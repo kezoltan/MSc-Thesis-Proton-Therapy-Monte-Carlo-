@@ -20,6 +20,8 @@ sims_per_CPU = dp.SIMS_PER_CPU
 KAPPA = dp.KAPPA
 range_allowance = dp.range_allowance
 y_scaling = dp.y_scaling
+energy_sdev = E0 * dp.energy_spread_percent #convert to the standard dev 
+width_sdev_factor = dp.width_sdev_factor
 
 #----1. FUNCTIONS REQUIRED FOR SETUP
 
@@ -28,7 +30,8 @@ def choose_l():
     Calculates l given the number of simulations N for the given dimension, for the FEM method.
     """
     N = sims_per_CPU * num_CPUs
-    return N**(-1/(2*spatial_dim))
+    factor = 0.8 #can play with this, have learnt 0.5 is too small
+    return N**(-1/(2*spatial_dim)) * factor
 
 def choose_Omega_0():
     if spatial_dim == 3:
@@ -71,7 +74,7 @@ def n_V_angular_drift(Omega, eps_0=eps_0):
     return -2*eps_0*Omega #Make sure that you correct this
 
 def n_V_angular_diffusion(Omega, eps_0=eps_0):
-    return np.sqrt(2*eps_0)*(np.eye(3) - np.outer(Omega, Omega))
+    return np.sqrt(2*eps_0)*(np.eye(spatial_dim) - np.outer(Omega, Omega))
 
 #Energy model:
 
@@ -79,7 +82,7 @@ def n_KZ_path_length_diffusion(E, a=alpha, p=p):
     return a*p*np.sqrt(KAPPA)*E**(p-0.5)
 
 def n_KZ_angular_diffusion(E, Omega, eps_0=eps_0, a=alpha, p=p):
-    return np.sqrt(2*eps_0 * a*p)*E**(p/2 - 0.5) * (np.eye(3) - np.outer(Omega, Omega))
+    return np.sqrt(2*eps_0 * a*p)*E**(p/2 - 0.5) * (np.eye(spatial_dim) - np.outer(Omega, Omega))
 
 #For the dose map:
 
@@ -131,7 +134,7 @@ def nodes(l):
     else:
         raise ValueError("Dimension (dim) must be either 2D or 3D.")
     
-def reference_cube_mapping(l,center, coordinate):
+def reference_cube_mapping(l, center, coordinate):
     """
     Maps the global coordinates inside a given voxel onto the reference cube [-1, 1] 
 
@@ -176,8 +179,8 @@ def Phi(l, X, n_i):
                 center[d] = (node_index + floors[d]) * l / 2
 
     #Map inputs and node ni onto the reference cube:
-    X_ref = reference_cube_mapping(center, X)
-    n_ref = reference_cube_mapping(center, n_i)
+    X_ref = reference_cube_mapping(l,center, X)
+    n_ref = reference_cube_mapping(l,center, n_i)
 
     phi = np.prod((1 + n_ref * X_ref) / 2)
     return phi
@@ -191,6 +194,79 @@ def position_lookup_matrix(X_meshgrid):
     """
     grid_shape = X_meshgrid.shape
     return np.arange(0, prod(grid_shape)).reshape(grid_shape)
+
+#Domain and Gaussian beam:
+
+def choose_X0(meshgrid):
+    """
+    Calculate length, depth and width of the cuboid domain. Assumes bounded below by zero in all dims. 
+    Then returns X0, the expected initial position of the Gaussian beam. 
+
+    meshgrid: tuple (X, Y, Z) indexing ij
+    """
+    domain_lower_bounds = np.zeros(spatial_dim)
+    
+    if spatial_dim==3:
+        X_meshgrid, Y_meshgrid, Z_meshgrid = meshgrid
+        upper_X = X_meshgrid[-1,-1,-1]
+        upper_Y = Y_meshgrid[-1,-1,-1]
+        lower_Y = Y_meshgrid[0,0,0] #This file relies on this being 0
+        lower_Z = Z_meshgrid[0,0,0]
+        upper_Z = Z_meshgrid[-1,-1,-1] #hi
+
+        if lower_Y != 0 or lower_Z != 0:
+            raise ValueError("lower domain bounds should be 0.")
+        domain_upper_bounds = np.array([upper_X, upper_Y, upper_Z])
+        lower_X, lower_Y, lower_Z = domain_lower_bounds
+        upper_X, upper_Y, upper_Z = domain_upper_bounds
+
+        y0 = (lower_Y + upper_Y)*1/2
+        z0 = (lower_Z + upper_Z)*1/2
+        X0 = np.array([0.0,y0,z0])
+
+    elif spatial_dim ==2:
+        X_meshgrid, Y_meshgrid = meshgrid
+        upper_X = X_meshgrid[-1,-1]
+        upper_Y = Y_meshgrid[-1,-1]
+        lower_Y = Y_meshgrid[0,0] #This file relies on this being 0
+
+        if lower_Y != 0:
+            raise ValueError("lower domain bounds should be 0.")
+        domain_upper_bounds = np.array([upper_X, upper_Y])
+        lower_X, lower_Y= domain_lower_bounds
+        upper_X, upper_Y= domain_upper_bounds
+
+        y0 = (lower_Y + upper_Y)*1/2
+        X0 = np.array([0.0,y0])
+
+    return X0, domain_lower_bounds, domain_upper_bounds
+
+def initial_energy_spread():
+    """
+    Gaussian sample the initial proton energy with % energy spread 
+    """
+    return np.random.normal(E0, energy_sdev)
+
+def sample_initial_position(meshgrid, rng, l): 
+    """
+    Gaussian sample the initial beam position given the X0 mean. 
+    The spread (i.e. the standard dev) should be order l
+    """
+    X0_mean,_,_ = choose_X0(meshgrid)
+
+    if spatial_dim == 2:
+        #we only need to sample the back "wall" where the beam originates
+        x0,y0 = X0_mean
+        width_sdev = width_sdev_factor * l
+        y = rng.normal(loc=y0, scale=width_sdev)
+        return np.array([x0, y], dtype=float)
+
+    elif spatial_dim == 3:
+        x0,y0,z0 = X0_mean
+        width_sdev = width_sdev_factor * l
+        y = rng.normal(loc=y0, scale=width_sdev)
+        z = rng.normal(loc=z0, scale=width_sdev)
+        return np.array([x0, y, z], dtype=float)
 
 #----mass matrix
 

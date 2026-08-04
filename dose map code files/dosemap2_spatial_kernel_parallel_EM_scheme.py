@@ -246,7 +246,7 @@ def one_path_dose_contribution(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds
 
             #Update the other variables
             X = X + Omega * h
-            Y = Y + h * n_V_log_energy_drift(E) + n_V_log_energy_diffusion(E) * np.sqrt(h) * dB1
+            Y = Y + h * n_V_log_energy_drift(E) + n_V_log_energy_diffusion(E) * dB1
             E = exp(Y)
             s += h
             step_counter+=1 

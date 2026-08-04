@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from dosesetup import *
 import doseparams as dp
 import os
+import matplotlib.ticker as mticker
 
 #We require the dose method (and params) to load the correct file 
 dose_method = "spatial_kernel"
@@ -265,10 +266,13 @@ def dose_plot_2D(method, dose_method, n_points=50, av_width=0.1, save=True, curv
     if finite_vals.size == 0:
         raise ValueError("Dose field contains no finite values.")
 
+    #Retrieve the extreme values
     vmin = np.nanmin(field)
-    vmax = np.nanpercentile(field, 99.5)
-    if not np.isfinite(vmax) or vmax <= vmin:
-        vmax = np.nanmax(field)
+    vmax = np.nanmax(field) #np.nanpercentile(field, 99.5)
+    print(f"Maximum dose reads as {vmax}.")
+
+    #if not np.isfinite(vmax) or vmax <= vmin:
+    #    vmax = np.nanmax(field)
 
     #levels_filled = np.linspace(vmin, vmax, 60)
     levels_lines = np.linspace(vmin, vmax, 12)
@@ -282,7 +286,11 @@ def dose_plot_2D(method, dose_method, n_points=50, av_width=0.1, save=True, curv
         alpha=0.35
     )
 
-    fig.colorbar(cf, cax=cax, label="Dose (1 gigaproton, Gy)")
+    colorbar = fig.colorbar(cf, cax=cax, label="Dose (1 gigaproton, Gy)")
+    dose_ticks = np.linspace(vmin, vmax, 10)
+    colorbar.set_ticks(dose_ticks)
+    #Report the labels
+    colorbar.ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2g'))
 
     ax_top.set_ylabel("y")
     ax_top.set_title(f"Estimated Dose: {title}\n{dose_title}, (n={sim_num}, $\\kappa$ = {KAPPA})")

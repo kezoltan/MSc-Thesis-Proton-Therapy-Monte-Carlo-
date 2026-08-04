@@ -143,7 +143,7 @@ def linear_path_parameterise(start, end, points=quad_nodes):
 
 max_steps = sum(nodes(l)[0].shape) #All boundaries, just needs to be large enough but relatively small
 
-def traversal_alg(start, end, rounding_tol = 8, max_steps = max_steps, corner_tol = 10**(-6)):
+def traversal_alg(start, end, rounding_tol = 8, max_steps = max_steps, corner_tol = 10**(-4)):
     """
     Runs all validation checks for the traversal algorithm below before running the alg with Numba
     Call this function to run the algorithm fully
@@ -349,6 +349,20 @@ def one_step_F_contribution(start, end, E_start, E_end):
     subsegment_endpts = traversal_alg(start, end)
     num_subsegments = len(subsegment_endpts) - 1 
 
+    direction = end - start
+    direction_sq = np.dot(direction, direction)
+
+    if direction_sq == 0:
+        raise ValueError("segment direction vector should not be 0.")
+    if E_start - E_end <= 0:
+        if method=="KZ": #Energy should be controlled - this shouldn't happen
+            print(f"{start, end}, {E_start, E_end}")
+            raise ValueError("full segment energy must be strictly decreasing.")
+        #V method is checked for this in EM code
+
+        #elif method=='V': #Can produce spurious non physical energy changes
+        #    return True
+
     #Every pair of adjacent points is one subsegment
     #For each, need (1) the list of nodes 
     #               (2) the value of the parameterised subsegment at the quad nodes 
@@ -358,30 +372,57 @@ def one_step_F_contribution(start, end, E_start, E_end):
         sub_start = subsegment_endpts[i] #these are coordinates 
         sub_end = subsegment_endpts[i+1]
 
+        #If the subsegment length is effectively 0, move on
+        #This is an extra guardrail 
+        if np.allclose(sub_start, sub_end, atol=1e-8, rtol=0):
+            continue #end this iteration 
+
+        #Estimate the energy loss per subsegment
+        t0 = np.dot(sub_start - start, direction) / direction_sq
+        t1 = np.dot(sub_end   - start, direction) / direction_sq 
+        sub_E_start = E_start + t0 * (E_end - E_start)
+        sub_E_end   = E_start + t1 * (E_end - E_start)
+
+        if sub_E_start - sub_E_end <= 0:
+            if method=='KZ':
+                print(f"{sub_start, sub_end}: {sub_E_start, sub_E_end} at {t0, t1}")
+                raise ValueError("subsegment energy must be strictly decreasing.")
+
         #We have a slightly different integral depending on the method choice  
         if method=="V": 
             length = np.linalg.norm(sub_end - sub_start) #Length of the subsegment
-            integral_factor = stopping_power((E_start + E_end)*0.5) * length / 2
+            #integral_factor = stopping_power((sub_E_start + sub_E_end)*0.5) * length / 2
             gamma_t1_point, gamma_t2_point = linear_path_parameterise(sub_start, sub_end) 
 
+            #Retrieve the stopping power values at the nodes
+            E_t1, E_t2 = linear_path_parameterise(sub_E_start, sub_E_end).flatten()  # same v(t) as KZ uses
+            S_t1, S_t2 = stopping_power(E_t1), stopping_power(E_t2)
+
         elif method=="KZ":
-            if E_start - E_end <= 0:
-                raise ValueError("energy must be strictly decreasing.")
-            energy_length = abs(E_start - E_end)
-            integral_factor = energy_length / 2
+            energy_length = sub_E_start - sub_E_end
 
             #This is the value of E(t1) and E(t2), not X
-            E_t1_point, E_t2_point = linear_path_parameterise(E_start, E_end).flatten() 
+            E_t1_point, E_t2_point = linear_path_parameterise(sub_E_start, sub_E_end).flatten() 
 
             #Use a linear path approximation to get X(E1) and X(E2)
-            gamma_t1_point, gamma_t2_point = [sub_start + (E_start - E)/(E_start - E_end) * (sub_end - sub_start) for E in [E_t1_point, E_t2_point]]
+            gamma_t1_point, gamma_t2_point = [sub_start + (sub_E_start - E)/(sub_E_start - sub_E_end) * (sub_end - sub_start) for E in [E_t1_point, E_t2_point]]
 
         nodes_touched = subsegment_voxel_vertices_numba(sub_start, sub_end)   
 
         #Where to store for each node:
         for node in nodes_touched:
             position = storage_position_convention(node)
-            node_contribution = integral_factor * (Phi(l,gamma_t1_point, node) + Phi(l,gamma_t2_point, node)) / rho
+
+            phi1 = Phi(l, gamma_t1_point, node)
+            phi2 = Phi(l, gamma_t2_point, node)
+
+            if method=='KZ':
+                node_contribution = (energy_length / 2) * (phi1 + phi2) / rho
+            elif method=='V':
+                node_contribution = (length / 2) * (S_t1 * phi1 + S_t2 * phi2) / rho
+
+            #node_contribution = integral_factor * (Phi(l,gamma_t1_point, node) + Phi(l,gamma_t2_point, node)) / rho
+
             one_step[position] += node_contribution
 
     return one_step #Each worker will be adding all these up for one path
@@ -419,14 +460,18 @@ def one_path_sim_load_vector(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds, 
     Y = log(E)
     X_start = X #For the path segment calculation  
     E_start = E
+    Omega_start = Omega
   
     if method == "KZ": #Runs the scheme in independent energy
-        h = dE
+        base_h = dE
 
         #Es should include Emin to be consistent with the other scheme
-        n = int(round((E - E_min) / abs(h)))
+        n = ceil((E - E_min) / abs(base_h)) 
         Es = np.linspace(E, E_min, n + 1)
-        #print(f"h is reading as {-Es[0] + Es[1]:.4f}, should be {h}") 
+
+        #h may have changed slightly from the base
+        h = Es[1] - Es[0]
+        #print(f"base_h is reading as {base_h:.4f}, actual h is reading as {h}") 
 
         num_steps = len(Es) - 1 #Minus 1 because we don't need to repeat the IC 
         coeff_prefactor = np.sqrt(2*eps_0 * a*p) 
@@ -476,9 +521,9 @@ def one_path_sim_load_vector(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds, 
         Es = [E]
         sqrt = np.sqrt(h) #for constant step size (change if adaptive)
         coeff = np.sqrt(2*eps_0)
-        E_start = E #for the load vector 
+        Y_start = log(E_start)
 
-        while E >= E_min: #Unknown end point 
+        while E > E_min: #Unknown end point 
             #Sample each Gaussian
             dB1 = sqrt * rng.standard_normal() 
             dB2_3D = sqrt * rng.standard_normal(spatial_dim)
@@ -491,21 +536,43 @@ def one_path_sim_load_vector(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds, 
 
             #Update the other variables
             X = X + Omega * h
-            Y = Y + h * n_V_log_energy_drift(E) + n_V_log_energy_diffusion(E) * np.sqrt(h) * dB1
+            Y = Y + h * n_V_log_energy_drift(E) + n_V_log_energy_diffusion(E) * dB1 #np.sqrt(h)
             E = exp(Y)
+
+            if E - E_start > 0: #Energy spuriously increased in this step
+                #Rerun this step
+                print("Spurious energy increase, rerunning step.")
+                E = E_start
+                Y = Y_start
+                Omega = Omega_start
+                X = X_start
+                continue #Redo the loop
+                
             E_end = E
-            s += h
+            #s += h
+            X_end = X
             
             if np.any(X > domain_upper_bounds) or np.any(X < domain_lower_bounds): #If we left the domain 
                 break
 
-            X_end = X
+            if E <= E_min: #Check this condition again after E has updated
+                #Interpolate the end point up to Emin
+
+                t_min = (E_min - E_start)/(E_end - E_start) #in 0,1
+                X_end = X_start + (X_end-X_start)*t_min 
+                E_end = E_min 
+                one_step = one_step_F_contribution(X_start, X_end, E_start, E_end)
+                one_path_load_contribution += one_step
+                return one_path_load_contribution     
+
             one_step = one_step_F_contribution(X_start, X_end, E_start, E_end)
             one_path_load_contribution += one_step
 
-            #Update for next loop
+            #Update for next loop, given an accepted step
             X_start = X
             E_start = E
+            Y_start = Y
+            Omega_start = Omega
 
     # else: 
     #     raise NameError("incorrect input for 'method' argument, available methods: KZ, V (as strings)") 
@@ -526,6 +593,9 @@ def worker(method, sims_per_CPU = sims_per_CPU):
     worker_load_vector = np.zeros(load_shape)
     for _ in range(sims_per_CPU):
         one_path_load_contribution = one_path_sim_load_vector(method, rng=rng)
+        #if np.asarray(one_path_load_contribution).dtype == object:
+        #    print(one_path_load_contribution)
+        #    print("bad one_path_load_contribution")
         worker_load_vector += one_path_load_contribution
     return worker_load_vector
 

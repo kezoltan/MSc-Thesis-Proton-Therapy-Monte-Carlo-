@@ -9,7 +9,7 @@ SIGMA = l/2
 
 SPATIAL_DIM = 2
 SIMS_PER_CPU = 2000
-dE = -0.09 #not including the first energy step
+dE = -0.09 
 ds = 0.005 #positive!
 METHOD = "V"
 

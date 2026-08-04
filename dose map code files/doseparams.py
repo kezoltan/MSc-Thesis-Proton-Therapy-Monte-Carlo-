@@ -2,13 +2,16 @@
 import os
 import numpy as np
 
+#Random seed
+master_seed_seq = np.random.SeedSequence(42)
+
 #For the spatial kernel method only
 l=0.05
 #l = 0.02 - this is what V uses for 100k sims
 SIGMA = l/2
 
 SPATIAL_DIM = 2
-SIMS_PER_CPU = 2000
+SIMS_PER_CPU = 100
 dE = -0.09 
 ds = 0.005 #positive!
 METHOD = "V"

@@ -46,6 +46,7 @@ KAPPA = dp.KAPPA
 range_allowance = dp.range_allowance
 y_scaling = dp.y_scaling
 origin = dp.origin
+master_seed_seq = dp.master_seed_seq
 Omega0 = choose_Omega_0()
 
 #For the finite element dose calculation
@@ -388,19 +389,18 @@ def one_step_F_contribution(start, end, E_start, E_end):
                 print(f"{sub_start, sub_end}: {sub_E_start, sub_E_end} at {t0, t1}")
                 raise ValueError("subsegment energy must be strictly decreasing.")
 
+        energy_length = sub_E_start - sub_E_end
+
         #We have a slightly different integral depending on the method choice  
         if method=="V": 
-            length = np.linalg.norm(sub_end - sub_start) #Length of the subsegment
-            #integral_factor = stopping_power((sub_E_start + sub_E_end)*0.5) * length / 2
+            #length = np.linalg.norm(sub_end - sub_start) #Length of the subsegment
             gamma_t1_point, gamma_t2_point = linear_path_parameterise(sub_start, sub_end) 
 
             #Retrieve the stopping power values at the nodes
             E_t1, E_t2 = linear_path_parameterise(sub_E_start, sub_E_end).flatten()  # same v(t) as KZ uses
-            S_t1, S_t2 = stopping_power(E_t1), stopping_power(E_t2)
+            #S_t1, S_t2 = stopping_power(E_t1), stopping_power(E_t2)
 
         elif method=="KZ":
-            energy_length = sub_E_start - sub_E_end
-
             #This is the value of E(t1) and E(t2), not X
             E_t1_point, E_t2_point = linear_path_parameterise(sub_E_start, sub_E_end).flatten() 
 
@@ -419,7 +419,8 @@ def one_step_F_contribution(start, end, E_start, E_end):
             if method=='KZ':
                 node_contribution = (energy_length / 2) * (phi1 + phi2) / rho
             elif method=='V':
-                node_contribution = (length / 2) * (S_t1 * phi1 + S_t2 * phi2) / rho
+                node_contribution = (energy_length / 2) * (phi1 + phi2) / rho
+                #node_contribution = (energy_length / 2) * (S_t1 * phi1 + S_t2 * phi2) / rho
 
             #node_contribution = integral_factor * (Phi(l,gamma_t1_point, node) + Phi(l,gamma_t2_point, node)) / rho
 
@@ -518,7 +519,6 @@ def one_path_sim_load_vector(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds, 
 
     elif method == "V":
         h = ds
-        Es = [E]
         sqrt = np.sqrt(h) #for constant step size (change if adaptive)
         coeff = np.sqrt(2*eps_0)
         Y_start = log(E_start)
@@ -536,7 +536,7 @@ def one_path_sim_load_vector(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds, 
 
             #Update the other variables
             X = X + Omega * h
-            Y = Y + h * n_V_log_energy_drift(E) + n_V_log_energy_diffusion(E) * dB1 #np.sqrt(h)
+            Y = Y + h * n_V_log_energy_drift(E) + n_V_log_energy_diffusion(E) * dB1 
             E = exp(Y)
 
             if E - E_start > 0: #Energy spuriously increased in this step
@@ -581,7 +581,7 @@ def one_path_sim_load_vector(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds, 
 
 #-------------------PARALLEL FUNCTIONS--------------------------------------------------
     
-def worker(method, sims_per_CPU = sims_per_CPU):
+def worker(method, path_seed_chunk, sims_per_CPU = sims_per_CPU):
     """
     This is the worker function telling each CPU what to do 
     Each CPU will run sims_per_CPU independent simulations, and add up the load vectors.
@@ -589,13 +589,11 @@ def worker(method, sims_per_CPU = sims_per_CPU):
     Returns:
         sum of load vectors, one per sim: np.ndarray, 1D: (load_shape,)
     """
-    rng = default_rng() #create a fresh random number generator for each CPU 
+    #rng = default_rng()  
     worker_load_vector = np.zeros(load_shape)
-    for _ in range(sims_per_CPU):
-        one_path_load_contribution = one_path_sim_load_vector(method, rng=rng)
-        #if np.asarray(one_path_load_contribution).dtype == object:
-        #    print(one_path_load_contribution)
-        #    print("bad one_path_load_contribution")
+    for path_seed in path_seed_chunk:
+        rng=default_rng(path_seed)
+        one_path_load_contribution = one_path_sim_load_vector(method, rng)
         worker_load_vector += one_path_load_contribution
     return worker_load_vector
 
@@ -607,13 +605,21 @@ def expected_coefficients_vector(method, sims_per_CPU = sims_per_CPU, num_CPUs =
     Returns:
         expected load vector, np.ndarray, 1D
     """
-    sim_num_list = [sims_per_CPU] * num_CPUs
     total_sims = sims_per_CPU * num_CPUs
     total_load = None 
 
+    #Setting seed
+    path_seeds = master_seed_seq.spawn(sim_num) #Make enough for all paths 
+
+    #Separate into sets for each worker
+    path_seed_chunks = [
+        path_seeds[i * sims_per_CPU : (i + 1) * sims_per_CPU]
+        for i in range(num_CPUs)
+    ]
+
     #Add contributions one by one  
     with ProcessPoolExecutor(max_workers=num_CPUs) as ex: 
-        for worker_contribution in ex.map(worker, repeat(method), sim_num_list):
+        for worker_contribution in ex.map(worker, repeat(method), path_seed_chunks):
             if total_load is None: 
                 total_load = np.array(worker_contribution, copy=True)
             else:

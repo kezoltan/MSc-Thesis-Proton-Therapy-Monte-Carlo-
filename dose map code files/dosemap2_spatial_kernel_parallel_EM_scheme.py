@@ -49,6 +49,7 @@ KAPPA = dp.KAPPA
 range_allowance = dp.range_allowance
 y_scaling = dp.y_scaling
 origin = dp.origin
+master_seed_seq = dp.master_seed_seq
 Omega0 = choose_Omega_0()
 
 if spatial_dim==3:
@@ -217,7 +218,6 @@ def one_path_dose_contribution(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds
         
     elif method == "V":
         h = ds
-        Es = [E0]
         sqrt = np.sqrt(h) #for constant step size (change if adaptive)
         coeff = np.sqrt(2*eps_0)
         constant = stopping_power(E) #For the comp trap
@@ -225,14 +225,17 @@ def one_path_dose_contribution(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds
         domain_check = True
         step_counter = 0
 
+        E_start = E
+        X_start = X
+
         while E >= E_min: #Unknown end point 
 
             one_step = one_step_dose_contribution(X, constant)
 
             if step_counter == 0:
-                dose_contribution += 1/2 * one_step
+                dose_contribution += abs(h)/2 * one_step
             else: 
-                dose_contribution += one_step
+                dose_contribution += abs(h) * one_step
             
             #Sample each Gaussian
             dB1 = sqrt * rng.standard_normal() 
@@ -250,23 +253,44 @@ def one_path_dose_contribution(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds
             E = exp(Y)
             s += h
             step_counter+=1 
-            constant = stopping_power(E)
+
+            E_end = E
+            X_end = X
+
+            constant = (-E_end+E_start)/h
             
             if np.any(X > domain_upper_bounds) or np.any(X < domain_lower_bounds): #If we left the domain 
                 domain_check = False
                 break
 
-        if domain_check: #If we were still in D at the end of the loop
-            dose_contribution -= 1/2 * one_step #Update the quadrature so that this was the endpoint  
+            if E <= E_min: #Check this condition again after E has updated
+                #Interpolate the end point up to Emin
 
-    dose_contribution *= abs(h) #check this abs 
+                t_min = (E_min - E_start)/(E_end - E_start) #in 0,1
+                X_end = X_start + (X_end-X_start)*t_min 
+                E_end = E_min 
+
+                h_final = np.linalg.norm(X_end - X_start)
+                constant = (-E_end+ E_start)/h_final
+                one_step = one_step_dose_contribution(X_start, constant)
+
+                #The final dose contribution
+                dose_contribution += h_final/2 * one_step
+                break
+
+            X_start = X
+            E_start = E
+
+        if not(domain_check): #If we exited the domain 
+            #Go back to the last full step that was inside D 
+            dose_contribution -= abs(h)/2 * one_step #Update the quadrature so that this was the endpoint  
 
     return dose_contribution
 
 
 #-------------------PARALLEL FUNCTIONS--------------------------------------------------
     
-def worker(method, sims_per_CPU = sims_per_CPU):
+def worker(method, path_seed_chunk, sims_per_CPU = sims_per_CPU):
     """
     This is the worker function telling each CPU what to do 
     Each CPU will run sims_per_CPU independent simulations, and add up the load vectors.
@@ -274,9 +298,9 @@ def worker(method, sims_per_CPU = sims_per_CPU):
     Returns:
         sum of load vectors, one per sim: np.ndarray, 1D: (load_shape,)
     """
-    rng = default_rng()
     worker_dose = np.zeros(dose_shape)
-    for _ in range(sims_per_CPU):
+    for path_seed in path_seed_chunk:
+        rng=default_rng(path_seed)
         dose_contribution = one_path_dose_contribution(method, rng=rng)
         worker_dose += dose_contribution
     return worker_dose
@@ -292,10 +316,18 @@ def expected_dose(method, sims_per_CPU = sims_per_CPU, num_CPUs = num_CPUs):
     sim_num_list = [sims_per_CPU] * num_CPUs
     total_sims = sims_per_CPU * num_CPUs
     total_dose = None 
+    sim_num = sims_per_CPU*num_CPUs
+
+    #Setting seed
+    path_seeds = master_seed_seq.spawn(sim_num) #Make enough for all paths 
+    
+    #Separate into sets for each worker
+    path_seed_chunks = [path_seeds[i * sims_per_CPU : (i + 1) * sims_per_CPU]
+            for i in range(num_CPUs)]
 
     #Add contributions one by one  
     with ProcessPoolExecutor(max_workers=num_CPUs) as ex: 
-        for worker_contribution in ex.map(worker, repeat(method), sim_num_list):
+        for worker_contribution in ex.map(worker, repeat(method), path_seed_chunks):
             if total_dose is None: 
                 total_dose = np.array(worker_contribution, copy=True)
             else:
@@ -305,6 +337,7 @@ def expected_dose(method, sims_per_CPU = sims_per_CPU, num_CPUs = num_CPUs):
     return dose
 
 if __name__ == "__main__":
+    sim_num = num_CPUs * sims_per_CPU
     
     dose_method = "spatial_kernel"
     if method == 'KZ':
@@ -316,7 +349,6 @@ if __name__ == "__main__":
     folder_path = r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
     dose_expected = expected_dose(method)
 
-    sim_num = num_CPUs * sims_per_CPU
     l=round(l,3)
     
     path_3D = os.path.join(folder_path, f"{dose_method}_{method}_{h}_{spatial_dim}D_shape_{dose_shape}_E0_{E0}_l_{l}.npz") 

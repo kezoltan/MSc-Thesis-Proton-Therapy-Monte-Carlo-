@@ -159,7 +159,7 @@ def dose_plot_2D(method, dose_method, n_points=50, av_width=0.1, save=True, curv
     folder_path = dp.file_path
     file_path = os.path.join(
         folder_path,
-        f"{dose_method}_{method}_{h_rounded}_{spatial_dim}D_shape_{shape}_E0_{E0}_l_{l_rounded}.npz"
+        f"{dose_method}_{method}_{h_rounded}_{spatial_dim}D_shape_{shape}_E0_{E0}_l_{l_rounded}_N_{sims_per_CPU*num_CPUs}.npz"
     )
     data = np.load(file_path)
 
@@ -307,7 +307,7 @@ def dose_plot_2D(method, dose_method, n_points=50, av_width=0.1, save=True, curv
     folder_save_path = dp.file_path
     file_save_path = os.path.join(
         folder_save_path,
-        f"{dose_method}_{method}_dose_and_depthdose_MC_{sim_num}_sims_E0_{E0}_h_{h}_l_{l}.png"
+        f"{dose_method}_{method}_dose_and_depthdose_MC_{sim_num}_sims_E0_{E0}_h_{h}_l_{l}_N_{sims_per_CPU*num_CPUs}.png"
     )
 
     fig.savefig(file_save_path, dpi=300, bbox_inches="tight")

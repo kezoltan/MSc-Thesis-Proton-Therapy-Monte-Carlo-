@@ -163,12 +163,13 @@ def one_path_dose_contribution(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds
     Y = log(E)
   
     if method == "KZ": #Runs the scheme in independent energy
-        h = dE
-        #Es should include Emin to be consistent with the other scheme
-        n = int(round((E - E_min) / abs(h)))
+        base_h = dE
+        n = ceil((E - E_min) / abs(base_h)) 
         Es = np.linspace(E, E_min, n + 1)
-        
+        h = Es[1] - Es[0]
+        #print(f"base_h is reading as {base_h:.4f}, actual h is reading as {h}") 
         num_steps = len(Es) - 1 #Minus 1 because we don't need to repeat the IC 
+
         coeff_prefactor = np.sqrt(2*eps_0 * a*p) 
         sqrt = np.sqrt(-h) 
         constant = 1 #This is for the comp trap rule, does not change 
@@ -185,9 +186,9 @@ def one_path_dose_contribution(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds
             #We will include step 0 in the comp trap
             one_step = one_step_dose_contribution(X, constant)
             if step_counter == 0:
-                dose_contribution += 1/2 * one_step 
+                dose_contribution += abs(h)/2 * one_step 
             else:
-                dose_contribution += one_step
+                dose_contribution += abs(h)*one_step
             
             S_inv = reciprocal_stopping_power(E) 
             coeff = coeff_prefactor*E**(p/2 - 0.5)  
@@ -214,7 +215,7 @@ def one_path_dose_contribution(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds
         #Do the final step contribution as well, assuming we were still in the domain:
         if domain_check:    
             one_step = one_step_dose_contribution(X, constant)
-            dose_contribution += 1/2 * one_step
+            dose_contribution += abs(h)/2 * one_step
         
     elif method == "V":
         h = ds
@@ -351,7 +352,7 @@ if __name__ == "__main__":
 
     l=round(l,3)
     
-    path_3D = os.path.join(folder_path, f"{dose_method}_{method}_{h}_{spatial_dim}D_shape_{dose_shape}_E0_{E0}_l_{l}.npz") 
+    path_3D = os.path.join(folder_path, f"{dose_method}_{method}_{h}_{spatial_dim}D_shape_{dose_shape}_E0_{E0}_l_{l}_N_{sims_per_CPU*num_CPUs}.npz") 
     np.savez(path_3D, dose_expected=dose_expected, sim_num=sim_num, method=method, absolute_h=h, spatial_dim=spatial_dim, l=l, X_meshgrid = X_meshgrid, sigma=SIGMA)
 
     plot = dose_plot_2D(method, "spatial_kernel")

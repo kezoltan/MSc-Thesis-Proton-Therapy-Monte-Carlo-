@@ -5,6 +5,7 @@ import numpy as np
 #Random seed
 master_seed_seq = np.random.SeedSequence(42)
 file_path = r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
+#r"/home/zoltan/Documents/dose map code repo"
 
 #For the spatial kernel method only
 l=0.05
@@ -12,10 +13,10 @@ l=0.05
 SIGMA = l/2
 
 SPATIAL_DIM = 2
-SIMS_PER_CPU = 100
+SIMS_PER_CPU = 100 #1064
 dE = -0.09 
 ds = 0.005 #positive!
-METHOD = "V"
+METHOD = "KZ"
 
 NUM_CPUs = os.cpu_count() - 2 #Leave two free 
 E0 = 62 #MeV

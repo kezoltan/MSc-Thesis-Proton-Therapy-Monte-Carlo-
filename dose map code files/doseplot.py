@@ -156,7 +156,7 @@ def dose_plot_2D(method, dose_method, n_points=50, av_width=0.1, save=True, curv
     X_MIN, X_MAX = X_meshgrid[0, 0], X_meshgrid[-1, -1]
     Y_MIN, Y_MAX = Y_meshgrid[0, 0], Y_meshgrid[-1, -1]
 
-    folder_path = r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
+    folder_path = dp.file_path
     file_path = os.path.join(
         folder_path,
         f"{dose_method}_{method}_{h_rounded}_{spatial_dim}D_shape_{shape}_E0_{E0}_l_{l_rounded}.npz"
@@ -304,7 +304,7 @@ def dose_plot_2D(method, dose_method, n_points=50, av_width=0.1, save=True, curv
     ax_bottom.set_ylabel("Relative dose")
     ax_bottom.set_xlim(X_MIN, X_MAX)
 
-    folder_save_path = r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map graphs"
+    folder_save_path = dp.file_path
     file_save_path = os.path.join(
         folder_save_path,
         f"{dose_method}_{method}_dose_and_depthdose_MC_{sim_num}_sims_E0_{E0}_h_{h}_l_{l}.png"

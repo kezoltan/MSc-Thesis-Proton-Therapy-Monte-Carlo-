@@ -4,6 +4,7 @@ import numpy as np
 
 #Random seed
 master_seed_seq = np.random.SeedSequence(42)
+file_path = r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
 
 #For the spatial kernel method only
 l=0.05

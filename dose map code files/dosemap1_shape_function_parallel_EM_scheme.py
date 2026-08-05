@@ -644,7 +644,7 @@ if __name__ == "__main__":
 
     M_diag = linear_lumped_mass_matrix(X_meshgrid,l)
 
-    folder_path= r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
+    folder_path= dp.file_path
 
     if spatial_dim==2:
         M_path = os.path.join(folder_path, "2D_lumped_mass_matrix.npz")

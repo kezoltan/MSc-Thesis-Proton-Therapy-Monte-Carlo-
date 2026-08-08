@@ -1,16 +1,3 @@
-
-#July 2026
-#Finite Element Dose Method Code
-
-#This file is structured as follows
-#   1. Dose function calculation by finite element method
-#   2. Euler Maruyama schemes for proton path generation 
-#   3. Worker functions (for parallel)
-
-#READ: if there is a mistake anywhere, it's the storage_position_convention function
-
-#----------------IMPORTS-----------------------------------------------------
-
 import numpy as np 
 from math import ceil, prod, floor, exp, log
 from itertools import repeat
@@ -19,8 +6,8 @@ import os
 from concurrent.futures import ProcessPoolExecutor
 from dosesetup import *
 import doseparams as dp
-from doseplot import dose_plot_2D
-from numpy.random import default_rng
+from doseplot import dose_plot_2D, dose_plot_3D
+#from numpy.random import default_rng
 
 #--------------PARAMETERS-----------------------------------------------------
 
@@ -286,13 +273,10 @@ def subsegment_voxel_vertices_numba(start, end, rounding_tol = 8):
 
     direction = end - start
     bounds = np.empty((spatial_dim, 2)) #Store a pair of bounds in each direction
-
-    #Outdated code (though caused no bugs) 
     #num_vertices = 2**np.count_nonzero(direction)
-    #vertices = np.empty((num_vertices, spatial_dim))
 
     varying_axes = []
-    idx_vals = []
+    idxs=[]
 
     for i in range(spatial_dim):
 
@@ -303,6 +287,7 @@ def subsegment_voxel_vertices_numba(start, end, rounding_tol = 8):
 
         lo_end = floor(round(end_i * l_reciprocal, rounding_tol))
         hi_end = ceil(round(end_i * l_reciprocal, rounding_tol)) 
+
         if lo_end < lo:
             lo = lo_end
         if hi_end > hi:
@@ -312,18 +297,21 @@ def subsegment_voxel_vertices_numba(start, end, rounding_tol = 8):
             val = lo*l
             bounds[i, 0] = val
             bounds[i, 1] = val 
-            idx_vals.append((i,val))
+            idxs.append((i,val))
             #vertices[:, i] = val
         else:
             bounds[i,0] = lo*l 
             bounds[i,1] = hi*l
             varying_axes.append(i) #Store the axis index if we are moving in this direction
 
-        num_vertices = 2**len(varying_axes)
-        vertices = np.empty((num_vertices, spatial_dim))
-        for pair in idx_vals:
-            i, val = pair
-            vertices[:,i] = val
+    #Change made!!
+    #This is different - simple test raised an error with the 0 direction vector
+    #This error was never raised in the source code
+    num_vertices = 2**len(varying_axes)
+    vertices = np.empty((num_vertices, spatial_dim))
+    for tup in idxs:
+        i, val = tup
+        vertices[:,i] = val
 
     #Fill out the vertices by mixing x,y,z in the same way as np.meshgrid 
     for axis_idx, i in enumerate(varying_axes):
@@ -337,20 +325,7 @@ def subsegment_voxel_vertices_numba(start, end, rounding_tol = 8):
     return vertices
 
 def one_step_F_contribution(start, end, E_start, E_end):
-    """
-    Add the contribution from one linear step ds of the proton path simulation to the load vector.
-    Designed to be called once each step of the proton path and recursively construct F. 
-    Assumes 2 point quadrature is being used, everything must be np.ndarrays! 
-    Requires the lookup matrix and the phis matrix to be defined globally. 
-    
-    Inputs: 
-        F_current, np.ndarray, 1D: the current load vector from the end of the previous segment 
-        start, end: arrays for the start and end point of the full linear segment 
-        dE, ds: floats for the energy lost + path length covered between start and end 
 
-    Returns:
-        one_step, np.ndarray, 1D, same shape as F_current: one linear segment contribution to the dose
-    """
     one_step = np.zeros(load_shape) #Load shape must be defined globally for this
 
     if len(quad_nodes) != 2:
@@ -397,16 +372,15 @@ def one_step_F_contribution(start, end, E_start, E_end):
 
         energy_length = sub_E_start - sub_E_end
 
+        #We have a slightly different integral depending on the method choice  
         if method=="V": 
+            #length = np.linalg.norm(sub_end - sub_start) #Length of the subsegment
             gamma_t1_point, gamma_t2_point = linear_path_parameterise(sub_start, sub_end) 
-
-            #Retrieve the stopping power values at the nodes
-            E_t1, E_t2 = linear_path_parameterise(sub_E_start, sub_E_end).flatten()  # same v(t) as KZ uses
-            #S_t1, S_t2 = stopping_power(E_t1), stopping_power(E_t2)
 
         elif method=="KZ":
             #This is the value of E(t1) and E(t2), not X
             E_t1_point, E_t2_point = linear_path_parameterise(sub_E_start, sub_E_end).flatten() 
+
             #Use a linear path approximation to get X(E1) and X(E2)
             gamma_t1_point, gamma_t2_point = [sub_start + (sub_E_start - E)/(sub_E_start - sub_E_end) * (sub_end - sub_start) for E in [E_t1_point, E_t2_point]]
 
@@ -423,6 +397,9 @@ def one_step_F_contribution(start, end, E_start, E_end):
                 node_contribution = (energy_length / 2) * (phi1 + phi2) / rho
             elif method=='V':
                 node_contribution = (energy_length / 2) * (phi1 + phi2) / rho
+                #node_contribution = (energy_length / 2) * (S_t1 * phi1 + S_t2 * phi2) / rho
+
+            #node_contribution = integral_factor * (Phi(l,gamma_t1_point, node) + Phi(l,gamma_t2_point, node)) / rho
 
             one_step[position] += node_contribution
 
@@ -432,82 +409,48 @@ def one_step_F_contribution(start, end, E_start, E_end):
 #--------------------------EULER-MARUYAMA SCHEMES----------------------------------------
 
 
-#These generate the proton paths - the full path should NOT be stored
-
-def one_path_sim_load_vector(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds, s0 = 0, kappa=KAPPA, a=alpha, p=p):
+def TEST_opslv(method, E0=E0, Omega0=Omega0, dE = dE, ds=ds, s0 = 0, kappa=KAPPA, a=alpha, p=p):
     """
-    Generates the load vector contribution for one full proton path simulation.
-    Does not store the path - at each step, run one_step_F_contribution. These are totalled up and returned.
-    Does not reflect the Gaussian increment is ds becomes negative.   
-    
-    Inputs:
-        method = "KZ" or "V" to denote which scheme we are using
-
-    Returns: 
-        total load vector contribution from this simulation, 1D np.ndarray 
-
     """ 
     #Load vector empty
     one_path_load_contribution = np.zeros(load_shape)
     
     s = float(s0)
-
-    #Sample the Gaussian beam 
-    X = sample_initial_position(meshgrid, rng, l)
-    Omega = Omega0
-    E = initial_energy_spread() 
-
-    #If V method:
+    E = E0
     Y = log(E)
+
+    #Initial positions, spread along y:
+    X = choose_X0(meshgrid)[0]
+    X=np.asarray(X)
+    initial_y0 = [y for y in np.linspace(domain_lower_bounds[1] + l/2, domain_upper_bounds[1] - l/2, int(round(4/l)))]
+    initial_Xs = []
+    for y0 in initial_y0:
+        X[1] = y0
+        initial_Xs.append(X.copy())
+    #Sample the start position (on average it should even out)
+    idx = np.random.randint(0, len(initial_y0) - 1)
+    X = initial_Xs[idx]
+
     X_start = X #For the path segment calculation  
     E_start = E
-    Omega_start = Omega
   
     if method == "KZ": #Runs the scheme in independent energy
         base_h = dE
-
-        #Es should include Emin to be consistent with the other scheme
         n = ceil((E - E_min) / abs(base_h)) 
         Es = np.linspace(E, E_min, n + 1)
-
-        #h may have changed slightly from the base
         h = Es[1] - Es[0]
-        #print(f"base_h is reading as {base_h:.4f}, actual h is reading as {h}") 
+        num_steps = len(Es) - 1 
 
-        num_steps = len(Es) - 1 #Minus 1 because we don't need to repeat the IC 
-        coeff_prefactor = np.sqrt(2*eps_0 * a*p) 
-        sqrt = np.sqrt(abs(h)) 
-
-        #Generate Brownians ahead of time because known endpoints (+ no reflection)
-        dB1 = sqrt * rng.standard_normal(num_steps) 
-        dB2_3D = sqrt * rng.standard_normal((num_steps, spatial_dim))
-        #negative_path_total = 0
-
-        for k in range(num_steps): #Known start and end points 
+        for _ in range(num_steps): #Known start and end points 
             S_inv = reciprocal_stopping_power(E) 
-            coeff = coeff_prefactor*E**(p/2 - 0.5)  
-            Omega_n = Omega #need this for the exp map 
-            instance_dB2 = dB2_3D[k] 
-            other_noise = instance_dB2 - Omega_n * np.dot(Omega_n, instance_dB2)
-            
-            #Exp map
-            y = coeff * other_noise
-            Omega = exponential_map_sphere(Omega_n, y)
-
-            #Update variables without storage
             s_n = s
-            s = s_n - S_inv * h + n_KZ_path_length_diffusion(E) * dB1[k]
+            s = s_n - S_inv * h
             path_travelled = s - s_n #Might be negative 
-            X = X + Omega * (path_travelled)
+            X = X + Omega0 * (path_travelled)
             E += h
             E_end = E
-
-            if E < 0:
-                raise ValueError(f"E became negative at step {k}: {E}")
-
             if np.any(X > domain_upper_bounds) or np.any(X < domain_lower_bounds): #If we left the domain 
                 break
-
             #The end point is now known 
             X_end = X 
             one_step = one_step_F_contribution(X_start, X_end, E_start, E_end)
@@ -519,24 +462,13 @@ def one_path_sim_load_vector(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds, 
 
     elif method == "V":
         h = ds
-        sqrt = np.sqrt(h) #for constant step size (change if adaptive)
-        coeff = np.sqrt(2*eps_0)
         Y_start = log(E_start)
 
         while E > E_min: #Unknown end point 
-            #Sample each Gaussian
-            dB1 = sqrt * rng.standard_normal() 
-            dB2_3D = sqrt * rng.standard_normal(spatial_dim)
-            Omega_n = Omega 
-            other_noise = dB2_3D - Omega_n * np.dot(Omega_n, dB2_3D) # =(1-OmegaOmega)dB
-            
-            #Exp map
-            y = coeff * other_noise
-            Omega = exponential_map_sphere(Omega_n, y)
 
             #Update the other variables
-            X = X + Omega * h
-            Y = Y + h * n_V_log_energy_drift(E) + n_V_log_energy_diffusion(E) * dB1 
+            X = X + Omega0 * h
+            Y = Y - h * stopping_power(E)/E
             E = exp(Y)
 
             if E - E_start > 0: #Energy spuriously increased in this step
@@ -544,12 +476,10 @@ def one_path_sim_load_vector(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds, 
                 print("Spurious energy increase, rerunning step.")
                 E = E_start
                 Y = Y_start
-                Omega = Omega_start
                 X = X_start
                 continue #Redo the loop
-                
             E_end = E
-            #s += h
+            s += h
             X_end = X
             
             if np.any(X > domain_upper_bounds) or np.any(X < domain_lower_bounds): #If we left the domain 
@@ -572,16 +502,12 @@ def one_path_sim_load_vector(method, rng, E0=E0, Omega0=Omega0, dE = dE, ds=ds, 
             X_start = X
             E_start = E
             Y_start = Y
-            Omega_start = Omega
-
-    # else: 
-    #     raise NameError("incorrect input for 'method' argument, available methods: KZ, V (as strings)") 
 
     return one_path_load_contribution
 
 #-------------------PARALLEL FUNCTIONS--------------------------------------------------
     
-def worker(method, path_seed_chunk, sims_per_CPU = sims_per_CPU):
+def TEST_worker(method, sims_per_CPU = sims_per_CPU):
     """
     This is the worker function telling each CPU what to do 
     Each CPU will run sims_per_CPU independent simulations, and add up the load vectors.
@@ -589,15 +515,13 @@ def worker(method, path_seed_chunk, sims_per_CPU = sims_per_CPU):
     Returns:
         sum of load vectors, one per sim: np.ndarray, 1D: (load_shape,)
     """
-    #rng = default_rng()  
     worker_load_vector = np.zeros(load_shape)
-    for path_seed in path_seed_chunk:
-        rng=default_rng(path_seed)
-        one_path_load_contribution = one_path_sim_load_vector(method, rng)
+    for _ in range(sims_per_CPU):
+        one_path_load_contribution = TEST_opslv(method)
         worker_load_vector += one_path_load_contribution
     return worker_load_vector
 
-def expected_coefficients_vector(method, sims_per_CPU = sims_per_CPU, num_CPUs = num_CPUs):
+def TEST_expected_coefficients_vector(method, sims_per_CPU = sims_per_CPU, num_CPUs = num_CPUs):
     """
     Retrieves the load vector sums from all CPUs, adds them up, takes expectation.
     Returns the coefficients c_i for the function approximation. 
@@ -606,24 +530,13 @@ def expected_coefficients_vector(method, sims_per_CPU = sims_per_CPU, num_CPUs =
         expected load vector, np.ndarray, 1D
     """
     total_sims = sims_per_CPU * num_CPUs
-    total_load = None 
-
-    #Setting seed
-    path_seeds = master_seed_seq.spawn(sim_num) #Make enough for all paths 
-
-    #Separate into sets for each worker
-    path_seed_chunks = [
-        path_seeds[i * sims_per_CPU : (i + 1) * sims_per_CPU]
-        for i in range(num_CPUs)
-    ]
+    total_load = np.zeros(load_shape)
 
     #Add contributions one by one  
     with ProcessPoolExecutor(max_workers=num_CPUs) as ex: 
-        for worker_contribution in ex.map(worker, repeat(method), path_seed_chunks):
-            if total_load is None: 
-                total_load = np.array(worker_contribution, copy=True)
-            else:
-                total_load += worker_contribution
+        futures = [ex.submit(TEST_worker, method) for _ in range(num_CPUs)]
+        for fut in futures:
+            total_load += fut.result()
 
     expected_F = total_load / total_sims
     c_vector = expected_F / M_diag #elementwise divide
@@ -640,7 +553,7 @@ if __name__ == "__main__":
         h = round(abs(dE), 3)
     if method == 'V':
         h = round(abs(ds), 3)
-    print(f"dose method {dose_method}, method {method}, {h} h, EO {E0}, l {l}, N = {sim_num}, KAPPA {KAPPA}")
+    print(f"RUNNING TEST: dose method {dose_method}, method {method}, {h} h, EO {E0}, l {l}, N = {sim_num}, KAPPA {KAPPA}")
 
     M_diag = linear_lumped_mass_matrix(X_meshgrid,l)
 
@@ -653,13 +566,16 @@ if __name__ == "__main__":
         M_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "3D_lumped_mass_matrix.npz")
         np.savez(M_path, M_diag=M_diag, l = l, X = X_meshgrid, Y =Y_meshgrid, Z = Z_meshgrid)
 
-    c_expected = expected_coefficients_vector(method)
+    c_expected = TEST_expected_coefficients_vector(method)
     coeffs_shape = c_expected.shape
 
     l=round(l,3)
 
-    path_3D = os.path.join(folder_path, f"{dose_method}_{method}_{h}_{spatial_dim}D_shape_{coeffs_shape[0]}_E0_{E0}_l_{l}_N_{sims_per_CPU*num_CPUs}.npz") 
+    path_3D = os.path.join(folder_path, f"TEST_{dose_method}_{method}_{h}_{spatial_dim}D_shape_{coeffs_shape[0]}_E0_{E0}_l_{l}_N_{sims_per_CPU*num_CPUs}.npz") 
     np.savez(path_3D, coeffs_expected=c_expected, sim_num=sim_num, method=method, absolute_h=h, spatial_dim=spatial_dim,  l = l, X = X_meshgrid)
 
     print("Now plotting...")
-    plot = dose_plot_2D(method, dose_method)
+    if spatial_dim==2:
+        plot = dose_plot_2D(method, "spatial_kernel", "TEST_{dose_method}_{method}_{h}_{spatial_dim}D_shape_{dose_shape}_E0_{E0}_l_{l}_N_{sims_per_CPU*num_CPUs}.npz")
+    if spatial_dim==3:
+        plot = dose_plot_3D(method, "spatial_kernel", "TEST_{dose_method}_{method}_{h}_{spatial_dim}D_shape_{dose_shape}_E0_{E0}_l_{l}_N_{sims_per_CPU*num_CPUs}.npz")

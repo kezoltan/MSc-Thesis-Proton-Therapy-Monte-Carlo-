@@ -7,24 +7,29 @@ master_seed_seq = np.random.SeedSequence(42)
 file_path = r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
 #r"/home/zoltan/Documents/dose map code repo"
 
-#For the spatial kernel method only
-l=0.05
-#l = 0.02 - this is what V uses for 100k sims
-SIGMA = l/2
-
-SPATIAL_DIM = 2
-SIMS_PER_CPU = 100 #1064
-dE = -0.09 
-ds = 0.005 #positive!
-METHOD = "KZ"
-
-NUM_CPUs = os.cpu_count() - 2 #Leave two free 
-E0 = 62 #MeV
 EMIN = 1.0 #The stopping power model diverges here
 EPS_0 = 0.005 #determined from E0 - COME BACK
 ALPHA =  2.633e-3
 P = 1.735
 RHO = 1 #water is 1gcm^{-3} 
+def stopping_power(E, a = ALPHA, p = P):
+    return 1/(a*p) * E**(1-p)
+
+#For the spatial kernel method only
+l=0.05 #0.02 - this is what V uses for 100k sims
+SIGMA = l/2 #tried making this l/4, definitely too small, images were very rough
+
+SPATIAL_DIM = 3
+SIMS_PER_CPU = 20 #7146 #1064
+METHOD = "V"
+
+NUM_CPUs = os.cpu_count() - 2 #Leave one free 
+E0 = 62 #MeV
+
+#For the dose to distribute correctly, we need an appropriate ratio between ds/dE
+ds = 0.005 #positive!
+dE = -0.09 #this only gets used by dose method 1
+
 straggling_severity = "Moderate"
 
 #For the domain D

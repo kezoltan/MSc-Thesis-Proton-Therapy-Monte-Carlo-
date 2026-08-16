@@ -49,14 +49,17 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, fp, *args):
 
     num_q = dose_shape  # Number of nodes, global parameter
 
-    #For storage
-    del1 = None #av fine-coarse payoff
-    del2 = None #av fine payoff
-    var1 = None #var fine-coarse payoff
-    var2 = None #""
-    kur1 = None #kurtosis
-    chk1 = None #consistency check: linearity of expectation is checked
+    #Statistics storage
+    del1 = np.zeros((num_q, L + 1), dtype=float)
+    del2 = np.zeros((num_q, L + 1), dtype=float)
+    var1 = np.zeros((num_q, L + 1), dtype=float)
+    var2 = np.zeros((num_q, L + 1), dtype=float)
+    kur1 = np.zeros((num_q, L + 1), dtype=float)
+    chk1 = np.zeros((num_q, L + 1), dtype=float)
     cost = np.zeros(L + 1, dtype=float) #store the per level cost 
+
+    cent2 = np.zeros((num_q, L + 1))
+    cent4 = np.zeros((num_q, L + 1))
 
     for l in range(L + 1):
         print(f'Starting parameter testing for mlmc level {l}, stepsize level {l+MLMC_LEVEL_OFFSET}')
@@ -68,23 +71,15 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, fp, *args):
         #Calculate mc estimator at level 1 (/N -> expected value)
         E_stats_sums_l = np.array(stats_sum_l, dtype=float) / N
         E_cost_l = cst_sum_l / N
-
         cost[l] = E_cost_l
-
-        # Late initialization of tracking arrays based on execution output shapes
-        if del1 is None: 
-            del1 = np.zeros((num_q, L + 1), dtype=float)
-            del2 = np.zeros((num_q, L + 1), dtype=float)
-            var1 = np.zeros((num_q, L + 1), dtype=float)
-            var2 = np.zeros((num_q, L + 1), dtype=float)
-            kur1 = np.zeros((num_q, L + 1), dtype=float)
-            chk1 = np.zeros((num_q, L + 1), dtype=float)
 
         for k in range(num_q):
             s0, s1, s2, s3, s4, s5 = E_stats_sums_l[k, :]
             
             del1[k, l] = s0
             del2[k, l] = s4
+            cent2[k, l] = (s1 - s0**2)**2 #second non centerd moment
+            cent4[k, l] = s3 - 4*s2*s0 + 6*s1*(s0**2) - 3*(s0**4) #fourth 
             var1[k, l] = s1 - s0**2
             var2[k, l] = max(s5 - s4**2, 1e-10) #excludes variance of 0
 
@@ -110,9 +105,8 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, fp, *args):
     elif dose_method=='SK':
         title_seg = "Spatial Kernel Dose"
 
-    def plot_kurtosis_heatmap():
+    def plot_kurtosis_heatmap(log_kurt=False):
         print(f"Plotting kurtosis heatmap for mlmc estimator from mlmc levels 1 to {L}...")
-        log_kurt=False #set to true for log scale visualise ord
         kurt_all = kur1[:, 1:]
         if log_kurt:
             kurt_plot = np.log10(1 + np.maximum(kurt_all, 0)) #make the kurts all >=0
@@ -140,10 +134,11 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, fp, *args):
         label = "log10(1 + kurtosis)" if log_kurt else r"$Y_\ell$ Kurtosis"
         fig.colorbar(sc,ax=axes[:L].tolist(),label=label)
         fig.suptitle(f"{title_seg} MLMC Test:{'Log' if log_kurt else ''} Kurtosis Heatmap (M={N_conv_test})")
-        kurt_save_path = os.path.join(file_path, f"kurtosis_map_{dose_method}_maxlvl_{L_conv_test}_offset_{MLMC_LEVEL_OFFSET}_mcsims_{N_conv_test}.png")
+        kurt_save_path = os.path.join(file_path, f"{'log_' if log_kurt else ''}kurtosis_map_{dose_method}_maxlvl_{L_conv_test}_offset_{MLMC_LEVEL_OFFSET}_mcsims_{N_conv_test}.png")
         plt.savefig(kurt_save_path, dpi=300)
         plt.show()
-    plot_kurtosis_heatmap()
+    #plot_kurtosis_heatmap()
+    #plot_kurtosis_heatmap(log_kurt=True)
 
     #2. Fine Payoff Check - excluding sampling error, should match original MLMC 
 
@@ -167,6 +162,38 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, fp, *args):
         plt.show()
     #plot_fine_payoff()
     #the SF method will be too chunky imo
+
+    def plot_moments_2_4():
+
+        for mlmc_level in [L]:
+
+            m2 = cent2[:, mlmc_level]
+            m4 = cent4[:, mlmc_level]
+
+            ratio = np.full(num_q, np.nan)
+            mask = m2 > 0
+            ratio[mask] = (m4[mask]/ m2[mask])
+
+            fig, axes = plt.subplots(1,3,figsize=(17, 5),sharex=True,sharey=True)
+            sc0 = axes[0].scatter(nodes_array[:, 0],nodes_array[:, 1],c=m2)
+            axes[0].set_title(r"$\mathbb{E}[(Y_\ell-\mathbb{E}(Y_\ell))^2]^2$")
+            fig.colorbar(sc0,ax=axes[0])
+            sc1 = axes[1].scatter(nodes_array[:, 0],nodes_array[:, 1],c=m4)
+            axes[1].set_title(r"$\mathbb{E}[(Y_\ell - \mathbb{E}(Y_\ell))^4]$")
+            fig.colorbar(sc1,ax=axes[1])
+
+            sc2 = axes[2].scatter(nodes_array[:, 0],nodes_array[:, 1],c=ratio)
+            axes[2].set_title(r"$\mathbb{E}[(Y_\ell - \mathbb{E}(Y_\ell))^4]/\mathbb{E}[(Y_\ell-\mathbb{E}(Y_\ell))^2]^2$")
+            fig.colorbar(sc2,ax=axes[2])
+            for ax in axes:
+                ax.set_xlabel("x")
+                ax.set_aspect("equal")
+            axes[0].set_ylabel("y")
+            fig.suptitle(rf"MLMC Moments, $h_\ell=T \cdot 2^{{-{mlmc_level+MLMC_LEVEL_OFFSET}}}$, (N={N})")
+            plt.tight_layout()
+            plt.show()
+
+    #plot_moments_2_4()
 
     #-------------------------------------------------------------
 
@@ -238,7 +265,128 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, fp, *args):
 
         plt.savefig(ab_save_path, dpi=300, bbox_inches="tight")
         plt.show()
-    plot_alpha_beta_map()
+    #plot_alpha_beta_map()
+
+    
+    def plot_alpha_beta_diagnostics(n_nodes=5, beam_y=None):
+        """
+        Plot:
+        1. alpha/beta regression data for representative nodes along beam axis
+        2. calculated alpha/beta along the beam axis
+        """
+
+        if beam_y is None:
+            beam_y = np.median(nodes_array[:, 1])
+
+        unique_y = np.unique(nodes_array[:, 1])
+        beam_y_mesh = unique_y[np.argmin(np.abs(unique_y - beam_y))]
+
+        beam_mask = np.isclose(nodes_array[:, 1], beam_y_mesh)
+        beam_indices = np.where(beam_mask)[0]
+        beam_indices = beam_indices[np.argsort(nodes_array[beam_indices, 0])]
+        beam_x = nodes_array[beam_indices, 0]
+
+        print(f"Using beam-axis mesh row y = {beam_y_mesh:.6f}")
+
+        # Select representative active nodes along beam
+        finest_fine_payoff = np.abs(del2[:, -1])
+        active_beam_indices = beam_indices[finest_fine_payoff[beam_indices] > 0]
+
+        if len(active_beam_indices) < n_nodes:
+            raise ValueError(f"Only {len(active_beam_indices)} nonzero beam-axis nodes available, but n_nodes={n_nodes}.")
+
+        selection_positions = np.linspace(0, len(active_beam_indices) - 1, n_nodes).astype(int)
+        selected_nodes = active_beam_indices[selection_positions]
+
+        levels = np.arange(1, L + 1)
+
+        # ============================================================
+        # FIGURE 1: INDIVIDUAL REGRESSIONS
+        # ============================================================
+
+        fig, axes = plt.subplots(n_nodes, 2, figsize=(11, 3*n_nodes), sharex=True)
+        axes = np.atleast_2d(axes)
+
+        for row, node in enumerate(selected_nodes):
+
+            # ---------------- ALPHA ----------------
+
+            mean_diff = np.abs(del1[node, 1:L+1])
+            mean_filtered = np.where(mean_diff > 1e-15, mean_diff, 1e-15)
+            log_mean = np.log2(mean_filtered)
+
+            pa = np.polyfit(levels, log_mean, 1)
+            fitted_mean = np.polyval(pa, levels)
+
+            ax = axes[row, 0]
+            ax.plot(levels, log_mean, "o", markersize=4)
+            ax.plot(levels, fitted_mean, "-", linewidth=1)
+            ax.set_ylabel(r"$\log_2|\mathbb{E}[Y_\ell]|$")
+            ax.set_title(f"Node {node}, {nodes_array[node]}\n" rf"$\alpha={alpha[node]:.3f}$")
+
+            floored = mean_diff <= 1e-15
+            if np.any(floored):
+                ax.scatter(levels[floored], log_mean[floored], marker="x", s=60, label=r"floored to $10^{-15}$")
+                ax.legend(fontsize=7)
+
+            # ---------------- BETA ----------------
+
+            variance = np.abs(var1[node, 1:L+1])
+            variance_filtered = np.where(variance > 1e-15, variance, 1e-15)
+            log_variance = np.log2(variance_filtered)
+
+            pb = np.polyfit(levels, log_variance, 1)
+            fitted_variance = np.polyval(pb, levels)
+
+            ax = axes[row, 1]
+            ax.plot(levels, log_variance, "o", markersize=4)
+            ax.plot(levels, fitted_variance, "-", linewidth=1)
+            ax.set_ylabel(r"$\log_2(\mathrm{Var}[Y_\ell])$")
+            ax.set_title(f"Node {node}, {nodes_array[node]}\n" rf"$\beta={beta[node]:.3f}$")
+
+            floored = variance <= 1e-15
+            if np.any(floored):
+                ax.scatter(levels[floored], log_variance[floored], marker="x", s=60, label=r"floored to $10^{-15}$")
+                ax.legend(fontsize=7)
+
+        axes[-1, 0].set_xlabel(r"MLMC level $\ell$")
+        axes[-1, 1].set_xlabel(r"MLMC level $\ell$")
+        fig.suptitle("Node-wise MLMC convergence regressions\n" r"left: $\alpha$, right: $\beta$")
+        plt.tight_layout()
+        plt.show()
+
+        # ============================================================
+        # FIGURE 2: ALPHA/BETA ALONG BEAM AXIS
+        # ============================================================
+
+        alpha_beam = alpha[beam_indices]
+        beta_beam = beta[beam_indices]
+
+        fig, axes = plt.subplots(2, 1, figsize=(11, 7), sharex=True)
+
+        axes[0].plot(beam_x, alpha_beam, ".-", linewidth=0.8, markersize=3)
+        axes[0].axhline(0, linewidth=0.6, color="black")
+        axes[0].scatter(nodes_array[selected_nodes, 0], alpha[selected_nodes], marker="x", s=50)
+        axes[0].set_ylabel(r"$\alpha$")
+        axes[0].set_title(rf"MLMC convergence rates along $y={beam_y_mesh:.3f}$")
+
+        axes[1].plot(beam_x, beta_beam, ".-", linewidth=0.8, markersize=3)
+        axes[1].axhline(0, linewidth=0.6, color="black")
+        axes[1].scatter(nodes_array[selected_nodes, 0], beta[selected_nodes], marker="x", s=50)
+        axes[1].set_ylabel(r"$\beta$")
+        axes[1].set_xlabel("x")
+
+        plt.tight_layout()
+        plt.show()
+
+        print("\nRepresentative nodes:")
+        print("node        position              alpha       beta")
+
+        for node in selected_nodes:
+            print(f"{node:5d}   {str(nodes_array[node]):18s}   {alpha[node]:9.4f}   {beta[node]:9.4f}")
+
+        return selected_nodes
+    selected_nodes = plot_alpha_beta_diagnostics(n_nodes=6, beam_y=1.6)
 
     #Save the data
     npz_save_path = os.path.join(file_path,f"mlmc_test_data_{dose_method}_N_{N}_L_{L}_offset_{MLMC_LEVEL_OFFSET}.npz")

@@ -11,34 +11,10 @@ from doseparams import *
 def storage_position_convention(node_coordinate):
     """
     Converts node coordinate to the vector index.
-
     NB: for mlmc, very important that floating pt error doesn't push data onto the wrong nodes
-
-    Note: we could possibly remove this function in favour of:
-        flattening the meshgrid into an array of node coords
-        and then indexing the required node directly
     """
     #the nodes_array should all be distinct 
     return np.where(np.all(nodes_array == node_coordinate, axis=1))[0][0]
-
-    #if SPATIAL_DIM == 3:
-    #    i = round((node_coordinate[0] - origin[0]) * l_reciprocal)
-    #    j = round((node_coordinate[1] - origin[1]) * l_reciprocal)
-    #    k = round((node_coordinate[2] - origin[2]) * l_reciprocal)
-    #    nx, ny, nz = lookup_matrix.shape
-    #    i = max(0, min(i, nx - 1))
-    #    j = max(0, min(j, ny - 1))
-    #    k = max(0, min(k, nz - 1))
-    #    return lookup_matrix[i, j, k]
-    #elif SPATIAL_DIM == 2:
-    #    i = round((node_coordinate[0] - origin[0]) * l_reciprocal)
-    #    j = round((node_coordinate[1] - origin[1]) * l_reciprocal)
-    #    nx, ny = lookup_matrix.shape
-    #    i = max(0, min(i, nx - 1))
-    #    j = max(0, min(j, ny - 1))
-    #    return lookup_matrix[i, j]
-    #else:
-    #    raise ValueError("SPATIAL_DIM must be 2 or 3.")
 
 lookup_matrix = position_lookup_matrix(X_meshgrid)
 lookup_shape = lookup_matrix.shape
@@ -59,15 +35,7 @@ def linear_path_parameterise(start, end, points=quad_nodes):
     Returns:
         output points, array with rows containing coords of the line at points 
     """
-
-    # if not isinstance(start, np.ndarray) or not isinstance(end, np.ndarray):
-    #     raise TypeError("start and end must be NumPy arrays.")
-
     points = np.asarray(points)
-
-    # if np.any((points < -1) | (points > 1)):
-    #     raise ValueError("All parameter values must lie in [-1, 1].")
-
     return start + 0.5 * (points[:, None] + 1) * (end - start)
 
 max_steps = sum(nodes(l)[0].shape) #All boundaries, just needs to be large enough but relatively small
@@ -151,7 +119,7 @@ def traversal_alg_numba(start, end, rounding_tol, max_steps, corner_tol):
         else: 
             tmaxs[i] = np.inf 
             tdeltas[i] = np.inf  
-    
+
     #----Run the algorithm (sweeping)----
 
     #The idea is to store a sequence to t values which define positions along the line 
@@ -197,7 +165,7 @@ def traversal_alg_numba(start, end, rounding_tol, max_steps, corner_tol):
     
     points = start + ts[:, None] * direction #Right most term puts each elt of ts into its own row and then * direction for each row in ts, gives one big matrix 
 
-    return points
+    return points, ts
 
 @njit
 def subsegment_voxel_vertices_numba(start, end, rounding_tol = 8):
@@ -309,9 +277,6 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
     if len(quad_nodes) != 2:
         raise ValueError("load vector calculation assumes two point Gauss quadrature is used, please update quad_nodes.")
 
-    subsegment_endpts = traversal_alg(start, end)
-    num_subsegments = len(subsegment_endpts) - 1 
-
     direction = end - start
     direction_sq = np.dot(direction, direction)
 
@@ -322,16 +287,19 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
             print(f"{start, end}, {E_start, E_end}")
             raise ValueError("full segment energy must be strictly decreasing.")
 
+    subsegment_endpts, subseg_ts = traversal_alg(start, end)
+    num_subsegments = len(subsegment_endpts) - 1 
+
     for i in range(num_subsegments): 
         sub_start = subsegment_endpts[i] #these are coordinates 
         sub_end = subsegment_endpts[i+1]
+        t0 = subseg_ts[i]
+        t1 = subseg_ts[i+1]
 
         #If the subsegment length is effectively 0, move on
-        if np.allclose(sub_start, sub_end, atol=1e-8, rtol=0):
+        if t1 - t0 < 1e-10:
             continue #end this iteration 
 
-        t0 = np.dot(sub_start - start, direction) / direction_sq
-        t1 = np.dot(sub_end   - start, direction) / direction_sq 
         sub_E_start = E_start + t0 * (E_end - E_start)
         sub_E_end   = E_start + t1 * (E_end - E_start)
 
@@ -344,9 +312,6 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
 
         if method=="V": 
             gamma_t1_point, gamma_t2_point = linear_path_parameterise(sub_start, sub_end) 
-
-            #E_t1, E_t2 = linear_path_parameterise(sub_E_start, sub_E_end).flatten()  # same v(t) as KZ uses
-            #S_t1, S_t2 = stopping_power(E_t1), stopping_power(E_t2)
 
         elif method=="KZ":
             #This is the value of E(t1) and E(t2), not X
@@ -405,7 +370,6 @@ def KZ_one_path_load_contribution(method, brownian_paths, setup_tuple):
         one_step, E, Omega, s, X = one_step_F_contribution(h, coeff_prefactor, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y)
         one_path_load_contribution += one_step
     return one_path_load_contribution
-
 
 def V_one_path_load_contribution(method, rng, level):
     """

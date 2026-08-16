@@ -16,9 +16,10 @@ from functools import partial
 
 if __name__ == "__main__":
     print(f"Gaussian energy spread is {'active' if energy_spread else 'inactive'}: energy deviation is {energy_sdev}, E0 is {E0}.")
+    print(f"Gaussian initial position sampling is {'active' if width_spread else 'inactive'}.")
 
     #For Monte Carlo, we select (it is simply convenient to ensure the stepsize is compatible with mlmc)
-    mc_level=9
+    mc_level= 9
     if sampling_type=="mc":
         dE, ds = choose_dE_ds(mc_level)
         if method=='V':

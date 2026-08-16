@@ -44,30 +44,29 @@ file_path = r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertatio
 
 #------------KEY PARAMETERS---------------------
 
-sampling_type="mc" #"mc" or "mlmc" or "anti_mlmc"
+sampling_type="mlmc" #"mc" or "mlmc" or "anti_mlmc"
 SPATIAL_DIM = 2 #making this 3 is a nightmare for plotting method 1
 method = "KZ"
-dose_method="SK" #"SF" or "SK"
+dose_method="SF" #"SF" or "SK"
 
 #-----------MC PARAMETERS----------------------
 
-SIMS_PER_CPU = 50 #7146 #1064
+SIMS_PER_CPU = 1000 #7146 #1064
 
 #-----------MLMC PARAMETERS---------------------
 
-MLMC_LEVEL_OFFSET = 6 #don't make this exceed 9 please (mc level)
+MLMC_LEVEL_OFFSET = 5 #don't make this exceed 9 please (mc level)
                       #i.e. this is mlmc level 0 but stepsize level 7 
-base = 2 #refinement base
+L_conv_test = 4 #if the step size level exceeds 12 it gets noticably slower
+N_conv_test = 500 
+base = 2 #2 #refinement base
 
 #mlmc levels,  
 Lmin = 2 #min level
 Lmax = 5 #10 #max level
-N0 = 20 #num samples level 0
+N0 = 5000 #num samples level 0
 final_time = E0 - EMIN #stepping in eta 
-
-#for the mlmc tests, mlmc level!! (don't include the offset)
-N_conv_test = 10000 
-L_conv_test = 4 #if the step size level exceeds 12 it gets noticably slower 
+ 
 Eps = [0.2] #0.01, 0.02, 0.05, 0.1, 
 
 if L_conv_test + MLMC_LEVEL_OFFSET >= 13:
@@ -83,27 +82,18 @@ straggling_severity = "Moderate" #None, Light, Moderate, Strong
 range_allowance = 1.3
 y_scaling = 0.75
 origin=np.array([0.0, 0.0, 0.0])
+
 width_sdev_factor = 3 #how many times l should the width be, also depends on E0 ideally
+width_spread=True
+if width_sdev_factor==0:
+    width_spread=False
+
 energy_spread_percent = 1/100 #initial energy spread in % from Chronholm and Pryer 2026 
                                 #we will interpret this as the % of the mean = standard dev 
 energy_spread=True
 energy_sdev = 0#E0 * energy_spread_percent #convert to the standard dev 
 if energy_sdev == 0:
     energy_spread=False
-
-#if sampling_type=='mlmc':
-#    if energy_sdev != 0:
-#        print("Setting energy_sdev to zero.")
-#        def modify_e_sdev():
-#            global energy_sdev
-#            energy_sdev = 0
-#        modify_e_sdev()
-#    if method != 'KZ':
-#        print("Setting method to KZ.")
-#        def modify_method():
-#            global method
-#            method = 'KZ'
-#        modify_method()
 
 #For Gauss quad in dose method 1
 t1 = 1/np.sqrt(3)

@@ -2,14 +2,14 @@
 #August 2026 
 #Multilevel Dose Contributionn User Input (at one level, for driver code)
 
-from dosemap1_shape_function_geoEM import KZ_one_path_load_contribution
+from dosemap1_shape_function_geoEM import KZ_one_path_load_contribution, one_step_F_contribution
 from dosemap2_spatial_kernel_geoEM import KZ_one_path_dose_contribution
 from dosesetup import *
 from numpy.random import default_rng
 from concurrent.futures import ProcessPoolExecutor
 import numpy as np 
-import os
-#from dosesetup 
+import os 
+import matplotlib.pyplot as plt 
 
 #Don't import dE and ds
 from doseparams import method, dose_method, dose_shape, energy_sdev
@@ -98,6 +98,7 @@ def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
         else:
             raise ValueError(f"mlmc level should not be negative: {level}.")
 
+
         if payoff_diff.shape[0] != dose_shape or len(payoff_diff.shape) != 1:
             raise ValueError(f"payoff shape is {payoff_diff.shape}, should be 1D array of shape: {(dose_shape,)}.")
 
@@ -144,3 +145,4 @@ def mlmc_parallel(level, Ml:int, M_diag):
     out_l = total_out
     cost_l = Ml * nf
     return out_l, cost_l
+

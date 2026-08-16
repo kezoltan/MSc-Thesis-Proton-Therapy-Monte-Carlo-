@@ -212,7 +212,7 @@ def one_step_KZ_g_euler(h, dB1_onestep, dB2_3D_onestep, coeff_prefactor, E_n, Om
     y = coeff * other_noise
     Omega_n1 = exponential_map_sphere(Omega_n, y)
     s_n1 = s_n - S_inv * h + n_KZ_path_length_diffusion(E_n) * dB1_onestep
-    path_travelled = s_n1 - s_n #Might be negative 
+    path_travelled = s_n1 - s_n  
     X_n1 = X_n + Omega_n * (path_travelled) #Omega n or n1?
     E_n1 = E_n + h
 

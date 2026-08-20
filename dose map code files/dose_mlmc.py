@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 from doseparams import method, dose_method, dose_shape, energy_sdev
 
 #---------------------------------MLMC LEVEL WORKER FUNCTIONS-----------------------------------------
-
 def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
     """
     Runs the dose method on level l of MLMC + calculates coarse/fine diff, + other statistics for testing
@@ -77,6 +76,7 @@ def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
             raise ValueError(f"invalid dose method: {dose_method}")
         if level == 0: #mlmc level!
             payoff_diff = dose_f 
+            dose_c=0.0
         elif level > 0:
             dB1_coarse = coarsen_step(dB1_fine)
             dB2_3D_coarse = coarsen_step(dB2_3D_fine)
@@ -145,4 +145,6 @@ def mlmc_parallel(level, Ml:int, M_diag):
     out_l = total_out
     cost_l = Ml * nf
     return out_l, cost_l
+
+
 

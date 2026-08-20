@@ -35,18 +35,7 @@ def _beam_axis_band_indices_2d(y_vals, y0=None, halfwidth_cm=0.1):
 
     return idx
 
-def _depth_dose_shape_function_fine(
-    coeffs,
-    node_coords,
-    l,
-    x_min,
-    x_max,
-    y_vals,
-    av_width=0.1,
-    n_x=600,
-    n_y=31,
-    relative=True,
-):
+def _depth_dose_shape_function_fine(coeffs,node_coords,l,x_min,x_max,y_vals,av_width=0.1,n_x=600,n_y=31,relative=True):
     """
     Fine depth-dose curve for the shape_function method by evaluating the basis
     directly on a finer x grid.
@@ -78,10 +67,8 @@ def _depth_dose_shape_function_fine(
 
 def _eval_phi_point(args):
     X, coeffs, node_coords, l = args
-    val = 0.0
-    for c, n_i in zip(coeffs, node_coords):
-        val += c * Phi(l, X, n_i)
-    return val
+    phis = Phi_vectorised(l, X, node_coords)
+    return np.dot(coeffs, phis)
 
 def compute_U(Xg, Yg, coeffs, node_coords, l, max_workers=None):
     points = [np.array([Xg[i, j], Yg[i, j]], dtype=float) for i in range(Xg.shape[0]) for j in range(Xg.shape[1])]
@@ -132,6 +119,10 @@ def dose_plot_2D(method, dose_method, path_3D, n_points=50, av_width=0.1, save=T
         dose_title = "Bilinear Basis Function Method"
         coeffs = data["coeffs_expected"]
         sim_num = data["sim_num"]
+        if sampling_type=='mlmc' or sampling_type=='anti_mlmc':
+            eps= data['accuracy'] #stricted eps is saved here
+            min_step_lvl = data['min_step_lvl']
+            max_step_lvl = data['mlmc_offset'] + len(data['final_samples_per_lvl'])
         node_coords = np.column_stack([arr.ravel() for arr in (X_meshgrid, Y_meshgrid)])
         x_vals = np.linspace(X_MIN, X_MAX, n_points)
         y_vals = np.linspace(Y_MIN, Y_MAX, n_points)
@@ -160,6 +151,10 @@ def dose_plot_2D(method, dose_method, path_3D, n_points=50, av_width=0.1, save=T
         dose_title = "Spatial Kernel Method"
         dose = data["dose_expected"]
         sim_num = data["sim_num"]
+        if sampling_type=='mlmc' or sampling_type=='anti_mlmc':
+            eps= data['accuracy'] #stricted eps is saved here
+            min_step_lvl = data['min_step_lvl']
+            max_step_lvl = data['mlmc_offset'] + len(data['final_samples_per_lvl']) - 1
         field = np.asarray(dose_gy_convert(dose), dtype=float).reshape(X_meshgrid.shape)
         x_vals = X_meshgrid[:, 0]
         y_vals = Y_meshgrid[0, :]
@@ -189,7 +184,10 @@ def dose_plot_2D(method, dose_method, path_3D, n_points=50, av_width=0.1, save=T
     #levels_filled = np.linspace(vmin, vmax, 60)
     levels_lines = np.linspace(vmin, vmax, 12)
     levels_filled = 80
-    cf = ax_top.contourf(plot_X, plot_Y, field, levels=levels_filled, cmap='plasma')
+
+    #Mask negative values so i can see them
+    field_plot = np.ma.masked_less(field, 0)
+    cf = ax_top.contourf(plot_X, plot_Y, field_plot, levels=levels_filled, cmap='plasma')
     ax_top.contour(plot_X, plot_Y, field,levels=levels_lines,colors="k",linewidths=0.6,alpha=0.5)
 
     colorbar = fig.colorbar(cf, cax=cax, label="Dose (1 gigaproton, Gy)")
@@ -198,8 +196,13 @@ def dose_plot_2D(method, dose_method, path_3D, n_points=50, av_width=0.1, save=T
     #Report the labels
     colorbar.ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2g'))
 
+    sampling_name = "Monte Carlo" if sampling_type=="mc" else "Multilevel Monte Carlo"
+    sim_num_label = "M" if sampling_type=="mc" else r"$\sum M_\ell$"
+    accuracy = "" if sampling_type=='mc' else f"Accuracy: {eps:.2f}"
+    step_lvls = "" if sampling_type=='mc' else f", Step Levels {min_step_lvl}-{max_step_lvl}"
+
     ax_top.set_ylabel("y")
-    ax_top.set_title(f"Estimated Dose: {title}\n{dose_title}, (n={sim_num})")
+    ax_top.set_title(f"Estimated Dose: {title}, {dose_title}\n {sampling_name}, {accuracy}, {sim_num_label}={sim_num}{step_lvls}")
     ax_top.tick_params(labelbottom=False)
     ax_top.set_xlim(X_MIN, X_MAX)
     ax_top.set_ylim(Y_MIN, Y_MAX)

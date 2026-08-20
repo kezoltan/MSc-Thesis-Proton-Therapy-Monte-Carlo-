@@ -10,7 +10,7 @@ from math import ceil, prod
 
 NUM_CPUS = os.cpu_count() - 2 #Leave one free 
 E0 = 62 #MeV
-EMIN = 1.0 #The stopping power model diverges here
+EMIN = 0.05 #1.0 #The stopping power model diverges here
 T=E0-EMIN
 EPS_0 = 0.005 
 ALPHA =  2.633e-3
@@ -24,7 +24,7 @@ if RHO <= 0:
     raise ValueError("density must be positive.")
 l=0.05 #0.02 - this is what V uses for 100k sims
 l_reciprocal=1/l
-SIGMA = l*1/2 #tried making this l/4, definitely too small, images were very rough
+SIGMA = l*3/4 #tried making this l/4, definitely too small, images were very rough, i think l/2 is also a bit small, l looks quite bit to me
 
 def choose_kappa():
     """
@@ -39,7 +39,8 @@ def choose_kappa():
     elif straggling_severity == "Strong":
         return 1e-3
 master_seed_seq = np.random.SeedSequence(42)
-file_path = r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
+file_path = r"/home/zoltan/Documents" #/MSc-Thesis-Proton-Therapy
+#r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
                 #r"/home/zoltan/Documents/dose map code repo
 
 #------------KEY PARAMETERS---------------------
@@ -55,19 +56,22 @@ SIMS_PER_CPU = 1000 #7146 #1064
 
 #-----------MLMC PARAMETERS---------------------
 
-MLMC_LEVEL_OFFSET = 5 #don't make this exceed 9 please (mc level)
-                      #i.e. this is mlmc level 0 but stepsize level 7 
-L_conv_test = 4 #if the step size level exceeds 12 it gets noticably slower
-N_conv_test = 500 
-base = 2 #2 #refinement base
+MLMC_LEVEL_OFFSET = 6 #don't make this exceed 9 please (mc level)
+                      #5 is prolly the lowest to set this too
+L_conv_test = 3#6 #if the step size level exceeds 12 it gets noticably slower
+N_conv_test = 50 
+base = 2 #2 #refinement base, alpha beta calc in mlmc test doesn't work if this is not 2
+#hit_tol = 0.001 #% of paths across all levels that must hit a cell for it to be considered
 
 #mlmc levels,  
 Lmin = 2 #min level
-Lmax = 5 #10 #max level
-N0 = 5000 #num samples level 0
+Lmax = 10 #10 #max level, ok to make this very small -- likely few sims will be run here
+N0 = 7000 #num samples level 0
 final_time = E0 - EMIN #stepping in eta 
  
-Eps = [0.2] #0.01, 0.02, 0.05, 0.1, 
+Eps = [1.0] #[3.5, 3.0, 2.5, 2.0, 1.5, 1.0] #Peiren's accuracy requirements were too steep  
+
+#0.01, 0.02, 0.05, 0.1, 0.2
 
 if L_conv_test + MLMC_LEVEL_OFFSET >= 13:
     print(f"Caution: max stepsize level: {L_conv_test + MLMC_LEVEL_OFFSET} is likely too fine for mlmc test.")
@@ -80,7 +84,7 @@ if L_conv_test + MLMC_LEVEL_OFFSET >= 13:
 sim_num = NUM_CPUS * SIMS_PER_CPU
 straggling_severity = "Moderate" #None, Light, Moderate, Strong
 range_allowance = 1.3
-y_scaling = 0.75
+y_scaling = 1.0
 origin=np.array([0.0, 0.0, 0.0])
 
 width_sdev_factor = 3 #how many times l should the width be, also depends on E0 ideally
@@ -146,6 +150,8 @@ def nodes(l):
     """
     R0 = calculate_R0()
     range_upper = R0*range_allowance
+    lower_x_bd = -6 #needs to be large enough to get hit w ~0% chance
+                    #if varying parameters -- this will need to be adjusted
     
     #Make sure the lengths are divisible by l
     beam_axis_depth = ceil(range_upper / l)*l 
@@ -156,7 +162,7 @@ def nodes(l):
     ny = int(round(height / l)) + 1 
     
     #Turn these into node positions with l
-    xs = np.arange(nx) * l
+    xs = np.arange(lower_x_bd, nx) * l
     ys = np.arange(ny) * l  
     
     if SPATIAL_DIM==3:
@@ -178,6 +184,9 @@ if SPATIAL_DIM==2:
     meshgrid = X_meshgrid, Y_meshgrid
     nodes_array = np.stack([X_meshgrid.ravel(), Y_meshgrid.ravel()], axis=-1)
 
+#Store this once
+node_lookup = {tuple(np.rint(node / l).astype(int)): i for i, node in enumerate(nodes_array)}
+
 def choose_X0(meshgrid):
     """
     Calculate length, depth and width of the cuboid domain. Assumes bounded below by zero in all dims. 
@@ -186,20 +195,18 @@ def choose_X0(meshgrid):
     meshgrid: tuple (X, Y, Z) indexing ij
     """
     domain_lower_bounds = np.zeros(SPATIAL_DIM)
-    
+
     if SPATIAL_DIM==3:
         X_meshgrid, Y_meshgrid, Z_meshgrid = meshgrid
         upper_X = X_meshgrid[-1,-1,-1]
         upper_Y = Y_meshgrid[-1,-1,-1]
-        lower_Y = Y_meshgrid[0,0,0] #This file relies on this being 0
+        lower_X = X_meshgrid[0,0,0]
+        lower_Y = Y_meshgrid[0,0,0] 
         lower_Z = Z_meshgrid[0,0,0]
         upper_Z = Z_meshgrid[-1,-1,-1] #hi
 
-        if lower_Y != 0 or lower_Z != 0:
-            raise ValueError("lower domain bounds should be 0.")
         domain_upper_bounds = np.array([upper_X, upper_Y, upper_Z])
-        lower_X, lower_Y, lower_Z = domain_lower_bounds
-        upper_X, upper_Y, upper_Z = domain_upper_bounds
+        domain_lower_bounds = np.array([lower_X, lower_Y, lower_Z])
 
         y0 = (lower_Y + upper_Y)*1/2
         z0 = (lower_Z + upper_Z)*1/2
@@ -208,21 +215,19 @@ def choose_X0(meshgrid):
     elif SPATIAL_DIM ==2:
         X_meshgrid, Y_meshgrid = meshgrid
         upper_X = X_meshgrid[-1,-1]
+        lower_X = X_meshgrid[0,0]
         upper_Y = Y_meshgrid[-1,-1]
         lower_Y = Y_meshgrid[0,0] #This file relies on this being 0
 
-        if lower_Y != 0:
-            raise ValueError("lower domain bounds should be 0.")
         domain_upper_bounds = np.array([upper_X, upper_Y])
-        lower_X, lower_Y= domain_lower_bounds
-        upper_X, upper_Y= domain_upper_bounds
+        domain_lower_bounds = np.array([lower_X, lower_Y])
 
         y0 = (lower_Y + upper_Y)*1/2
         X0 = np.array([0.0,y0])
 
     return X0, domain_lower_bounds, domain_upper_bounds
 
-_, domain_lower_bounds, domain_upper_bounds = choose_X0(meshgrid)
+X0_mean, domain_lower_bounds, domain_upper_bounds = choose_X0(meshgrid)
 
 dose_shape = prod(X_meshgrid.shape) #More accurately this is a length but it works as a 1D shape
 max_steps = sum(X_meshgrid.shape) #All boundaries, just needs to be large enough but relatively small

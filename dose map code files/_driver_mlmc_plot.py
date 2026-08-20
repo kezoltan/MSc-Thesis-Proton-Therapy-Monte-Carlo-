@@ -35,6 +35,7 @@ def mlmc_plot(filename, nvert=3, error_bars=True, mode="all"):
       "primal"           plot only the first output
     """
     plt.close("all")
+    print("Calling MLMC plot...")
 
     if nvert not in (1, 3):
         raise ValueError("nvert must be 1 or 3")
@@ -68,7 +69,7 @@ def mlmc_plot(filename, nvert=3, error_bars=True, mode="all"):
         if "ave(Pf-Pc)" not in line:
             continue
 
-        name = "PRIMAL"
+        name = "Node"
         for previous in reversed(lines[max(0, i - 6):i]):
             if "Convergence tests" in previous:
                 match = re.search(r"\*\*\*\s*(.*?)\s*Convergence tests", previous)

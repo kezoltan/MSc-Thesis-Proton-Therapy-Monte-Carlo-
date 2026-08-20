@@ -47,7 +47,7 @@ def n_KZ_path_length_diffusion(E, a=ALPHA, p=p):
 
 def n_KZ_angular_diffusion(E, Omega, EPS_0=EPS_0, a=ALPHA, p=p):
     return np.sqrt(2*EPS_0 * a*p)*E**(p/2 - 0.5) * (np.eye(SPATIAL_DIM) - np.outer(Omega, Omega))
-    
+
 def reference_cube_mapping(l, center, coordinate):
     """
     Maps the global coordinates inside a given voxel onto the reference cube [-1, 1] 
@@ -98,6 +98,46 @@ def Phi(l, X, n_i):
 
     phi = np.prod((1 + n_ref * X_ref) / 2)
     return phi
+
+def Phi_vectorised(l, X, nodes):
+    """
+    Receives all nodes and evaluates all corresponding Phi simultaneously at X.  
+    """
+    X = np.asarray(X)
+    nodes = np.asarray(nodes)
+
+    active_nodes_mask = np.all(np.abs(X-nodes) <= l, axis=1) 
+    phis = np.zeros(len(nodes), dtype=float)
+    active_nodes = nodes[active_nodes_mask]
+
+    if len(active_nodes)==0:
+        return phis
+
+    #X tells you which voxel you are in
+    scaled = X / l
+    floors = np.floor(scaled)
+    ceils = np.ceil(scaled)
+    center = (floors + ceils) * l / 2 #an array 
+
+    #We need this repeated for all active nodes (copy is needed else array is read only)
+    centers = np.broadcast_to(center, active_nodes.shape).copy()
+
+    #Correct centres for boundary X values:
+    X_boundaries = floors == ceils
+    active_bdry_node_indx = np.rint(active_nodes[:, X_boundaries] / l) #rowwise mask
+
+    #Node and position same side of cube:
+    same_side = floors[X_boundaries] == active_bdry_node_indx
+
+    #Replace based on this condition (i.e. same side, not same side)
+    centers[:, X_boundaries] = np.where(same_side, active_nodes[:, X_boundaries] - l/2, (active_bdry_node_indx + floors[X_boundaries])*l/2)
+
+    X_ref = reference_cube_mapping(l, centers, X)
+    n_ref = reference_cube_mapping(l, centers, active_nodes)
+
+    #Fill in all nonzero values:
+    phis[active_nodes_mask] = np.prod((1 + n_ref * X_ref) / 2, axis=1)
+    return phis 
 
 def position_lookup_matrix(X_meshgrid):
     """

@@ -120,8 +120,10 @@ def KZ_one_path_dose_contribution(method, brownian_paths, setup_tuple):
         else: 
             dB1_onestep = dB1[k] 
             dB2_3D_onestep = dB2_3D[k]
+            X_start = X
             one_step, E, Omega, s, X = one_step_dose_contribution(h, coeff_prefactor, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y) #Y will not be used or returned
             if domain_exit_check(X): #If we left the domain 
+                print(f"Track exited the domain between {X_start} and {X}.")
                 domain_check = False    
                 break
             dose_contribution += abs(h)*one_step

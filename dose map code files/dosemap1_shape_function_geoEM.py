@@ -9,12 +9,11 @@ from dosesetup import *
 from doseparams import *
 
 def storage_position_convention(node_coordinate):
-    """
-    Converts node coordinate to the vector index.
-    NB: for mlmc, very important that floating pt error doesn't push data onto the wrong nodes
-    """
-    #the nodes_array should all be distinct 
-    return np.where(np.all(nodes_array == node_coordinate, axis=1))[0][0]
+    grid_coordinate = tuple(np.rint(node_coordinate / l).astype(int))
+    try:
+        return node_lookup[grid_coordinate]
+    except KeyError:
+        raise ValueError(f"No node found at coordinate {node_coordinate}.")
 
 lookup_matrix = position_lookup_matrix(X_meshgrid)
 lookup_shape = lookup_matrix.shape
@@ -268,7 +267,7 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
         E_end=E_n1
         one_step = np.zeros(dose_shape) 
         if domain_exit_check(X_n1) and not(final_V_step): #If we left the domain during the simulation
-            #print(f"Track exited the domain, contribution = {np.sum(one_step)}")
+            print(f"Track exited the domain between {X} and {X_n1}.")
             if method=='KZ':
                 return one_step, E_n1, Omega_n1, s_n1, X_n1
             elif method=='V':
@@ -321,15 +320,22 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
 
         nodes_touched = subsegment_voxel_vertices_numba(sub_start, sub_end)   
 
-        #Where to store for each node:
-        for node in nodes_touched:
+        #Vectorisation - compute all Phi at once at all relevant nodes
+        phi1 = Phi_vectorised(l, gamma_t1_point, nodes_touched)
+        phi2 = Phi_vectorised(l, gamma_t2_point, nodes_touched)
+        node_contributions = (energy_length / 2)*(phi1+phi2)/RHO #array
+        
+        for node, contribution in zip(nodes_touched, node_contributions):
             position = storage_position_convention(node)
+            one_step[position] += contribution
 
-            phi1 = Phi(l, gamma_t1_point, node)
-            phi2 = Phi(l, gamma_t2_point, node)
-
-            node_contribution = (energy_length / 2) * (phi1 + phi2) / RHO
-            one_step[position] += node_contribution
+        #Where to store for each node: (old, not vectorised)
+        #for node in nodes_touched:
+        #    position = storage_position_convention(node)
+        #    phi1 = Phi(l, gamma_t1_point, node)
+        #    phi2 = Phi(l, gamma_t2_point, node)
+        #    node_contribution = (energy_length / 2) * (phi1 + phi2) / RHO
+        #    one_step[position] += node_contribution
 
     if final_V_step:
         return one_step
@@ -369,6 +375,8 @@ def KZ_one_path_load_contribution(method, brownian_paths, setup_tuple):
         dB2_3D_onestep = dB2_3D[k]
         one_step, E, Omega, s, X = one_step_F_contribution(h, coeff_prefactor, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y)
         one_path_load_contribution += one_step
+        if domain_exit_check(X):
+            break
     return one_path_load_contribution
 
 def V_one_path_load_contribution(method, rng, level):
@@ -429,6 +437,9 @@ def V_one_path_load_contribution(method, rng, level):
             return one_path_load_contribution     
 
         one_path_load_contribution += one_step
+
+        if domain_exit_check(X):
+            return one_path_load_contribution
 
         #Update for next loop, given an accepted step
         X_start = X

@@ -71,9 +71,25 @@ if __name__ == "__main__":
         partial_mlmc_parallel = partial(mlmc_parallel, M_diag=M_diag)
 
         with open(txt_save_path, 'w') as fp:
-            mlmc_testv(partial_mlmc_parallel, N_conv_test, L_conv_test, N0, Eps, Lmin, Lmax, fp)
+            all_dose_estimates, Eps, Nl, Cl, _ = mlmc_testv(partial_mlmc_parallel, N_conv_test, L_conv_test, N0, Eps, Lmin, Lmax, fp)
         
-        mlmc_plot(txt_save_path, nvert=3, error_bars=True)
+        plot_folder = f"mlmc_{dose_method}_Nfull_{np.sum(Nl)}_lvls_{MLMC_LEVEL_OFFSET}_{len(Nl)-1+MLMC_LEVEL_OFFSET}_l_{side_len}_eps_{Eps[0]}_{Eps[-1]}"
+        folder_path = os.path.join(file_path, plot_folder)
+        os.makedirs(folder_path, exist_ok=True)
+        sim_num = np.sum(Nl)
+        print(f"Total sims done by mlmc across all levels (exlcuding mlmc test): {sim_num}.")
+
+        if dose_method=='SF':
+            l=round(l,3)
+            path_3D = os.path.join(folder_path, f"{sampling_type}_{dose_method}_{method}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_l_{l}_lvls_{Lmin + MLMC_LEVEL_OFFSET}_{len(Nl) - 1 + MLMC_LEVEL_OFFSET}.npz") 
+            np.savez(path_3D, coeffs_expected=all_dose_estimates[-1], accuracy=Eps[-1], all_dose_estimates=all_dose_estimates, all_accuracies=Eps, min_step_lvl = MLMC_LEVEL_OFFSET + Lmin, mlmc_offset = MLMC_LEVEL_OFFSET, final_samples_per_lvl = Nl, final_costs_per_lvl = Cl, sim_num=sim_num, dose_method=dose_method, SPATIAL_DIM=SPATIAL_DIM, l=l, X_meshgrid = X_meshgrid)
+        if dose_method=='SK':
+            l=round(l,3)
+            path_3D = os.path.join(folder_path, f"{sampling_type}_{dose_method}_{method}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_l_{l}_lvls_{Lmin + MLMC_LEVEL_OFFSET}_{len(Nl) - 1 + MLMC_LEVEL_OFFSET}_sigma_{SIGMA:.3f}.npz") 
+            np.savez(path_3D, dose_expected=all_dose_estimates[-1], accuracy=Eps[-1], all_dose_estimates=all_dose_estimates, all_accuracies=Eps, min_step_lvl = MLMC_LEVEL_OFFSET + Lmin, mlmc_offset = MLMC_LEVEL_OFFSET, final_samples_per_lvl = Nl, final_costs_per_lvl = Cl, sim_num=sim_num, dose_method=dose_method, SPATIAL_DIM=SPATIAL_DIM, l=l, X_meshgrid = X_meshgrid, sigma=SIGMA)
+
+        #Don't call this!
+            #mlmc_plot(txt_save_path, nvert=3, error_bars=True)
 
     print(f"Raw output array saved at {path_3D}.")
     print("Now plotting...")

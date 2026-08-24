@@ -22,7 +22,7 @@ def stopping_power(E, a=ALPHA, p=p):
 RHO = 1 #water is 1gcm^{-3} 
 if RHO <= 0:
     raise ValueError("density must be positive.")
-l=0.05 #0.02 - this is what V uses for 100k sims
+l=0.05 #0.02 - this is what V uses for 200k sims
 l_reciprocal=1/l
 SIGMA = l*3/4 #tried making this l/4, definitely too small, images were very rough, i think l/2 is also a bit small, l looks quite bit to me
 
@@ -39,52 +39,53 @@ def choose_kappa():
     elif straggling_severity == "Strong":
         return 1e-3
 master_seed_seq = np.random.SeedSequence(42)
-file_path = r"/home/zoltan/Documents" #/MSc-Thesis-Proton-Therapy
-#r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
+
+#=====================================================================================
+#------------KEY PARAMETERS-----------------------------------------------------------
+#=====================================================================================
+
+file_path = r"/home/zoltan/Documents" 
+                #r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
                 #r"/home/zoltan/Documents/dose map code repo
 
-#------------KEY PARAMETERS---------------------
-
 sampling_type="mlmc" #"mc" or "mlmc" or "anti_mlmc"
-SPATIAL_DIM = 2 #making this 3 is a nightmare for plotting method 1
+SPATIAL_DIM = 2 #dont recommend making this 3
 method = "KZ"
-dose_method="SF" #"SF" or "SK"
+dose_method="SK" #"SF" or "SK"
 
-#-----------MC PARAMETERS----------------------
+#-----------MC PARAMETERS-----------------------
 
-SIMS_PER_CPU = 1000 #7146 #1064
+SIMS_PER_CPU = 2000 #7146 #1064
 
 #-----------MLMC PARAMETERS---------------------
 
-MLMC_LEVEL_OFFSET = 6 #don't make this exceed 9 please (mc level)
-                      #5 is prolly the lowest to set this too
-L_conv_test = 3#6 #if the step size level exceeds 12 it gets noticably slower
-N_conv_test = 50 
-base = 2 #2 #refinement base, alpha beta calc in mlmc test doesn't work if this is not 2
-#hit_tol = 0.001 #% of paths across all levels that must hit a cell for it to be considered
-
-#mlmc levels,  
-Lmin = 2 #min level
-Lmax = 10 #10 #max level, ok to make this very small -- likely few sims will be run here
-N0 = 7000 #num samples level 0
-final_time = E0 - EMIN #stepping in eta 
+MLMC_LEVEL_OFFSET = 5 #5-9
+L_conv_test = 5#8 #runtime caution if finest level exceeds 12
+N_conv_test = 1000 #minimum: 50k, ideal: c.100K (but runtime caution)
  
-Eps = [1.0] #[3.5, 3.0, 2.5, 2.0, 1.5, 1.0] #Peiren's accuracy requirements were too steep  
+Lmax = 15 #max mlmc level
+Eps =  np.array([2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3]) #np.array([1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]) #Please keep best acc at the right end
+N0 = 20000 #need large enough to get a good variance estimate
+if dose_method=='SF':
+    theta = 0.25 #proportion allocated to discretisation error 
+if dose_method=='SK':
+    theta=0.5
 
-#0.01, 0.02, 0.05, 0.1, 0.2
+#Fixed parameters:
+base = 2 
+Lmin = 2 #min mlmc level
 
-if L_conv_test + MLMC_LEVEL_OFFSET >= 13:
-    print(f"Caution: max stepsize level: {L_conv_test + MLMC_LEVEL_OFFSET} is likely too fine for mlmc test.")
-
-#-----------------------------------------------
+#=====================================================================================
+#-------------------------------------------------------------------------------------
+#=====================================================================================
 
 #ds = 0.005*2 #positive!
 #dE = -0.09
 
 sim_num = NUM_CPUS * SIMS_PER_CPU
 straggling_severity = "Moderate" #None, Light, Moderate, Strong
-range_allowance = 1.3
-y_scaling = 1.0
+range_allowance = 1.6 
+y_scaling = 1.3
 origin=np.array([0.0, 0.0, 0.0])
 
 width_sdev_factor = 3 #how many times l should the width be, also depends on E0 ideally
@@ -150,7 +151,7 @@ def nodes(l):
     """
     R0 = calculate_R0()
     range_upper = R0*range_allowance
-    lower_x_bd = -6 #needs to be large enough to get hit w ~0% chance
+    lower_x_bd = -9 #needs to be large enough to get hit w ~0% chance
                     #if varying parameters -- this will need to be adjusted
     
     #Make sure the lengths are divisible by l

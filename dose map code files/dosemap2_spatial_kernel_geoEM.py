@@ -12,7 +12,7 @@ from scipy.stats import chi2
 
 #Precompute these 
 KERNEL_PREFACTOR = 1/RHO * 1/((2*pi)**(SPATIAL_DIM/2)*SIGMA**SPATIAL_DIM)
-allowed_sd = 4 #For the gaussian truncation 
+allowed_sd = 6 #For the gaussian truncation, must be tiny  
 MASS_RESCALING = chi2.cdf(allowed_sd**2, df=SPATIAL_DIM)
 
 def spatial_kernel_vectorized(X_i, nodes_array, truncate=True, allowed_sd=4):

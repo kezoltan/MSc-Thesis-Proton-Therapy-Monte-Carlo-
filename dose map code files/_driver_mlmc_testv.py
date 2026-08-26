@@ -146,7 +146,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         plt.savefig(kurt_save_path, dpi=300)
         plt.show()
     plot_kurtosis_heatmap()
-    #plot_kurtosis_heatmap(log_kurt=True)
+    plot_kurtosis_heatmap(log_kurt=True)
 
     def plot_consistency_error_heatmap(log_error=False):
         print(f"Plotting consistency error heatmap from MLMC levels 1 to {L}...")
@@ -207,7 +207,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     for k in range(dose_shape):
         name = f"NODE: {nodes_array[k]}"
         #for the nodes high kurtosis at the edges is inevitable - replace this with a heatmap
-        if kur1[k, -1] > 100.0:
+        if kur1[k, -1] > 100.0: 
             printf(fp, '\n WARNING: mask kurtosis on finest level for %s = %f \n', name, kur1[k, -1], printout=False)
             printf(fp, ' indicates MLMC correction dominated by a few rare paths. \n', printout=False)
         if max(chk1[k, :]) > 1.0: #i.e. the error in the tele sum >> sampling error
@@ -249,37 +249,42 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
 
     a_nan_total = 0
     b_nan_total = 0
-    #First shield from taking log of 0
     for k in range(dose_shape):
-        if np.any(var1[k, 1:L+1] < -1e-15):
+        if np.any(var1[k, 1:L+1] < -trunc_tol):
             print(f"Node {nodes_array[k]} has negative variance diff estimates.")
-        del_filtered = np.where(np.abs(del1[k, 1:L+1]) > 1e-15, np.abs(del1[k, 1:L+1]), 1e-15)
-        var_filtered = np.where(np.abs(var1[k, 1:L+1]) > 1e-15, np.abs(var1[k, 1:L+1]), 1e-15)
+        #First shield from taking log of 0
+        del_filtered = np.where(np.abs(del1[k, 1:L+1]) > trunc_tol, np.abs(del1[k, 1:L+1]), trunc_tol)
+        var_filtered = np.where(np.abs(var1[k, 1:L+1]) > trunc_tol, np.abs(var1[k, 1:L+1]), trunc_tol)
         
         #at each data point test the alpha/beta condition
         a_mask = del_filtered <= c2 * step_sizes ** alpha_expected
         b_mask = var_filtered <= c3 * step_sizes ** beta_expected
 
-        if np.all(a_mask):
+        #regress on only the non-floored values
+        del_mask = del_filtered > trunc_tol
+        var_mask = var_filtered > trunc_tol
+
+        if np.all(a_mask): #if all pass the test already
             alpha[k] = alpha_expected
         else: 
-            #the regression assumes sufficient sampling/regularity, place a catch here
-            if np.count_nonzero(~a_mask) < 3:
+            #reject regression if insufficient data
+            if np.count_nonzero(del_mask) < 3: 
                 alpha[k] = np.nan
                 a_nan_total+=1 
             else:
-                pa = np.polyfit(step_levels[~a_mask], np.log2(del_filtered[~a_mask]), 1)
+                pa = np.polyfit(step_levels[del_mask], np.log2(del_filtered[del_mask]), 1)
                 alpha[k] = -pa[0] #keep the raw data for the heatmap + reconcile global alpha/beta later
                 a_regression_mask[k] = True
+        
         if np.all(b_mask):
             beta[k] = beta_expected
         else: 
             #the regression assumes sufficient sampling/regularity, place a catch here
-            if np.count_nonzero(~b_mask) < 3:
+            if np.count_nonzero(var_mask) < 3:
                 beta[k] = np.nan
                 b_nan_total+=1
             else:
-                pb = np.polyfit(step_levels[~b_mask], np.log2(var_filtered[~b_mask]), 1)
+                pb = np.polyfit(step_levels[var_mask], np.log2(var_filtered[var_mask]), 1)
                 beta[k] = -pb[0]
                 b_regression_mask[k] = True
 
@@ -292,7 +297,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         title_seg = "Spatial Kernel Dose"
 
     def plot_alpha_beta_map():
-        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+        fig, axes = plt.subplots(1, 2, figsize=(10, 5), constrained_layout=True)
         vmin = min(np.nanmin(alpha), np.nanmin(beta))
         vmax = max(np.nanmax(alpha), np.nanmax(beta))
         
@@ -301,16 +306,17 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         axes[0].set_xlabel("x")
         axes[0].set_ylabel("y")
         axes[0].set_aspect("equal")
-        fig.colorbar(sc_alpha, ax=axes[0], label=r"$\alpha$")
+        #fig.colorbar(sc_alpha, ax=axes[0], label=r"$\alpha$")
 
         sc_beta = axes[1].scatter(nodes_array[:, 0],nodes_array[:, 1],c=beta, vmin=vmin, vmax=vmax)
         axes[1].set_title(r"$\beta$")
         axes[1].set_xlabel("x")
         axes[1].set_ylabel("y")
         axes[1].set_aspect("equal")
-        fig.colorbar(sc_beta, ax=axes[1], label=r"$\beta$")
-        fig.suptitle(f"{title_seg} MLMC Test: Convergence Rates (M={N_conv_test})")
-        plt.tight_layout()
+        #Shared colour bar
+        fig.colorbar(sc_beta, ax=axes, label=r"Convergence Rate")
+
+        fig.suptitle(rf"{title_seg} MLMC Test: $\alpha$, $\beta$ Estimation (M={N_conv_test})")
         ab_save_path = os.path.join(folder_path,f"alpha_beta_map_{dose_method}_maxlvl_{L_conv_test}_offset_{MLMC_LEVEL_OFFSET}_mcsims_{N_conv_test}.png")
         plt.savefig(ab_save_path, dpi=300, bbox_inches="tight")
         plt.show()
@@ -341,13 +347,139 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         plt.show()
     plot_alpha_beta_map()
     
-    def plot_mlmc_test(y_coord, plot_keyword):
+    def plot_mlmc_test(named_nodes, plot_keyword, y_coord=None):
         """
         Produce the standard report style mlmc plots. 
         Named nodes should be in the order you want it to come out from left to right 
         """
         if SPATIAL_DIM!=2:
             raise NotImplementedError(f"alpha/beta regression plots not implemented in {SPATIAL_DIM}D.")     
+ 
+        #Sort in increasing x
+        named_nodes.sort(key=lambda x: nodes_array[x[0]][0]) 
+        nodes = [x[0] for x in named_nodes]
+
+        l_ticks = np.arange(MLMC_LEVEL_OFFSET,L + 1 + MLMC_LEVEL_OFFSET)
+        if y_coord is None:
+            y_coord=""
+        else:
+            y_coord = f"y={y_coord:.2f} "
+
+        #Print the raw data into the file 
+        output_txt_path = os.path.join(folder_path, f"plot_mlmc_raw_regression_data_N_{N_conv_test}.txt")
+        file_ptr = open(output_txt_path, "a")
+
+        printf(file_ptr, "\n" + "=" * 156 + "\n", printout=False)
+        printf(file_ptr, "RAW MLMC DATA AT SELECTED NODES%s\n", y_coord, printout=False)
+        printf(file_ptr, "=" * 156 + "\n", printout=False)
+
+        printf(file_ptr, "\n" + "=" * 156 + "\n", printout=False)
+        printf(file_ptr, "%s\n", plot_keyword.upper() + " NODES", printout=False)
+        printf(file_ptr, "=" * 156 + "\n", printout=False)
+
+        for node, name in named_nodes:
+            printf(file_ptr,"\nNode %d: %s  %s\n", node, str(nodes_array[node]), f"({name})" if name is not None else "", printout=False)
+            printf(file_ptr, "alpha = %.12e\n", alpha[node], printout=False)
+            printf(file_ptr, "beta  = %.12e\n", beta[node], printout=False)
+            printf(file_ptr, "%8s %20s %20s %25s %20s %25s %20s\n", "level", "P_l - P_{l-1}", "P_l", "Var(P_l - P_{l-1})", "Var(P_l)", "Kurt(P_l - P_{l-1})", "Consistency", printout=False)
+            printf(file_ptr, "-" * 156 + "\n", printout=False)
+
+            for j, level in enumerate(l_ticks):
+                printf(file_ptr, "%8d %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e\n", level, del1[node, j], del2[node, j], var1[node, j], var2[node, j], kur1[node, j], chk1[node, j], printout=False)
+        file_ptr.close()
+
+        fig, axes = plt.subplots(5, len(nodes), figsize=(3.1 * len(nodes),12),sharex=True, constrained_layout=True, gridspec_kw={'height_ratios': [0.70, 1, 1, 0.70, 0.70]})
+        for i, (node, name) in enumerate(named_nodes):
+            ls = range(1, L + 1)    
+
+            axes[0, i].set_ylabel(r"$P_\ell$")
+            axes[1, i].set_ylabel(r"$\log_2 |mean|$")
+            axes[2, i].set_ylabel(r"$\log_2 variance$")
+            axes[3, i].set_ylabel("Kurtosis")
+            axes[4, i].set_ylabel("Consistency Check")
+
+            #Show which node is being plotted + why
+            name_label=f" ({name})" if name != None else ""
+            axes[0, i].set_title(rf"Node {nodes_array[node]}{name_label}")
+            axes[1, i].set_title(rf"$\alpha={alpha[node]:.3f}$")
+            axes[2, i].set_title(rf"$\beta={beta[node]:.3f}$") 
+
+            mean_data = np.abs(del1[node, 1:])
+            raw_payoff = del2[node, :]
+            payoff_data = np.abs(raw_payoff)
+            var_data = var1[node, 1:]
+            var2_data = var2[node, :]
+
+            mean_masks = mean_data < trunc_tol
+            payoff_masks = payoff_data < trunc_tol
+            var_masks = var_data < trunc_tol
+            var2_masks = var2_data < trunc_tol 
+
+            #Cut them off to avoid 0 again
+            mean_data = np.maximum(mean_data, trunc_tol)
+            payoff_data = np.maximum(payoff_data, trunc_tol)
+            var_data = np.maximum(var_data, trunc_tol)
+            var2_data = np.maximum(var2_data, trunc_tol)
+
+            kurt_data = kur1[node, 1:] 
+            chk_data = chk1[node, 1:]
+
+            axes[1, i].scatter(l_ticks[1:][~mean_masks], np.log2(mean_data[~mean_masks]))
+            axes[1, i].scatter(l_ticks[1:][mean_masks], np.log2(mean_data[mean_masks]), marker='x')
+            axes[1, i].scatter(l_ticks[~payoff_masks], np.log2(payoff_data[~payoff_masks]), color='red')
+            axes[1, i].scatter(l_ticks[payoff_masks], np.log2(payoff_data[payoff_masks]), marker='+', color='gray')
+            axes[1, i].ticklabel_format(axis='y', style='plain', useOffset=False)
+
+            axes[2, i].scatter(l_ticks[1:][~var_masks], np.log2(var_data[~var_masks]))
+            axes[2, i].scatter(l_ticks[1:][var_masks], np.log2(var_data[var_masks]), marker='x')
+            axes[2, i].scatter(l_ticks[~var2_masks], np.log2(var2_data[~var2_masks]), color='red')
+            axes[2, i].scatter(l_ticks[var2_masks], np.log2(var2_data[var2_masks]), marker='+', color='gray')
+            axes[2, i].ticklabel_format(axis='y', style='plain', useOffset=False)
+
+            axes[1, i].yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
+            axes[2, i].yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
+
+            axes[3, i].plot(l_ticks[1:], kurt_data)
+            axes[4, i].plot(l_ticks[1:], chk_data)
+            axes[0, i].plot(l_ticks, raw_payoff)
+
+            #Draw on the regression
+            if np.count_nonzero(~mean_masks) >= 3:
+                mean_fit = np.polyfit(l_ticks[1:][~mean_masks], np.log2(mean_data[~mean_masks]), 1)
+                axes[1, i].plot(l_ticks[1:], np.polyval(mean_fit, l_ticks[1:]), linestyle="-", label=rf'$P_\ell - P_{{\ell - 1}}$')
+            if np.count_nonzero(~var_masks) >= 3:
+                var_fit = np.polyfit(l_ticks[1:][~var_masks], np.log2(var_data[~var_masks]), 1)
+                axes[2, i].plot(l_ticks[1:], np.polyval(var_fit, l_ticks[1:]), linestyle="-", label=rf'$P_\ell - P_{{\ell - 1}}$')
+                
+            payoff_fit = np.polyfit(l_ticks, np.log2(payoff_data), 1)
+            var2_fit = np.polyfit(l_ticks, np.log2(var2_data), 1)
+
+            axes[1, i].plot(l_ticks, np.polyval(payoff_fit, l_ticks), linestyle="--", label=rf'$P_\ell$', color='red')
+            axes[2, i].plot(l_ticks, np.polyval(var2_fit, l_ticks), linestyle="--", label=rf'$P_\ell$', color='red')
+            axes[1, 0].legend()
+            axes[2, 0].legend() #only show it on one
+
+            payoff_max = np.max(del2)*1.05
+            axes[0, i].set_ylim(-payoff_max*0.15, payoff_max)
+            for k in range(5):
+                axes[k, i].set_xticks(l_ticks)
+                axes[k, i].grid(alpha=0.3)
+
+        for k in range(len(nodes)):
+            axes[-1, k].set_xlabel(r"Step Level $\ell$")
+        fig.suptitle(f"{title_seg} MLMC Test: {plot_keyword.title()} Statistics {y_coord}(M={N_conv_test})", fontsize=14)
+        mlmc_plot_path=os.path.join(folder_path, f"{plot_keyword}_regression_data_N_{N_conv_test}")
+        plt.savefig(mlmc_plot_path, dpi=300)
+        plt.show()  
+        return  
+
+    #Beam axis plot:
+    def plot_beam_axis_nodes():
+        """
+        Use the plot mlmc test function above, make sets of nodes here
+        """
+        ys = np.unique(Y_meshgrid.flatten())
+        y_coord = ceil(len(ys)/2)*side_len
 
         beamline_mask = nodes_array[:,1] == y_coord
         beam_nodes = nodes_array[beamline_mask] 
@@ -356,8 +488,8 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
 
         #Select nodes
         node1 = beam_nodes_numbers[np.argmax(payoff_fine)]
-        node3 = beam_nodes_numbers[np.argmax(alpha[beamline_mask])]
-        node4 = beam_nodes_numbers[np.argmax(beta[beamline_mask])]
+        node3 = beam_nodes_numbers[np.nanargmax(alpha[beamline_mask])]
+        node4 = beam_nodes_numbers[np.nanargmax(beta[beamline_mask])]
 
         same_node=False
         if node4 == node3: #likely this could happen
@@ -401,150 +533,8 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
                 names.append(f'Y < 0')            
 
         named_nodes = [(node_number,name) for node_number, name in zip(nodes, names)]
-        #Sorting this in increasing x
-        named_nodes.sort(key=lambda x: nodes_array[x[0]][0])  
-        l_ticks = np.arange(MLMC_LEVEL_OFFSET,L + 1 + MLMC_LEVEL_OFFSET)
-
-        #Print the raw data into the file 
-
-        output_txt_path = os.path.join(folder_path, f"plot_mlmc_raw_regression_data_N_{N_conv_test}.txt")
-        file_ptr = open(output_txt_path, "a")
-
-        printf(file_ptr, "\n" + "=" * 156 + "\n", printout=False)
-        printf(file_ptr, "RAW MLMC DATA AT SELECTED NODES — y = %.6f\n", y_coord, printout=False)
-        printf(file_ptr, "=" * 156 + "\n", printout=False)
-
-        printf(file_ptr, "\n" + "=" * 156 + "\n", printout=False)
-        printf(file_ptr, "%s\n", plot_keyword.upper() + " NODES", printout=False)
-        printf(file_ptr, "=" * 156 + "\n", printout=False)
-
-        for node, name in named_nodes:
-            printf(
-                file_ptr,
-                "\nNode %d: %s  %s\n",
-                node,
-                str(nodes_array[node]),
-                f"({name})" if name is not None else "",
-                printout=False
-            )
-            printf(file_ptr, "alpha = %.12e\n", alpha[node], printout=False)
-            printf(file_ptr, "beta  = %.12e\n", beta[node], printout=False)
-
-            printf(
-                file_ptr,
-                "%8s %20s %20s %25s %20s %25s %20s\n",
-                "level",
-                "P_l - P_{l-1}",
-                "P_l",
-                "Var(P_l - P_{l-1})",
-                "Var(P_l)",
-                "Kurt(P_l - P_{l-1})",
-                "Consistency",
-                printout=False
-            )
-            printf(file_ptr, "-" * 156 + "\n", printout=False)
-
-            for j, level in enumerate(l_ticks):
-                printf(
-                    file_ptr,
-                    "%8d %20.12e %20.12e %20.12e %20.12e %20.12e %20.12e\n",
-                    level,
-                    del1[node, j],
-                    del2[node, j],
-                    var1[node, j],
-                    var2[node, j],
-                    kur1[node, j],
-                    chk1[node, j],
-                    printout=False
-                )
-
-        file_ptr.close()
-
-        fig, axes = plt.subplots(4, len(nodes), figsize=(3.1 * len(nodes),12),sharex=True, constrained_layout=True, gridspec_kw={'height_ratios': [1, 1, 0.70, 0.70]})
-        for i, (node, name) in enumerate(named_nodes):
-            ls = range(1, L + 1)    
-
-            axes[0, i].set_ylabel(r"$\log_2 |mean|$")
-            axes[1, i].set_ylabel(r"$\log_2 variance$")
-            axes[2, i].set_ylabel("Kurtosis")
-            axes[3, i].set_ylabel("Consistency Check")
-
-            #Show which node is being plotted + why
-            name_label=f" ({name})" if name != None else ""
-            axes[0, i].set_title(rf"Node {nodes_array[node]}{name_label}" + "\n" + rf"$\alpha={alpha[node]:.3f}$")
-            axes[1, i].set_title(rf"$\beta={beta[node]:.3f}$") 
-
-            mean_data = np.abs(del1[node, 1:])
-            payoff_data = np.abs(del2[node, :])
-            var_data = var1[node, 1:]
-            var2_data = var2[node, :]
-            mean_masks = mean_data < trunc_tol
-            payoff_masks = payoff_data < trunc_tol
-            var_masks = var_data < trunc_tol
-            var2_masks = var2_data < trunc_tol 
-
-            #Cut them off to avoid 0 again
-            mean_data = np.maximum(mean_data, trunc_tol)
-            payoff_data = np.maximum(payoff_data, trunc_tol)
-            var_data = np.maximum(var_data, trunc_tol)
-            var2_data = np.maximum(var2_data, trunc_tol)
-
-            kurt_data = kur1[node, :] 
-            chk_data = chk1[node, :]
-
-            axes[0, i].scatter(l_ticks[1:][~mean_masks], np.log2(mean_data[~mean_masks]))
-            axes[0, i].scatter(l_ticks[1:][mean_masks], np.log2(mean_data[mean_masks]), marker='x')
-            axes[0, i].scatter(l_ticks[~payoff_masks], np.log2(payoff_data[~payoff_masks]), color='red')
-            axes[0, i].scatter(l_ticks[payoff_masks], np.log2(payoff_data[payoff_masks]), marker='+', color='gray')
-            axes[0, i].ticklabel_format(axis='y', style='plain', useOffset=False)
-
-            axes[1, i].scatter(l_ticks[1:][~var_masks], np.log2(var_data[~var_masks]))
-            axes[1, i].scatter(l_ticks[1:][var_masks], np.log2(var_data[var_masks]), marker='x')
-            axes[1, i].scatter(l_ticks[~var2_masks], np.log2(var2_data[~var2_masks]), color='red')
-            axes[1, i].scatter(l_ticks[var2_masks], np.log2(var2_data[var2_masks]), marker='+', color='gray')
-            axes[1, i].ticklabel_format(axis='y', style='plain', useOffset=False)
-
-            axes[0, i].yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
-            axes[1, i].yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
-
-            axes[2, i].plot(l_ticks, kurt_data)
-            axes[3, i].plot(l_ticks, chk_data)
-
-            mean_fit = np.polyfit(l_ticks[1:], np.log2(mean_data), 1)
-            payoff_fit = np.polyfit(l_ticks, np.log2(payoff_data), 1)
-            var_fit = np.polyfit(l_ticks[1:], np.log2(var_data), 1)
-            var2_fit = np.polyfit(l_ticks, np.log2(var2_data), 1)
-
-            axes[0, i].plot(l_ticks[1:], np.polyval(mean_fit, l_ticks[1:]), linestyle="-", label=rf'$P_\ell - P_{{\ell - 1}}$')
-            axes[0, i].plot(l_ticks, np.polyval(payoff_fit, l_ticks), linestyle="--", label=rf'$P_\ell$', color='red')
-            axes[1, i].plot(l_ticks[1:], np.polyval(var_fit, l_ticks[1:]), linestyle="-", label=rf'$P_\ell - P_{{\ell - 1}}$')
-            axes[1, i].plot(l_ticks, np.polyval(var2_fit, l_ticks), linestyle="--", label=rf'$P_\ell$', color='red')
-            axes[0, 0].legend()
-            axes[1, 0].legend() #only show it on one
-
-            #payoff_max = np.max(del2)*1.05
-            #axes[0, i].set_ylim(-payoff_max*0.15, payoff_max)
-            for k in range(4):
-                axes[k, i].set_xticks(l_ticks)
-                axes[k, i].grid(alpha=0.3)
-
-        for k in range(len(nodes)):
-            axes[-1, k].set_xlabel(r"Step Level $\ell$")
-        fig.suptitle(f"{title_seg} MLMC Test: Statistics along y = {y_coord:.2f} (M={N_conv_test})", fontsize=14)
-        mlmc_plot_path=os.path.join(folder_path, f"{plot_keyword}_regression_data_N_{N_conv_test}")
-        plt.savefig(mlmc_plot_path, dpi=300)
-        plt.show()    
-
-    #Beam axis plot:
-    ys = np.unique(Y_meshgrid.flatten())
-    mid_y_beam = ceil(len(ys)/2)*side_len
-    plot_keyword="beamline"
-    plot_mlmc_test(mid_y_beam, plot_keyword)
-
-    #Outliers plot (along far field y)
-    #outlier_y = ceil(len(ys)/5)*side_len
-    #plot_keyword ="outliers"
-    #plot_mlmc_test(outlier_y, plot_keyword)
+        plot_keyword="beamline"
+        plot_mlmc_test(named_nodes, plot_keyword, y_coord)
 
     def plot_negative_alpha_beta_nodes(max_nodes=8):
         """
@@ -570,119 +560,36 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
             nodes = negative_nodes[selection]
         else:
             nodes = negative_nodes
+        named_nodes = [(node_number,None) for node_number in nodes]
 
-        l_ticks = np.arange(MLMC_LEVEL_OFFSET, L + 1 + MLMC_LEVEL_OFFSET)
+        plot_keyword="negative convergence rate"
+        plot_mlmc_test(named_nodes, plot_keyword, None)
 
-        fig, axes = plt.subplots(4, len(nodes), figsize=(3.1 * len(nodes), 12), sharex=True,
-                                constrained_layout=True, gridspec_kw={'height_ratios': [1, 1, 0.70, 0.70]})
+    def plot_negative_estimator_nodes(max_nodes=8):
 
-        if len(nodes) == 1:
-            axes = axes[:, np.newaxis]
-
-        for i, node in enumerate(nodes):
-            axes[0, i].set_ylabel(r"$\log_2 |mean|$")
-            axes[1, i].set_ylabel(r"$\log_2 variance$")
-            axes[2, i].set_ylabel("Kurtosis")
-            axes[3, i].set_ylabel("Consistency Check")
-
-            axes[0, i].set_title(rf"Node {nodes_array[node]}" + "\n" + rf"$\alpha={alpha[node]:.3f}$")
-            axes[1, i].set_title(rf"$\beta={beta[node]:.3f}$")
-
-            mean_data = np.abs(del1[node, 1:])
-            payoff_data = np.abs(del2[node, :])
-            var_data = var1[node, 1:]
-            var2_data = var2[node, :]
-
-            mean_masks = mean_data < trunc_tol
-            payoff_masks = payoff_data < trunc_tol
-            var_masks = var_data < trunc_tol
-            var2_masks = var2_data < trunc_tol
-
-            mean_data = np.maximum(mean_data, trunc_tol)
-            payoff_data = np.maximum(payoff_data, trunc_tol)
-            var_data = np.maximum(var_data, trunc_tol)
-            var2_data = np.maximum(var2_data, trunc_tol)
-
-            kurt_data = kur1[node, :]
-            chk_data = chk1[node, :]
-
-            axes[0, i].scatter(l_ticks[1:][~mean_masks], np.log2(mean_data[~mean_masks]))
-            axes[0, i].scatter(l_ticks[1:][mean_masks], np.log2(mean_data[mean_masks]), marker='x')
-            axes[0, i].scatter(l_ticks[~payoff_masks], np.log2(payoff_data[~payoff_masks]), color='red')
-            axes[0, i].scatter(l_ticks[payoff_masks], np.log2(payoff_data[payoff_masks]), marker='+', color='gray')
-
-            axes[1, i].scatter(l_ticks[1:][~var_masks], np.log2(var_data[~var_masks]))
-            axes[1, i].scatter(l_ticks[1:][var_masks], np.log2(var_data[var_masks]), marker='x')
-            axes[1, i].scatter(l_ticks[~var2_masks], np.log2(var2_data[~var2_masks]), color='red')
-            axes[1, i].scatter(l_ticks[var2_masks], np.log2(var2_data[var2_masks]), marker='+', color='gray')
-
-            axes[0, i].yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
-            axes[1, i].yaxis.set_major_formatter(FormatStrFormatter('%.0f'))
-
-            axes[2, i].plot(l_ticks, kurt_data)
-            axes[3, i].plot(l_ticks, chk_data)
-
-            mean_fit = np.polyfit(l_ticks[1:], np.log2(mean_data), 1)
-            payoff_fit = np.polyfit(l_ticks, np.log2(payoff_data), 1)
-            var_fit = np.polyfit(l_ticks[1:], np.log2(var_data), 1)
-            var2_fit = np.polyfit(l_ticks, np.log2(var2_data), 1)
-
-            axes[0, i].plot(l_ticks[1:], np.polyval(mean_fit, l_ticks[1:]), linestyle="-",
-                            label=rf'$P_\ell-P_{{\ell-1}}$')
-            axes[0, i].plot(l_ticks, np.polyval(payoff_fit, l_ticks), linestyle="--",
-                            label=rf'$P_\ell$', color='red')
-            axes[1, i].plot(l_ticks[1:], np.polyval(var_fit, l_ticks[1:]), linestyle="-",
-                            label=rf'$P_\ell-P_{{\ell-1}}$')
-            axes[1, i].plot(l_ticks, np.polyval(var2_fit, l_ticks), linestyle="--",
-                            label=rf'$P_\ell$', color='red')
-
-            for k in range(4):
-                axes[k, i].set_xticks(l_ticks)
-                axes[k, i].grid(alpha=0.3)
-
-            axes[-1, i].set_xlabel(r"Step Level $\ell$")
-
-        axes[0, 0].legend()
-        axes[1, 0].legend()
-
-        fig.suptitle(
-            f"{title_seg} MLMC Test: Nodes with Negative Convergence Rates "
-            f"(M={N_conv_test}, total negative={len(negative_nodes)})",
-            fontsize=14
-        )
-
-        save_path = os.path.join(
-            folder_path,
-            f"negative_alpha_beta_regression_data_N_{N_conv_test}.png"
-        )
-        plt.savefig(save_path, dpi=300)
-        plt.show()
-    plot_negative_alpha_beta_nodes()
-
-    def write_negative_nodes():
-        """
-        Finds all the negative Y nodes and write their data to a text file
-        """
         mlmc_estimator = del2[:, 0] + np.sum(del1[:, 1:], axis=1)
         negative_nodes = np.flatnonzero(mlmc_estimator < 0)
-
-        output_txt_path = os.path.join(folder_path, f"mlmc_test_negative_Y_data_N_{N_conv_test}.txt")
-        file_ptr = open(output_txt_path, "a")
-
         if len(negative_nodes) == 0:
-            printf(file_ptr, "No nodes with negative MLMC estimator found. Skipping negative payoff plot.", printout=False)
-            file_ptr.close()
+            printf(fp, f"\nNo nodes found with negative estimator")
             return
-
-        levels = np.arange(MLMC_LEVEL_OFFSET+1, MLMC_LEVEL_OFFSET+L+1, 1)
-        for node in negative_nodes:
-            printf(file_ptr,
-                f"Node {node}, coord={nodes_array[node]}, "
-                f"MLMC estimator={mlmc_estimator[node]:.6e}, Levels={levels}: Kurtosis={kur1[node, 1:]}, Consistency={chk1[node, 1:]}\n", printout=False)
         
-        file_ptr.close()
-        return 
-    write_negative_nodes()
+        order = negative_nodes[np.argsort(mlmc_estimator[negative_nodes])]
+        if len(order) <= max_nodes:
+            nodes = order
+        else:
+            n = max_nodes // 2
+            nodes = np.concatenate((order[:n], order[-n:]))
+
+        names=[f"Y={mlmc_estimator[node_idx]}" for node_idx in nodes]
+        named_nodes=[(node_number,name) for node_number, name in zip(nodes, names)]
+        plot_keyword="negative estimator"
+        plot_mlmc_test(named_nodes, plot_keyword, None)
+
+    #Call the plots
+    print("\nPlotting regression data...")
+    plot_beam_axis_nodes()
+    plot_negative_alpha_beta_nodes()
+    plot_negative_estimator_nodes()
 
     npz_save_path = os.path.join(folder_path,f"mlmc_test_data_{dose_method}_N_{N}_L_{L}_offset_{MLMC_LEVEL_OFFSET}.npz")
     np.savez(npz_save_path,nodes_array=nodes_array,mean_diff=del1,mean_fine=del2, var_diff=var1, var_fine=var2, kurtosis_diff=kur1,
@@ -710,7 +617,10 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
 
     #Only print the best+worst n_show nodes by beta to inspect
     n_show = 5
-    ranking = np.argsort(beta)
+
+    #Ignore nan values
+    nanmask = np.flatnonzero(~np.isnan(beta))
+    ranking = nanmask[np.argsort(beta[nanmask])]
     worst_nodes = ranking[:n_show]
     best_nodes = ranking[-n_show:][::-1]
 
@@ -803,14 +713,14 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         step_levels = np.arange(MLMC_LEVEL_OFFSET, max_num_lvls + MLMC_LEVEL_OFFSET)
         sim_num = np.sum(Nl)
         path_3D=os.path.join(folder_path, f"{sampling_type}_{dose_method}_eps_{eps}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}_Nfull_{np.sum(Nl)}.npz")
-        np.savez(path_3D, dose_expected=mlmc_dose, hybrid_dose_expected=hybrid_dose, accuracy=eps, Nl = Nl, Cl = Cl, std_mlmc_cost=std_mlmc_cost, std_cost=std_cost, step_levels=step_levels, sim_num=sim_num, dose_method=dose_method, method=method, SPATIAL_DIM=SPATIAL_DIM, l=side_len, X_meshgrid=X_meshgrid, title_seg=title_seg, folder_path=folder_path, sigma=SIGMA, dose_shape=dose_shape, KAPPA=KAPPA, EPS_0=EPS_0, sampling_type=sampling_type, num_neg_nodes=num_neg_nodes, mc_replacements=mc_replacements)
+        np.savez(path_3D, dose_expected=mlmc_dose, hybrid_dose_expected=hybrid_dose, accuracy=eps, Nl = Nl, Cl = Cl, std_mlmc_cost=std_mlmc_cost, std_cost=std_cost, step_levels=step_levels, sim_num=sim_num, dose_method=dose_method, method=method, SPATIAL_DIM=SPATIAL_DIM, l=side_len, X_meshgrid=X_meshgrid, Y_meshgrid=Y_meshgrid, title_seg=title_seg, folder_path=folder_path, sigma=SIGMA, dose_shape=dose_shape, KAPPA=KAPPA, EPS_0=EPS_0, sampling_type=sampling_type, num_neg_nodes=num_neg_nodes, mc_replacements=mc_replacements)
         
         #We already checked that this is not a duplicate
         f = open(paths_file, "a")
         f.write(path_3D + "\n")
         f.close()
         
-        print(f"MLMC data for eps={eps} saved at {path_3D}.")
+        print(f"\nMLMC data for eps={eps} saved at {path_3D}.")
     
     end_time = time.perf_counter()
     elapsed = end_time - start_time

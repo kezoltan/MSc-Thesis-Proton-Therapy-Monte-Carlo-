@@ -6,14 +6,16 @@ import numpy as np
 from math import prod
 import matplotlib.pyplot as plt 
 from dosesetup import *
-from doseparams import *
+from doseparams import NUM_CPUS, Y_meshgrid #subject to change -- should save ymeshgrid
 from math import ceil
 import os
 import matplotlib.ticker as mticker
 from concurrent.futures import ProcessPoolExecutor
 
-#The number of interpolation points for the SF method 
-num_points = ceil(l_reciprocal * max(Y_meshgrid.flatten()) * 2)
+#edit-- this code is inefficient + needs updating, parallelisation could be improved
+
+#The number of interpolation points for the SF method, careful of increasing this 
+num_points = ceil(l_reciprocal * max(Y_meshgrid.flatten())*2.5)
 
 def dose_gy_convert(dose_expected):
     """
@@ -52,6 +54,9 @@ def evaluate_phi(args):
     return np.dot(coeffs, phis)
 
 def compute_U(Xg, Yg, coeffs, node_coords, l, max_workers=None):
+    if max_workers is None:
+        max_workers = ceil(NUM_CPUS / 2)
+    
     points = [np.array([Xg[i, j], Yg[i, j]], dtype=float) for i in range(Xg.shape[0]) for j in range(Xg.shape[1])]
     args = [(X, coeffs, node_coords, l) for X in points]
 
@@ -63,116 +68,180 @@ def compute_U(Xg, Yg, coeffs, node_coords, l, max_workers=None):
 
 #2D plotter 
 
-def dose_plot_2D(method, dose_method, path_3D, n_points=num_points, av_width=0.1, save=True, curve_factor=8):
+def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
     """
-    2D dose plot with dose map + Bragg curve along beam axis 
+    Loads all the data for one path for one plot
     """
+    #Load the data 
+    full_file_path = path_3D
+    data = np.load(full_file_path, allow_pickle=True)
+    dose = data["dose_expected"]
+    sim_num = data["sim_num"]
+    method = data["method"]
+    dose_method = data["dose_method"]
+    l = data["l"]
+    X_meshgrid = data["X_meshgrid"]
+    #Y_meshgrid = data["Y_meshgrid"]
+    title_seg = data["title_seg"]
+    SPATIAL_DIM = data["SPATIAL_DIM"]
+    sampling_type = data["sampling_type"]
+    dose_shape = data["dose_shape"]
+
     if SPATIAL_DIM != 2:
         raise ValueError("dose_plot_2D requires a 2D dose map.")
-    if method == "V":
-        title = "Track Length Model"
-    elif method == "KZ":
-        title = "Energy Model"
 
     print(f"Number of nodes: {dose_shape}")
     X_MIN, X_MAX = X_meshgrid[0, 0], X_meshgrid[-1, -1] #bounds
     Y_MIN, Y_MAX = Y_meshgrid[0, 0], Y_meshgrid[-1, -1]
 
-    #Load the data 
-    full_file_path = path_3D
-    data = np.load(full_file_path, allow_pickle=True)
-
-    dose = data["dose_expected"]
-    sim_num = data["sim_num"]
-    if sampling_type=='mlmc' or sampling_type=='anti_mlmc':
+    if sampling_type=='mlmc':
         eps= data['accuracy'] #stricted eps is saved here
         step_lvls = data['step_levels']
         min_step_lvl = min(step_lvls)
         max_step_lvl = max(step_lvls)
-        hybrid_dose=data['hybrid_dose_expected']
-
-    dose_data=[]
+        if hybrid:
+            hybrid_dose=data['hybrid_dose_expected']
+            num_neg_nodes=data["num_neg_nodes"]
+            mc_replacements=data["mc_replacements"]
+            print(f"MC replacements made: {mc_replacements}/{num_neg_nodes}.")
 
     if dose_method == "SF":
 
-        dose_title = "Bilinear Basis Function"
+        dose_title = title_seg
         node_coords = np.column_stack([arr.ravel() for arr in (X_meshgrid, Y_meshgrid)])
         
         #Generate a fine(r) grid over which to plot the heat map 
         x_vals = np.linspace(X_MIN, X_MAX, n_points)
         y_vals = np.linspace(Y_MIN, Y_MAX, n_points)
         Xg, Yg = np.meshgrid(x_vals, y_vals, indexing="ij")
-        U = compute_U(Xg, Yg, dose, node_coords, l, n_points)
+        U = compute_U(Xg, Yg, dose, node_coords, l)
         #Convert to Grays + store in 2D
         fine_dose_field = np.asarray(dose_gy_convert(U), dtype=float)
-        n_curve = max(curve_factor * n_points, 300)
-        x_curve, depth_dose_curve, y_beam = depth_dose_beam_axis(fine_dose_field, x_vals, y_vals)
+        x_curve, depth_dose_curve, y_beam = depth_dose_beam_axis(fine_dose_field, x_vals, y_vals, sampling_type)
         plot_X = Xg
         plot_Y = Yg
-
-        dose_data.append((x_curve, depth_dose_curve, fine_dose_field, ""))
-
-        if sampling_type=='mlmc': #store the hybrid data + plot too
-            U_hybrid=compute_U(Xg, Yg, hybrid_dose, node_coords, l, n_points)
+        if sampling_type=='mlmc' and hybrid: #store the hybrid data + plot too
+            U_hybrid=compute_U(Xg, Yg, hybrid_dose, node_coords, l)
             hybrid_fine_dose_field = np.asarray(dose_gy_convert(U_hybrid), dtype=float)
             hybrid_x_curve, hybrid_depth_dose_curve, y_beam = depth_dose_beam_axis(hybrid_fine_dose_field, x_vals, y_vals)
 
-            dose_data.append((hybrid_x_curve, hybrid_depth_dose_curve, hybrid_fine_dose_field, "Hybrid "))
-
     if dose_method=="SK":
 
-        dose_title = "Spatial Kernel"
+        dose_title = title_seg
         fine_dose_field = np.asarray(dose_gy_convert(dose), dtype=float).reshape(X_meshgrid.shape)
         x_vals = X_meshgrid[:, 0]
         y_vals = Y_meshgrid[0, :]
-        n_curve = max(curve_factor * len(x_vals), 300)
         #This is to plot the Bragg curve
         x_curve, depth_dose_curve, y_beam = depth_dose_beam_axis(fine_dose_field=fine_dose_field,x_vals=x_vals,y_vals=y_vals)
         plot_X = X_meshgrid
         plot_Y = Y_meshgrid
-
-        dose_data.append((x_curve, depth_dose_curve, fine_dose_field, ""))
-
-        if sampling_type=='mlmc': #store the hybrid data + plot too
+        if sampling_type=='mlmc' and hybrid: #store the hybrid data + plot too
             hybrid_fine_dose_field = np.asarray(dose_gy_convert(hybrid_dose), dtype=float).reshape(X_meshgrid.shape)
             hybrid_x_curve, hybrid_depth_dose_curve, y_beam = depth_dose_beam_axis(fine_dose_field=hybrid_fine_dose_field,x_vals=x_vals,y_vals=y_vals)
 
-            dose_data.append((hybrid_x_curve, hybrid_depth_dose_curve, hybrid_fine_dose_field, "Hybrid "))
+    dose_data = {
+        "x_curve": x_curve,
+        "depth_dose_curve": depth_dose_curve,
+        "fine_dose_field": fine_dose_field,
+        "name": "",
+        "plot_X": plot_X,
+        "plot_Y": plot_Y,
+        "y_beam": y_beam,
 
-    for plot_data in dose_data:
-        #Unpack the tuple 
-        x_curve, depth_dose_curve, fine_dose_field, name=plot_data
+        # spatial bounds
+        "X_MIN": X_MIN,
+        "X_MAX": X_MAX,
+        "Y_MIN": Y_MIN,
+        "Y_MAX": Y_MAX,
 
-        fig = plt.figure(figsize=(9, 8))
+        # metadata
+        "sampling_type": sampling_type,
+        "sim_num": sim_num,
+        "method": method,
+        "dose_method": dose_method,
+        "dose_title": dose_title,
+
+        # MLMC metadata -- None for MC
+        "eps": eps if sampling_type == "mlmc" else None,
+        "step_lvls": step_lvls if sampling_type == "mlmc" else None,
+        "min_step_lvl": min_step_lvl if sampling_type == "mlmc" else None,
+        "max_step_lvl": max_step_lvl if sampling_type == "mlmc" else None}
+
+        if sampling_type == "mlmc" and hybrid:
+            dose_data["x_curve"] = hybrid_x_curve
+            dose_data["depth_dose_curve"] = hybrid_depth_dose_curve
+            dose_data["fine_dose_field"] = hybrid_fine_dose_field
+            dose_data["name"] = "Hybrid "
+    return dose_data
+
+
+def dose_plot_2D(path_3D_list, hybrid=False):
+    """
+    2D dose plot with dose map + Bragg curve along beam axis 
+    """
+    full_dose_data = []
+    for path_3D in path_3D_list:
+        full_dose_data.append(dose_map_2D(path_3D, hybrid=hybrid))
+
+    #Construct the figure
+    num_cols=2
+    num_plots = len(full_dose_data)
+    num_cols = min(num_cols, num_plots)
+    num_rows = ceil(num_plots / num_cols)
+
+    vmin = min(np.nanmin(plot_data["fine_dose_field"]) for plot_data in full_dose_data)
+    vmax = max(np.nanmax(plot_data["fine_dose_field"])for plot_data in full_dose_data)
+
+    fig = plt.figure(figsize=(7*num_cols, 6 * num_rows))
+    height_ratios = [3.0, 1.0] * num_rows
+    gs = fig.add_gridspec(2*num_rows,num_cols,height_ratios=height_ratios,wspace=0.20,hspace=0.15)
+
+    for i, plot_data in enumerate(ull_dose_data):
+        x_curve = plot_data["x_curve"]
+        depth_dose_curve = plot_data["depth_dose_curve"]
+        fine_dose_field = plot_data["fine_dose_field"]
+        plot_X = plot_data["plot_X"]
+        plot_Y = plot_data["plot_Y"]
+        sampling_type = plot_data["sampling_type"]
+        sim_num = plot_data["sim_num"]
+        method = plot_data["method"]
+        dose_title = plot_data["dose_title"]
+        name = plot_data["name"]
+        y_beam = plot_data["y_beam"]
+        X_MIN = plot_data["X_MIN"]
+        X_MAX = plot_data["X_MAX"]
+        Y_MIN = plot_data["Y_MIN"]
+        Y_MAX = plot_data["Y_MAX"]
+        if sampling_type == "mlmc":
+            eps = plot_data["eps"]
+            step_lvls = plot_data["step_lvls"]
+            min_step_lvl = plot_data["min_step_lvl"]
+            max_step_lvl = plot_data["max_step_lvl"]    
+
         #Resizing between the two plots 
-        gs = fig.add_gridspec(2, 2,width_ratios=[20, 1],height_ratios=[3.0, 1.2],wspace=0.08,hspace=0.10)
-        ax_top = fig.add_subplot(gs[0, 0])
-        ax_bottom = fig.add_subplot(gs[1, 0], sharex=ax_top)
-        
-        #this creates space for the heat bar on the side
-        cax = fig.add_subplot(gs[0, 1])
+        row = i // num_cols
+        col = i % num_cols
 
-        #Retrieve the extreme values
-        vmin = np.nanmin(fine_dose_field)
-        vmax = np.nanmax(fine_dose_field) #np.nanpercentile(fine_dose_field, 99.5)
-        print(f"Maximum dose reads as {vmax}.")
+        ax_top = fig.add_subplot(gs[2 * row, col])
+        ax_bottom = fig.add_subplot(gs[2 * row + 1, col], sharex=ax_top)
+        #this creates space for the heat bar on the side
 
         #levels_filled = np.linspace(vmin, vmax, 60)
         levels_lines = np.linspace(vmin, vmax, 12)
-        levels_filled = 80
+        levels_filled = np.linspace(vmin, vmax, 80)
 
         cf = ax_top.contourf(plot_X, plot_Y, fine_dose_field, levels=levels_filled, cmap='plasma')
         ax_top.contour(plot_X, plot_Y, fine_dose_field,levels=levels_lines,colors="k",linewidths=0.6,alpha=0.5)
-        colorbar = fig.colorbar(cf, cax=cax, label="Dose (1 gigaproton, Gy)")
-        dose_ticks = np.linspace(vmin, vmax, 10)
-        colorbar.set_ticks(dose_ticks)
-        colorbar.ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2g'))
 
         sampling_name = "Monte Carlo" if sampling_type=="mc" else "Multilevel Monte Carlo"
         sim_num_label = "M" if sampling_type=="mc" else r"$\sum M_\ell$"
         accuracy = "" if sampling_type=='mc' else f"Accuracy {eps:.2f}, "
         step_lvls = "" if sampling_type=='mc' else f", Step Levels {min_step_lvl}-{max_step_lvl}"
 
+        if method == "V":
+            title = "Track Length Model"
+        elif method == "KZ":
+            title = "Energy Model"
         #Dose map
         ax_top.set_ylabel("y")
         ax_top.set_title(f"Estimated Dose: {title}, {dose_title}\n {name}{sampling_name}, {accuracy}{sim_num_label}={sim_num:.0f}{step_lvls}")
@@ -187,10 +256,22 @@ def dose_plot_2D(method, dose_method, path_3D, n_points=num_points, av_width=0.1
         ax_bottom.set_ylabel(f"Relative dose (y={y_beam:.3f}cm)")
         ax_bottom.set_xlim(X_MIN, X_MAX)
         
-        plot_name=""
-        if name=='Hybrid ':
-            plot_name="_hybrid"
+    plot_name=""
+    if name=='Hybrid ' and hybrid:
+        plot_name="_hybrid"
+
+    colorbar = fig.colorbar(cf, ax=fig.axes, label="Dose (1 gigaproton, Gy)", pad=0.02)
+    dose_ticks = np.linspace(vmin, vmax, 10)
+    colorbar.set_ticks(dose_ticks)
+    colorbar.ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2g'))
+
+    if num_plots==1:
         file_save_path = path_3D[:-4] + plot_name + ".png"
+        print(f'Plot is trying to save at location: {file_save_path}')
+        fig.savefig(file_save_path, dpi=300, bbox_inches="tight")
+        plt.show()
+    else:
+        file_save_path = path_3D[:-4] + "REPORT_PAIR" + plot_name + ".png"
         print(f'Plot is trying to save at location: {file_save_path}')
         fig.savefig(file_save_path, dpi=300, bbox_inches="tight")
         plt.show()

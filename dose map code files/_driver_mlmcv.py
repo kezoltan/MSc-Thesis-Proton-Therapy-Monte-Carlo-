@@ -122,7 +122,7 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, alpha0=1.0, beta0=1.0, gamma0=1.
 
         # Weak convergence verification
         if np.sum(dNl > 0.01 * Nl) == 0:
-            rng = np.arange(0, min(2, L - 1) + 1)
+            rng = np.arange(0, min(2, L - 1) + 1) #num points to extrapolate back
             rem = np.max(ml_max[L - rng] / (2.0**(rng * alpha))) / (2.0**alpha - 1.0)
 
             if rem > np.sqrt(theta) * eps: #testing that weak conv allowance is met
@@ -133,8 +133,11 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, alpha0=1.0, beta0=1.0, gamma0=1.
                     L += 1
                     
                     # Expand arrays dynamically for the new level
+
+                    #Extrapolate !
                     Vl_max = np.append(Vl_max, Vl_max[-1] / (2.0**beta))
                     Cl = np.append(Cl, Cl[-1] * (2.0**gamma))
+                    
                     Nl = np.append(Nl, 0)
                     suml = np.column_stack((suml, np.zeros(4 * dose_shape)))
                     costl = np.append(costl, 0.0)
@@ -212,6 +215,6 @@ if __name__ == "__main__":
     print(f"MLMC data saved at {path_3D}")
     print("Now plotting...")
     if SPATIAL_DIM==2:
-        plot = dose_plot_2D(method, dose_method, path_3D)
+        plot = dose_plot_2D([path_3D])
     if SPATIAL_DIM==3:
-        plot = dose_plot_3D(method, dose_method, path_3D)
+        plot = dose_plot_3D([path_3D])

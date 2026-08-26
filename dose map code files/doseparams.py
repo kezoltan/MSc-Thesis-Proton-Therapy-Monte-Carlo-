@@ -48,23 +48,23 @@ file_path = r"/home/zoltan/Documents"
                 #r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
                 #r"/home/zoltan/Documents/dose map code repo
 
-sampling_type="mlmc" #"mc" or "mlmc" or "anti_mlmc"
+sampling_type= "mc" #"mc" or "mlmc"
 SPATIAL_DIM = 2 #dont recommend making this 3
 method = "KZ"
-dose_method="SK" #"SF" or "SK"
+dose_method="SF" #"SF" or "SK"
 
 #-----------MC PARAMETERS-----------------------
 
-SIMS_PER_CPU = 2000 #7146 #1064
+SIMS_PER_CPU = 1600 #1600
 
 #-----------MLMC PARAMETERS---------------------
 
 MLMC_LEVEL_OFFSET = 5 #5-9
-L_conv_test = 5#8 #runtime caution if finest level exceeds 12
-N_conv_test = 1000 #minimum: 50k, ideal: c.100K (but runtime caution)
+L_conv_test = 8 #runtime caution if finest level exceeds 12
+N_conv_test = 200000 #minimum: 50k, ideal: c.100K (but runtime caution)
  
 Lmax = 15 #max mlmc level
-Eps =  np.array([2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3]) #np.array([1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]) #Please keep best acc at the right end
+Eps =  np.array([1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]) #Please keep best acc at the right end, np.array([2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3])
 N0 = 20000 #need large enough to get a good variance estimate
 if dose_method=='SF':
     theta = 0.25 #proportion allocated to discretisation error 
@@ -85,7 +85,7 @@ Lmin = 2 #min mlmc level
 sim_num = NUM_CPUS * SIMS_PER_CPU
 straggling_severity = "Moderate" #None, Light, Moderate, Strong
 range_allowance = 1.6 
-y_scaling = 1.3
+y_scaling = 1.0
 origin=np.array([0.0, 0.0, 0.0])
 
 width_sdev_factor = 3 #how many times l should the width be, also depends on E0 ideally

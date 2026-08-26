@@ -9,7 +9,7 @@ import os
 from doseplot import dose_plot_2D, dose_plot_3D
 from functools import partial
 
-def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, alpha0=1.0, beta0=1.0, gamma0=1.0, *args):
+def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
     """
     Multi-level Monte Carlo estimation.
     Dynamically vectorized to handle the Primal value and an arbitrary 
@@ -26,9 +26,9 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, alpha0=1.0, beta0=1.0, gamma0=1.
     if N0 <= 0 or eps <= 0:
         raise ValueError("error: needs N0 > 0, eps > 0")
 
-    # Initialization -- set to 1.0 for dose EM
-    alpha = 1.0 #max(0.0, alpha0) 
-    beta  = 1.0 #max(0.0, beta0)
+    # Initialization -- expect 1.0 for dose EM
+    alpha = max(0.0, min(1.0, alpha0))   
+    beta  = max(0.0, beta0) 
     gamma = max(0.0, gamma0)
 
     print(f"Alpha, beta, gamma: {alpha, beta, gamma}")

@@ -48,10 +48,10 @@ file_path = r"/home/zoltan/Documents"
                 #r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
                 #r"/home/zoltan/Documents/dose map code repo
 
-sampling_type= "mc" #"mc" or "mlmc"
+sampling_type= "mlmc" #"mc" or "mlmc"
 SPATIAL_DIM = 2 #dont recommend making this 3
 method = "KZ"
-dose_method="SF" #"SF" or "SK"
+dose_method="SK" #"SF" or "SK"
 
 #-----------MC PARAMETERS-----------------------
 
@@ -61,7 +61,7 @@ SIMS_PER_CPU = 1600 #1600
 
 MLMC_LEVEL_OFFSET = 5 #5-9
 L_conv_test = 8 #runtime caution if finest level exceeds 12
-N_conv_test = 200000 #minimum: 50k, ideal: c.100K (but runtime caution)
+N_conv_test = 100000 #200000 #minimum: 50k, ideal: c.100K (but runtime caution)
  
 Lmax = 15 #max mlmc level
 Eps =  np.array([1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]) #Please keep best acc at the right end, np.array([2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3])
@@ -109,6 +109,12 @@ if dose_method not in ["SK", "SF"]:
     raise ValueError("dose_method must be either SK (spatial kernel) or SF (sbape function).")
 if method not in ["V", "KZ"]:
     raise ValueError("method must be 'KZ' or 'V'.")
+
+#set up title labels
+if dose_method=='SF':
+    title_seg = f"{'Bilinear' if SPATIAL_DIM==2 else 'Trilinear'} Basis Function"
+elif dose_method=='SK':
+    title_seg = "Spatial Kernel"
 
 def choose_l():
     """

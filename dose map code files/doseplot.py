@@ -167,11 +167,11 @@ def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
         "min_step_lvl": min_step_lvl if sampling_type == "mlmc" else None,
         "max_step_lvl": max_step_lvl if sampling_type == "mlmc" else None}
 
-        if sampling_type == "mlmc" and hybrid:
-            dose_data["x_curve"] = hybrid_x_curve
-            dose_data["depth_dose_curve"] = hybrid_depth_dose_curve
-            dose_data["fine_dose_field"] = hybrid_fine_dose_field
-            dose_data["name"] = "Hybrid "
+    if sampling_type == "mlmc" and hybrid:
+        dose_data["x_curve"] = hybrid_x_curve
+        dose_data["depth_dose_curve"] = hybrid_depth_dose_curve
+        dose_data["fine_dose_field"] = hybrid_fine_dose_field
+        dose_data["name"] = "Hybrid "
     return dose_data
 
 
@@ -196,7 +196,7 @@ def dose_plot_2D(path_3D_list, hybrid=False):
     height_ratios = [3.0, 1.0] * num_rows
     gs = fig.add_gridspec(2*num_rows,num_cols,height_ratios=height_ratios,wspace=0.20,hspace=0.15)
 
-    for i, plot_data in enumerate(ull_dose_data):
+    for i, plot_data in enumerate(full_dose_data):
         x_curve = plot_data["x_curve"]
         depth_dose_curve = plot_data["depth_dose_curve"]
         fine_dose_field = plot_data["fine_dose_field"]

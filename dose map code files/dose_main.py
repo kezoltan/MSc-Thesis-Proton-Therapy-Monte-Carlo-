@@ -136,7 +136,7 @@ if __name__ == "__main__":
 
             def plot_mlmc():
                 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-                fig.suptitle(f"{title_seg} MLMC Results")
+                fig.suptitle(f"{title_seg} MLMC Results", fontsize=18)
 
                 max_num_lvls = max(len(Nl) for Nl in all_Nls) #since Nl includes lvl 0
                 step_levels = np.arange(MLMC_LEVEL_OFFSET, max_num_lvls + MLMC_LEVEL_OFFSET)
@@ -153,20 +153,22 @@ if __name__ == "__main__":
                     #if np.any(~pos_mask):
                     #    y_axis = np.min(Nl[pos_mask]) if np.any(pos_mask) else 1.0
                     #    axes[0].scatter(step_levels[~pos_mask], np.full(np.sum(~pos_mask), y_axis), marker='x')
-                    axes[0].set_xlabel(r"Step Level $\ell$")
+                    axes[0].set_xlabel(r"Step Level $\ell$", fontsize=16)
                     axes[0].set_xticks(step_levels)
-                    axes[0].set_ylabel(r"Number of Proton Paths $M_\ell$")
+                    axes[0].tick_params(axis='both', labelsize=14)
+                    axes[0].set_ylabel(r"Number of Proton Paths $M_\ell$", fontsize=16)
                 #axes[0].scatter([], [], marker="x", color="black",label=r"($N_\ell=0$)")
-                axes[0].legend(title=r"$\epsilon$")
+                axes[0].legend(title=r"$\epsilon$", fontsize=16, title_fontsize=16)
 
 
                 axes[1].loglog(Eps, Eps**2 * std_MC_costs, "-*", label="Standard MC")
                 axes[1].loglog(Eps, Eps**2 * std_mlmc_costs, ":*", label="Standard MLMC")
-                axes[1].set_xlabel(r"Accuracy $\epsilon$")
+                axes[1].set_xlabel(r"Accuracy $\epsilon$", fontsize=16)
                 axes[1].set_xticks(Eps)
+                axes[1].tick_params(axis='both', labelsize=14)
                 axes[1].set_xticklabels([f"{eps:g}" for eps in Eps])
-                axes[1].set_ylabel(r"$\epsilon^2$ Cost")
-                axes[1].legend()
+                axes[1].set_ylabel(r"$\epsilon^2$ Cost", fontsize=16)
+                axes[1].legend(fontsize=16)
 
                 out_mlmc_plot_path=os.path.join(folder_path, f"mlmc_plot_{dose_method}_{method}_eps_{Eps[0]}_{Eps[-1]}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}.png") 
                 plt.tight_layout()

@@ -4,7 +4,6 @@ from doseparams import l as side_len
 from dose_mlmc import mlmc_parallel as mlmc_parallel_l
 from dosesetup import load_mass_matrix
 from math import ceil 
-from dosemap1_shape_function_geoEM import storage_position_convention
 import os
 from doseplot import dose_plot_2D, dose_plot_3D
 from functools import partial
@@ -29,6 +28,13 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
     # Initialization -- expect 1.0 for dose EM
     alpha = max(0.0, min(1.0, alpha0))   
     beta  = max(0.0, beta0) 
+
+    #Hardcode these from 100k runs levels 5-13 MLMC test
+    if dose_method=='SK':
+        beta = float(0.7290827490901862)
+    elif dose_method=='SF':
+        beta = float(1.3696968296614642)
+    beta0 = beta
     gamma = max(0.0, gamma0)
 
     print(f"Alpha, beta, gamma: {alpha, beta, gamma}")

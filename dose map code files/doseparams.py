@@ -10,7 +10,7 @@ from math import ceil, prod
 
 NUM_CPUS = os.cpu_count() - 2 #Leave one free 
 E0 = 62 #MeV
-EMIN = 0.05 #1.0 #The stopping power model diverges here
+EMIN = 0.1 #The stopping power model diverges here
 T=E0-EMIN
 EPS_0 = 0.005 
 ALPHA =  2.633e-3
@@ -19,7 +19,7 @@ p = 1.735
 def stopping_power(E, a=ALPHA, p=p):
     return 1/(a*p) * E**(1-p)
 
-RHO = 1 #water is 1gcm^{-3} 
+RHO = 1 #water is 1gcm^{-3}  
 if RHO <= 0:
     raise ValueError("density must be positive.")
 l=0.05 #0.02 - this is what V uses for 200k sims
@@ -49,9 +49,9 @@ file_path = r"/home/zoltan/Documents"
                 #r"/home/zoltan/Documents/dose map code repo
 
 sampling_type= "mlmc" #"mc" or "mlmc"
-SPATIAL_DIM = 2 #dont recommend making this 3
+SPATIAL_DIM = 2 #2 or 3
 method = "KZ"
-dose_method="SK" #"SF" or "SK"
+dose_method="SF" #"SF" or "SK"
 
 #-----------MC PARAMETERS-----------------------
 
@@ -60,12 +60,12 @@ SIMS_PER_CPU = 1600 #1600
 #-----------MLMC PARAMETERS---------------------
 
 MLMC_LEVEL_OFFSET = 5 #5-9
-L_conv_test = 8 #runtime caution if finest level exceeds 12
-N_conv_test = 100000 #200000 #minimum: 50k, ideal: c.100K (but runtime caution)
+L_conv_test = 17 #8 #runtime caution if finest level exceeds 12
+N_conv_test = 100 #200000 #minimum: 50k, ideal: >=.100K (runtime caution)
  
-Lmax = 15 #max mlmc level
-Eps =  np.array([1.2, 1.1, 1.0, 0.9, 0.8, 0.7, 0.6]) #Please keep best acc at the right end, np.array([2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3])
-N0 = 20000 #need large enough to get a good variance estimate
+Lmax = 17 #max mlmc level
+Eps = np.array([0.2, 0.1]) #np.array([0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2]) #Please keep best acc at the right end, np.array([2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3])
+N0 = 50000 #need large enough to get a good variance estimate
 if dose_method=='SF':
     theta = 0.25 #proportion allocated to discretisation error 
 if dose_method=='SK':

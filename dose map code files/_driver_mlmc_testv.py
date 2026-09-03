@@ -140,10 +140,10 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     print(f"Step levels check: {step_levels} (not inc. steplvl={MLMC_LEVEL_OFFSET})")
     step_sizes = np.array([float(base)**(-l) for l in step_levels])
 
-    #c2, c3 can be any finite positive constant
-    #If alpha, beta show up negative try increasing this first
-    c2 = 100.0
-    c3 = 100.0
+    #c2, c3 can be any finite positive constant -- edit: the only purpose of this is to deal with the outliers, however this may need changing
+    #At 10.0 most internal beam values still get regressed, which is what is intended
+    c2 = 10.0
+    c3 = 10.0
 
     #For the plots this will tell us which were not regressed
     a_regression_mask = np.full(dose_shape, False)
@@ -228,12 +228,13 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         ax.scatter(levels, log_V_l, color="C0", label=r"$V_\ell = \max_i V_{\ell,i}$")
         ax.plot(levels, np.polyval(beta_fit, levels), color="C0", linestyle="--", label=rf"Fit: $\beta={beta_global:.3f}$")
 
-        ax.set_xlabel(r"MLMC Level $\ell$")
-        ax.set_ylabel(r"$\log_2 V_\ell$")
-        ax.set_title(rf"{title_seg} MLMC Test: Global $\beta$ Regression")
+        ax.set_xlabel(r"MLMC Level $\ell$", fontsize=12)
+        ax.set_ylabel(r"$\log_2 V_\ell$", fontsize=12)
+        ax.set_title(rf"{title_seg} MLMC Test: Global $\beta$ Regression", fontsize=14)
         ax.set_xticks(l_ticks)
+        ax.tick_params(axis='both', labelsize=10)
         ax.grid(alpha=0.3)
-        ax.legend()
+        ax.legend(fontsize=12)
         save_path=os.path.join(folder_path, "global_beta_Vl_regression.png")
         plt.savefig(save_path, dpi=300)
         plt.tight_layout()
@@ -248,7 +249,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     plot_negative_alpha_beta_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path)
     plot_negative_estimator_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path)
 
-    npz_save_path = os.path.join(folder_path,f"mlmc_test_data_{dose_method}_N_{N}_L_{L}_offset_{MLMC_LEVEL_OFFSET}.npz")
+    npz_save_path = os.path.join(folder_path,f"mlmc_test_data_{dose_method}_N_{N}_L_{L}_offset_{MLMC_LEVEL_OFFSET}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_sigma_{SIGMA:.2f}_kappa_{KAPPA}_eps0_{EPS_0}_theta_{theta}_width_sdev_{width_sdev_factor:.2f}_EMIN_{EMIN}_l_{side_len}.npz")
     np.savez(npz_save_path,nodes_array=nodes_array,mean_diff=del1,mean_fine=del2, var_diff=var1, var_fine=var2, kurtosis_diff=kur1,
             consistency_check=chk1,alpha=alpha,beta=beta,gamma=gamma,cost=cost,N=N,L=L,Lmin=Lmin,Lmax=Lmax,MLMC_LEVEL_OFFSET=MLMC_LEVEL_OFFSET,base=base, beta_global=beta_global)
     print(f"MLMC test data saved to {npz_save_path}.")
@@ -297,18 +298,6 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
 
     for k in best_nodes:
         printf(fp, '%5d  %-20s  %11.4e  %11.4e\n', k, nodes_array[k], alpha[k], beta[k])
-
-    #Edit: unsure why these were originally set to max? Min makes more sense to me
-    #alpha_max = max(np.max(alpha), 0.5)
-    #beta_max = max(np.max(beta), 0.5)
-
-    alpha_min = np.min(alpha)
-    beta_min = np.min(beta)
-    print(f"alpha_min: {alpha_min}, beta_min: {beta_min}")
-
-    #Assign known values after testing
-    alpha = 1.0
-    beta = 1.0
 
     #Create a new folder for the mlmc data associated to this run - folder name must contain all key params 
     save_folder = f"{sampling_type}_{dose_method}_{method}_eps_{min(Eps)}_{max(Eps)}_offset_{MLMC_LEVEL_OFFSET}_l_{side_len}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_sigma_{SIGMA:.2f}_kappa_{KAPPA}_eps0_{EPS_0}_theta_{theta}_width_sdev_{width_sdev_factor:.2f}_EMIN_{EMIN}"

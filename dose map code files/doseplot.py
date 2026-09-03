@@ -1,21 +1,21 @@
 
-#This file will plot and store the results from the dose MC
-
+#July 2026
+#Code to create dose maps 
 
 import numpy as np
-from math import prod
 import matplotlib.pyplot as plt 
+from matplotlib.colors import PowerNorm 
 from dosesetup import *
 from doseparams import NUM_CPUS, Y_meshgrid #subject to change -- should save ymeshgrid
 from math import ceil
 import os
-import matplotlib.ticker as mticker
+from matplotlib.ticker import FormatStrFormatter, MultipleLocator
 from concurrent.futures import ProcessPoolExecutor
 
 #edit-- this code is inefficient + needs updating, parallelisation could be improved
 
 #The number of interpolation points for the SF method, careful of increasing this 
-num_points = ceil(l_reciprocal * max(Y_meshgrid.flatten())*2.5)
+num_points = ceil(l_reciprocal * max(Y_meshgrid.flatten())*2.5)  
 
 def dose_gy_convert(dose_expected):
     """
@@ -82,8 +82,13 @@ def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
     l = data["l"]
     X_meshgrid = data["X_meshgrid"]
     #Y_meshgrid = data["Y_meshgrid"]
-    title_seg = data["title_seg"]
+    #title_seg = data["title_seg"]
+    #set up title labels
     SPATIAL_DIM = data["SPATIAL_DIM"]
+    if dose_method=='SF':
+        title_seg = f"{'Bilinear' if SPATIAL_DIM==2 else 'Trilinear'} Basis Function"
+    elif dose_method=='SK':
+        title_seg = "Spatial Kernel"
     sampling_type = data["sampling_type"]
     dose_shape = data["dose_shape"]
 
@@ -97,7 +102,7 @@ def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
     if sampling_type=='mlmc':
         eps= data['accuracy'] #stricted eps is saved here
         step_lvls = data['step_levels']
-        min_step_lvl = min(step_lvls)
+        min_step_lvl = min(step_lvls) # =offset i think
         max_step_lvl = max(step_lvls)
         if hybrid:
             hybrid_dose=data['hybrid_dose_expected']
@@ -165,13 +170,15 @@ def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
         "eps": eps if sampling_type == "mlmc" else None,
         "step_lvls": step_lvls if sampling_type == "mlmc" else None,
         "min_step_lvl": min_step_lvl if sampling_type == "mlmc" else None,
-        "max_step_lvl": max_step_lvl if sampling_type == "mlmc" else None}
+        "max_step_lvl": max_step_lvl if sampling_type == "mlmc" else None, 
+        "mc_replacements": mc_replacements if hybrid and sampling_type == "mlmc" else None,
+        "num_neg_nodes": num_neg_nodes if hybrid and sampling_type == "mlmc" else None}
 
     if sampling_type == "mlmc" and hybrid:
         dose_data["x_curve"] = hybrid_x_curve
         dose_data["depth_dose_curve"] = hybrid_depth_dose_curve
         dose_data["fine_dose_field"] = hybrid_fine_dose_field
-        dose_data["name"] = "Hybrid "
+        dose_data["name"] = "Hybrid" 
     return dose_data
 
 
@@ -181,7 +188,13 @@ def dose_plot_2D(path_3D_list, hybrid=False):
     """
     full_dose_data = []
     for path_3D in path_3D_list:
-        full_dose_data.append(dose_map_2D(path_3D, hybrid=hybrid))
+        plot_data = dose_map_2D(path_3D)
+
+        if plot_data["sampling_type"] == "mlmc":
+            full_dose_data.append(plot_data)
+            full_dose_data.append(dose_map_2D(path_3D, hybrid=True))
+        else:
+            full_dose_data.append(plot_data)
 
     #Construct the figure
     num_cols=2
@@ -192,9 +205,13 @@ def dose_plot_2D(path_3D_list, hybrid=False):
     vmin = min(np.nanmin(plot_data["fine_dose_field"]) for plot_data in full_dose_data)
     vmax = max(np.nanmax(plot_data["fine_dose_field"])for plot_data in full_dose_data)
 
-    fig = plt.figure(figsize=(7*num_cols, 6 * num_rows))
-    height_ratios = [3.0, 1.0] * num_rows
-    gs = fig.add_gridspec(2*num_rows,num_cols,height_ratios=height_ratios,wspace=0.20,hspace=0.15)
+    fig = plt.figure(figsize=(15*num_cols, 12* num_rows))
+    height_ratios = [0.2] + [2.5, 0.9, 0.2] * (num_rows)
+    gs = fig.add_gridspec(3*num_rows+1,num_cols,height_ratios=height_ratios,wspace=0.05,hspace=0.08)
+
+    big_size = 27
+    med_size = 24
+    small_size = 22
 
     for i, plot_data in enumerate(full_dose_data):
         x_curve = plot_data["x_curve"]
@@ -209,72 +226,112 @@ def dose_plot_2D(path_3D_list, hybrid=False):
         name = plot_data["name"]
         y_beam = plot_data["y_beam"]
         X_MIN = plot_data["X_MIN"]
-        X_MAX = plot_data["X_MAX"]
+        X_MAX = min(4.5, plot_data["X_MAX"]) #hardcode cut off for visual clarity
         Y_MIN = plot_data["Y_MIN"]
         Y_MAX = plot_data["Y_MAX"]
         if sampling_type == "mlmc":
             eps = plot_data["eps"]
             step_lvls = plot_data["step_lvls"]
-            min_step_lvl = plot_data["min_step_lvl"]
-            max_step_lvl = plot_data["max_step_lvl"]    
+            max_step_lvl = plot_data["max_step_lvl"]  
+            min_step_lvl = plot_data["min_step_lvl"] 
+            L_final = max_step_lvl - min_step_lvl
+            num_neg_nodes = plot_data["num_neg_nodes"]
+            mc_replacements = plot_data["mc_replacements"]
 
         #Resizing between the two plots 
         row = i // num_cols
         col = i % num_cols
 
-        ax_top = fig.add_subplot(gs[2 * row, col])
-        ax_bottom = fig.add_subplot(gs[2 * row + 1, col], sharex=ax_top)
-        #this creates space for the heat bar on the side
+        gs_row=3*row+1
+        ax_top = fig.add_subplot(gs[gs_row, col])
+        ax_bottom = fig.add_subplot(gs[gs_row + 1, col], sharex=ax_top)
+        levels_lines = np.linspace(0.5, vmax, 15)
+        levels_filled = np.linspace(0, vmax, 100)
 
-        #levels_filled = np.linspace(vmin, vmax, 60)
-        levels_lines = np.linspace(vmin, vmax, 12)
-        levels_filled = np.linspace(vmin, vmax, 80)
+        #Deal with any negatives - show as scatter not dose field
+        negative_mask = fine_dose_field < 0
+        dose_for_contour = np.maximum(0.0, fine_dose_field)
 
-        cf = ax_top.contourf(plot_X, plot_Y, fine_dose_field, levels=levels_filled, cmap='plasma')
-        ax_top.contour(plot_X, plot_Y, fine_dose_field,levels=levels_lines,colors="k",linewidths=0.6,alpha=0.5)
+        #colornorm = PowerNorm(gamma=0.8, vmin=vmin, vmax=vmax)
+        cf = ax_top.contourf(plot_X, plot_Y, dose_for_contour, levels=levels_filled, cmap='inferno') #, norm=colornorm
+        ax_top.contour(plot_X, plot_Y, dose_for_contour,levels=levels_lines,colors="w",linewidths=0.8,alpha=1) #0.9
 
-        sampling_name = "Monte Carlo" if sampling_type=="mc" else "Multilevel Monte Carlo"
+        if sampling_type=='mlmc':
+            if np.count_nonzero(negative_mask) >= 1:
+                print(f"Maximum magnitude of negative dose: {np.max(np.abs(fine_dose_field[negative_mask])):.3f}")
+            ax_top.scatter(plot_X[negative_mask], plot_Y[negative_mask], color="#4C78A8", s=5, zorder=10, label=f"Negative Dose")
+            ax_top.legend(fontsize=small_size-2, markerscale=2.5, framealpha=0.9, loc="upper left")
+
+        sampling_name = "Monte Carlo" if sampling_type=="mc" else "MLMC and Hybrid MC-MLMC"
         sim_num_label = "M" if sampling_type=="mc" else r"$\sum M_\ell$"
-        accuracy = "" if sampling_type=='mc' else f"Accuracy {eps:.2f}, "
-        step_lvls = "" if sampling_type=='mc' else f", Step Levels {min_step_lvl}-{max_step_lvl}"
+        accuracy = "" if sampling_type=='mc' else f"RMSE {eps:.2f}, "
+        step_lvls = "" if sampling_type=='mc' else f", L={L_final}"
 
         if method == "V":
             title = "Track Length Model"
         elif method == "KZ":
             title = "Energy Model"
         #Dose map
-        ax_top.set_ylabel("y")
-        ax_top.set_title(f"Estimated Dose: {title}, {dose_title}\n {name}{sampling_name}, {accuracy}{sim_num_label}={sim_num:.0f}{step_lvls}")
+        if sampling_type=="mc":
+            ax_top.set_title(f"{title}, {dose_title}", fontsize=med_size+2, pad=10)
+            fig.suptitle(rf"Estimated Proton Dose: {sampling_name} ({sim_num_label}={sim_num:.0f}), Beamline: $y$={y_beam:.2f}cm", y=0.90, fontsize=big_size+2)
+        elif sampling_type=="mlmc" and col % 2 == 0:
+            ax_top.set_title(f"{dose_title}, {sim_num_label}={sim_num:.0f}{step_lvls}", fontsize=med_size+2, pad=10)
+            fig.suptitle(rf"Estimated Proton Dose: {sampling_name}, {accuracy}Beamline: $y$={y_beam:.2f}cm", y=0.90, fontsize=big_size+2)
+        elif sampling_type=="mlmc" and col % 2 != 0:
+            ax_top.set_title(f"{name}, Successful Replacements: {mc_replacements}/{num_neg_nodes}", fontsize=med_size+2, pad=10)
+            fig.suptitle(rf"Estimated Proton Dose: {sampling_name}, {accuracy}Beamline: $y$={y_beam:.2f}cm", y=0.90, fontsize=big_size+2)
         ax_top.tick_params(labelbottom=False)
         ax_top.set_xlim(X_MIN, X_MAX)
         ax_top.set_ylim(Y_MIN, Y_MAX)
 
         #Bragg curve
-        ax_bottom.plot(x_curve, depth_dose_curve, linewidth=2)
+        ax_bottom.plot(x_curve, depth_dose_curve, linewidth=2, color='black')
         ax_bottom.grid(True, alpha=0.3)
-        ax_bottom.set_xlabel("Depth x (cm)")
-        ax_bottom.set_ylabel(f"Relative dose (y={y_beam:.3f}cm)")
         ax_bottom.set_xlim(X_MIN, X_MAX)
-        
+
+        if col == 0:
+            ax_top.set_ylabel(r"$y$, cm", labelpad=22, fontsize=med_size)
+            ax_bottom.set_ylabel("Relative dose", fontsize=med_size)
+            ax_top.tick_params(axis="y", labelleft=True, labelsize=small_size)
+            ax_bottom.tick_params(axis="y", labelleft=True, labelsize=small_size)
+        else:
+            ax_top.set_ylabel("")
+            ax_bottom.set_ylabel("")
+            ax_top.tick_params(axis="y", left=True, labelleft=False, labelsize=small_size)
+            ax_bottom.tick_params(axis="y", left=True, labelleft=False, labelsize=small_size)
+
+        # Keep x tick marks everywhere, but labels only on the bottom pair
+        ax_top.tick_params(axis="x", which="both", bottom=True, labelbottom=False)
+        if row == num_rows - 1:
+            ax_bottom.tick_params(axis="x", which="both", bottom=True, labelbottom=True, labelsize=small_size)
+            ax_bottom.set_xlabel(r"Depth $x$, cm", fontsize=med_size)
+            ax_bottom.xaxis.set_minor_locator(MultipleLocator(0.2))
+            ax_bottom.tick_params(axis="x", which="minor")
+        else:
+            ax_bottom.tick_params(axis="x", which="both", bottom=True, labelbottom=False)
+            ax_bottom.set_xlabel("")
+                
     plot_name=""
     if name=='Hybrid ' and hybrid:
         plot_name="_hybrid"
 
     colorbar = fig.colorbar(cf, ax=fig.axes, label="Dose (1 gigaproton, Gy)", pad=0.02)
-    dose_ticks = np.linspace(vmin, vmax, 10)
+    colorbar.ax.tick_params(labelsize=big_size)
+    colorbar.set_label("Dose (1 gigaproton, Gy)", fontsize=big_size, labelpad=10)
+    dose_ticks = np.linspace(max(0.0, vmin), vmax, 10)
     colorbar.set_ticks(dose_ticks)
-    colorbar.ax.yaxis.set_major_formatter(mticker.FormatStrFormatter('%.2g'))
+    colorbar.ax.yaxis.set_major_formatter(FormatStrFormatter('%.2g'))
 
     if num_plots==1:
         file_save_path = path_3D[:-4] + plot_name + ".png"
         print(f'Plot is trying to save at location: {file_save_path}')
         fig.savefig(file_save_path, dpi=300, bbox_inches="tight")
-        plt.show()
     else:
-        file_save_path = path_3D[:-4] + "REPORT_PAIR" + plot_name + ".png"
+        file_save_path = path_3D[:-4] + "_REPORT_PAIR" + plot_name + ".png"
         print(f'Plot is trying to save at location: {file_save_path}')
-        fig.savefig(file_save_path, dpi=300, bbox_inches="tight")
-        plt.show()
+        fig.savefig(file_save_path, dpi=500, bbox_inches="tight")
+
     return fine_dose_field, x_curve, depth_dose_curve, file_save_path
 
 #Needs update to combine this with the above, not implemented 
@@ -461,9 +518,15 @@ def dose_plot_3D(method, dose_method, path_3D, n_points=num_points, av_width=0.1
 
 if __name__ == '__main__':
 
-    print(f"Plot for: {dose_method}, {method}, {sampling_type}")
-    path_3D = input("Please enter the path: ")
-    dose_plot_2D(method, dose_method, path_3D)
+    #Set up file with names of data files inside 
+
+    file_names = [os.path.join(file_path, "mlmc_results.txt")] #os.path.join(file_path, "mc_results.txt") 
+    for file in file_names:
+        with open(file, "r") as f:
+            strings = [line.strip() for line in f]
+            data_path=strings[0]
+        path_3d_list = [os.path.join(data_path, path) for path in strings[1:]]
+        dose_plot_2D(path_3d_list)
     
 
     

@@ -44,9 +44,7 @@ master_seed_seq = np.random.SeedSequence(42)
 #------------KEY PARAMETERS-----------------------------------------------------------
 #=====================================================================================
 
-file_path = r"/home/zoltan/Documents" 
-                #r"C:\Users\kathe\OneDrive - Zolution Technologies\Oxford\Dissertation\Code\Dose Map Code\dose map results"
-                #r"/home/zoltan/Documents/dose map code repo
+file_path = #### SET AS USER
 
 sampling_type= "mlmc" #"mc" or "mlmc"
 SPATIAL_DIM = 2 #2 or 3

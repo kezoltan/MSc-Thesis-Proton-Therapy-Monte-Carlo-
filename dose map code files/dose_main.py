@@ -33,9 +33,6 @@ if __name__ == "__main__":
         if SPATIAL_DIM==3:
             plot = dose_plot_3D([path_3D])
 
-        #eps 0.6 with SF method mlmc:
-            #path_3D=/home/zoltan/Documents/mlmc_SF_KZ_eps_0.6_1.2_offset_5_l_0.05_2D_shape_13090_E0_62_sigma_0.04_kappa_4e-05_eps0_0.005_theta_0.25_width_sdev_3.00_EMIN_0.05/mlmc_SF_eps_0.6_minstep_5_maxstep_15_Nfull_2522128.npz
-
     else:
         print(f"Gaussian energy spread is {'active' if energy_spread else 'inactive'}: energy deviation is {energy_sdev}, E0 is {E0}.")
         print(f"Gaussian initial position sampling is {'active' if width_spread else 'inactive'}.")

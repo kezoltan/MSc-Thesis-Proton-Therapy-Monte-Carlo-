@@ -6,7 +6,7 @@ The function of this code is to estimate the absorbed dose of a monoenergetic pr
 For the MLMC driver code, we credit Peiren Wang for providing us with his completed versions in Python, which have been adapted for this particular application by the author.  
 
 Instructions for a user:
-- All parameters are set in doseparams.py, and we recommend that the user reviews these. The most important ones are method, dose_method, file_path, SPATIAL_DIM, sampling_type, and all parameters relating to simulation numbers which are labelled under MC/MLMC params. The former three respectively decide which SDE EM scheme to use, which dose computation method is used, and which Monte Carlo sampling type is used. 
+- All parameters are set in doseparams.py, and we recommend that the user reviews these. The most important ones are method, dose_method, sampling_type, file_path, SPATIAL_DIM, and all parameters relating to simulation numbers which are labelled under MC/MLMC params. The former three respectively decide which SDE EM scheme to use, which dose computation method is used, and which Monte Carlo sampling type is used. 
 - Run the dose estimation in dose_main.py, which receives all parameters from doseparams.py. 
 - All other files need not be changed by the user, these perform the required calculations.
 

@@ -2,6 +2,8 @@
 #July 2026
 #Dose basic functions 
 
+#HELLO WORLD    
+
 import numpy as np 
 from math import prod, comb, cos, sin, exp, log
 from itertools import product
@@ -208,7 +210,7 @@ def energy_model_initialise(dE, E_start, a=ALPHA, p=p):
     #Stepsize calibration (important if Gaussian energy spread is on, E_start might not be E0)
     h=dE
     if energy_spread:
-        base_h = dE
+        base_h = dE 
         n = ceil((E_start - EMIN) / abs(base_h)) 
         Es = np.linspace(E_start, EMIN, n + 1)
         h = Es[1] - Es[0]

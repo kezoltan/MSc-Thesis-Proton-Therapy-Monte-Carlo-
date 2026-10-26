@@ -5,12 +5,12 @@
 import numpy as np 
 from concurrent.futures import ProcessPoolExecutor
 import os
-from doseparams import Omega0, E0, p, base, master_seed_seq, file_path, SPATIAL_DIM, T, MLMC_LEVEL_OFFSET
-from doseparams import NUM_CPUS as num_CPUs
-from doseparams import X0_mean as X0
-from doseparams import ALPHA as alpha
-from doseparams import EPS_0 as eps_0
-from dosesetup import coarsen_step, one_step_KZ_g_euler
+from src.doseparams import Omega0, E0, p, base, master_seed_seq, file_path, SPATIAL_DIM, T, MLMC_LEVEL_OFFSET
+from src.doseparams import NUM_CPUS as num_CPUs
+from src.doseparams import X0_mean as X0
+from src.doseparams import ALPHA as alpha
+from src.doseparams import EPS_0 as eps_0
+from src.dosesetup import coarsen_step, one_step_KZ_g_euler
 import matplotlib.pyplot as plt
 
 largest_exponent = 22 #if largest_exp = m then the reference/"exact" timestep size is base**(-m)

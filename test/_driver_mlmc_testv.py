@@ -4,10 +4,10 @@ import os
 import numpy as np
 from datetime import datetime
 from _driver_mlmcv import mlmcv  # Vectorized controller
-from doseparams import dose_shape, nodes_array, MLMC_LEVEL_OFFSET
+from src.doseparams import dose_shape, nodes_array, MLMC_LEVEL_OFFSET
 import matplotlib.pyplot as plt
-from doseparams import base, T, dose_method, L_conv_test, N_conv_test, file_path, SPATIAL_DIM, X_meshgrid, Y_meshgrid, dose_shape, nodes_array, l_reciprocal, EPS_0, KAPPA, method, E0, SIGMA, sampling_type, theta, width_sdev_factor, EMIN, title_seg #do not import l side length 
-from doseparams import l as side_len
+from src.doseparams import base, T, dose_method, L_conv_test, N_conv_test, file_path, SPATIAL_DIM, X_meshgrid, Y_meshgrid, dose_shape, nodes_array, l_reciprocal, EPS_0, KAPPA, method, E0, SIGMA, sampling_type, theta, width_sdev_factor, EMIN, title_seg #do not import l side length 
+from src.doseparams import l as side_len
 from mlmc_test_plot import *
 
 def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):

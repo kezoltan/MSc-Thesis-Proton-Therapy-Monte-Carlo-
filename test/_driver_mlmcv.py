@@ -1,11 +1,11 @@
 import numpy as np
-from doseparams import MLMC_LEVEL_OFFSET, dose_shape, nodes_array, Lmin, Lmax, N0, Eps, X_meshgrid, Y_meshgrid, SIGMA, SPATIAL_DIM, dose_shape, dose_method, method, sampling_type, E0, N_conv_test, L_conv_test, file_path, theta
-from doseparams import l as side_len
-from dose_mlmc import mlmc_parallel as mlmc_parallel_l
-from dosesetup import load_mass_matrix
+from src.doseparams import MLMC_LEVEL_OFFSET, dose_shape, nodes_array, Lmin, Lmax, N0, Eps, X_meshgrid, Y_meshgrid, SIGMA, SPATIAL_DIM, dose_shape, dose_method, method, sampling_type, E0, N_conv_test, L_conv_test, file_path, theta
+from src.doseparams import l as side_len
+from src.monte_carlo_methods.dose_mlmc import mlmc_parallel as mlmc_parallel_l
+from src.dosesetup import load_mass_matrix
 from math import ceil 
 import os
-from doseplot import dose_plot_2D, dose_plot_3D
+from src.doseplot import dose_plot_2D, dose_plot_3D
 from functools import partial
 
 def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):

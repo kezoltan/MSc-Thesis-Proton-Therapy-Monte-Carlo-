@@ -2,8 +2,8 @@
 #August 2026 
 #Multilevel Dose Contributionn User Input (at one level, for driver code)
 
-from dosemap1_shape_function_geoEM import KZ_one_path_load_contribution, one_step_F_contribution
-from dosemap2_spatial_kernel_geoEM import KZ_one_path_dose_contribution
+from dose_computation.dosemap1_shape_function_geoEM import KZ_one_path_load_contribution, one_step_F_contribution
+from dose_computation.dosemap2_spatial_kernel_geoEM import KZ_one_path_dose_contribution
 from dosesetup import *
 from numpy.random import default_rng
 from concurrent.futures import ProcessPoolExecutor

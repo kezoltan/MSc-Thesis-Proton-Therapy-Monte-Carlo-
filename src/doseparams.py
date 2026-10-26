@@ -44,7 +44,7 @@ master_seed_seq = np.random.SeedSequence(42)
 #------------KEY PARAMETERS-----------------------------------------------------------
 #=====================================================================================
 
-file_path = #### SET AS USER
+file_path = "/tmp/CHANGE_THIS" #### SET AS USER
 
 sampling_type= "mlmc" #"mc" or "mlmc"
 SPATIAL_DIM = 2 #2 or 3

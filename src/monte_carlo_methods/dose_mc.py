@@ -6,8 +6,8 @@ import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 from numpy.random import default_rng
 from doseparams import *
-from dosemap1_shape_function_geoEM import V_one_path_load_contribution, KZ_one_path_load_contribution
-from dosemap2_spatial_kernel_geoEM import V_one_path_dose_contribution, KZ_one_path_dose_contribution
+from dose_computation.dosemap1_shape_function_geoEM import V_one_path_load_contribution, KZ_one_path_load_contribution
+from dose_computation.dosemap2_spatial_kernel_geoEM import V_one_path_dose_contribution, KZ_one_path_dose_contribution
 from dosesetup import full_energy_model_setup
 
 def mc_worker(method, dose_method, path_seed_chunk, level):
@@ -63,5 +63,5 @@ def mc_parallel(method, level, SIMS_PER_CPU = SIMS_PER_CPU, NUM_CPUS = NUM_CPUS)
                 total_out = np.array(wc, copy=True)
             else:
                 total_out += wc
-    out = total_out / total_sims
+    out = total_out / total_sims # type: ignore
     return out

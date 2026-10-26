@@ -5,12 +5,12 @@
 import os
 import sys
 import numpy as np
-from doseparams import MLMC_LEVEL_OFFSET, base, T, dose_method, L_conv_test, N_conv_test, file_path, SPATIAL_DIM, X_meshgrid, Y_meshgrid, dose_shape, nodes_array, l_reciprocal, EPS_0, KAPPA, method, E0, SIGMA, sampling_type, theta, width_sdev_factor, EMIN, title_seg #do not import l side length 
-from doseparams import l as side_len
+from src.doseparams import MLMC_LEVEL_OFFSET, base, T, dose_method, L_conv_test, N_conv_test, file_path, SPATIAL_DIM, X_meshgrid, Y_meshgrid, dose_shape, nodes_array, l_reciprocal, EPS_0, KAPPA, method, E0, SIGMA, sampling_type, theta, width_sdev_factor, EMIN, title_seg #do not import l side length 
+from src.doseparams import l as side_len
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator
 from math import ceil, log
-from dosemap1_shape_function_geoEM import storage_position_convention
+from src.dose_computation.dosemap1_shape_function_geoEM import storage_position_convention
 
 def printf(file_ptr, fmt, *pargs, printout=True):
     """Helper to print to both stdout and a file pointer simultaneously."""

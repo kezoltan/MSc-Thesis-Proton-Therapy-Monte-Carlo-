@@ -5,47 +5,119 @@
 import numpy as np 
 from math import prod, comb, cos, sin, exp, log
 from itertools import product
-from doseparams import *
+from .doseparams import *
 
 def exponential_map_sphere(Omega_n, strat_proj_brownian):
-    """
-    The exponential map Exp_{Omega}(y) on the sphere acts on the term y to generate each update.
-    It follows the geodesic starting from the value of the scheme at the previous step (Omega_n)
-    which is constructed by following the direction y for unit time. (see ref)
-    y is the diffusion * brownian term in Strat form (i.e. drift is 0, do not convert to Ito form) 
+    """Update a direction vector along a geodesic on the unit sphere.
+
+    The projected Brownian increment defines the tangent direction and the
+    geodesic distance for the update. It is the diffusion multiplied by the
+    Brownian increment in Stratonovich form; do not convert it to Itô form.
+
+    Parameters
+    ----------
+    Omega_n : numpy.ndarray, shape (d,)
+        Current unit direction vector.
+    strat_proj_brownian : numpy.ndarray, shape (d,)
+        Brownian increment projected onto the tangent space at
+        ``Omega_n``.
+
+    Returns
+    -------
+    numpy.ndarray, shape (d,)
+        Updated direction vector on the sphere. 
+        If the increment is zero, this is equal to ``Omega_n``.
     """
     norm = np.linalg.norm(strat_proj_brownian)
+
+    if norm == 0:
+        return np.asarray(Omega_n).copy() # copy is used so Omega_n is not modified
+
     return cos(norm) * Omega_n + sin(norm) * (strat_proj_brownian / norm) 
 
-def reciprocal_stopping_power(E, a=ALPHA, p=p): #this is the drift 
+def reciprocal_stopping_power(E, a=ALPHA, p=p): # this is the drift \(a p E^{p-1}\)
+    """Calculate the drift term from the reciprocal stopping power.
+
+    The drift term is given by ``apE^(p-1)``.
+
+    Parameters
+    ----------
+    E : float
+        Proton energy, which must be positive for non-integer values of ``p``.
+    a : float, optional
+        Stopping-power coefficient. Defaults to ``ALPHA`` from ``doseparams``.
+    p : float, optional
+        Stopping-power exponent. Defaults to ``p`` from ``doseparams``.
+
+    Returns
+    -------
+    float
+        Drift term evaluated at energy ``E``.
+    """
     return a*p*E**(p-1)
 
 def T_energy_stragg(E, kappa = KAPPA):
+    """Calculate the energy straggling diffusion term.
+
+    The term is ``kappa * E * stopping_power(E)``.
+
+    Parameters
+    ----------
+    E : float
+        Proton energy.
+    kappa : float, optional
+        Energy straggling strength. Defaults to ``KAPPA`` from ``doseparams``.
+
+    Returns
+    -------
+    float
+        Energy straggling term evaluated at energy ``E``.
+    """
     return kappa*E*stopping_power(E)
 
 def reference_cube_mapping(side_len, center, coordinate):
-    """
-    Maps the global coordinates inside a given voxel onto the reference cube [-1, 1] 
+    """Map a global coordinate in a voxel to the reference cube ``[-1, 1]^d``.
 
-    Inputs: as numpy arrays 
-        center = the (global) center of the given voxel 
-        coordinate = the (global) coordinate that we wish to transform (i.e. could be a node or a proton position)
+    Parameters
+    ----------
+    side_len : float
+        Side length of the voxel.
+    center : numpy.ndarray, shape (d,)
+        Global coordinates of the voxel center.
+    coordinate : numpy.ndarray, shape (d,)
+        Global coordinates to map, such as a node or proton position.
 
-    Returns:
-        np.array, the transformed coordinate in [-1, 1]^3 
+    Returns
+    -------
+    numpy.ndarray, shape (d,)
+        Coordinate mapped relative to the voxel center. The voxel center maps
+        to zero and its corners map to coordinates with components ``-1`` or
+        ``1``.
     """
     return 2*(coordinate - center) / side_len
 
 def Phi(side_len, X, n_i):
-    """
-    The basis function Phi_i attached to the ith node, defined over the whole domain 
+    """Evaluate the basis function ``Phi_i`` attached to the ``i``th node.
 
-    Inputs: as numpy arrays 
-        X = np.array(x,y,z), a 2D or 3D position in space (at which Phi(ni) is evaluated)
-        n_i = 2D or 3D coordinates of the node to which Phi is attached 
+    The basis function is defined over the whole domain. ``X`` is the position
+    at which ``Phi_i`` is evaluated, and ``n_i`` is the coordinate of the node
+    to which the basis function is attached. The function is zero outside the
+    node's support. Coordinates on voxel boundaries follow the mesh convention.
 
-    Returns: t
-        The value of Phi_i at one point, X_3D 
+    Parameters
+    ----------
+    side_len : float
+        Side length of a mesh voxel.
+    X : numpy.ndarray, shape (d,)
+        2D or 3D position at which to evaluate ``Phi_i``.
+    n_i : numpy.ndarray, shape (d,)
+        2D or 3D coordinates of the node to which ``Phi_i`` is attached.
+
+    Returns
+    -------
+    float
+        Basis function value at ``X``. Returns zero when ``X`` is outside
+        the node's support.
     """
 
     if not np.all(np.abs(X - n_i) <= side_len):
@@ -75,8 +147,26 @@ def Phi(side_len, X, n_i):
     return phi
 
 def Phi_vectorised(side_len, X, nodes):
-    """
-    Receives all nodes and evaluates all corresponding Phi simultaneously at X.  
+    """Evaluate basis functions for multiple nodes at one point.
+
+    Computes the same values as calling :func:`Phi` once for each node, while
+    evaluating all supplied nodes together. Nodes outside the point's support
+    receive a value of zero. Voxel-boundary coordinates follow the same
+    convention as :func:`Phi`.
+
+    Parameters
+    ----------
+    side_len : float
+        Side length of a mesh voxel.
+    X : numpy.ndarray, shape (d,)
+        2D or 3D point at which to evaluate the basis functions.
+    nodes : numpy.ndarray, shape (n_nodes, d)
+        Coordinates of the mesh nodes whose basis functions are evaluated.
+
+    Returns
+    -------
+    numpy.ndarray, shape (n_nodes,)
+        Basis function value for each row of ``nodes``, in the same order.
     """
     X = np.asarray(X)
     nodes = np.asarray(nodes)
@@ -115,11 +205,21 @@ def Phi_vectorised(side_len, X, nodes):
     return phis 
 
 def position_lookup_matrix(X_meshgrid):
-    """
-    Provide the first array of an np.meshgrid, return a 1D position lookup matrix. Compute once.
-    
-    How to use the output matrix:
-        Given an ijk index for the node on the grid, returns a 1D index 0,1,2,.. position for storage in F.
+    """Give each point in a mesh its position in a one-dimensional list.
+
+    The returned array has the same shape as the mesh. Each entry contains
+    the point's index in a flattened version of the mesh, starting at zero.
+
+    Parameters
+    ----------
+    X_meshgrid : numpy.ndarray
+        A coordinate array from the meshgrid. Only its shape is used.
+
+    Returns
+    -------
+    numpy.ndarray
+        Integer array with the same shape as ``X_meshgrid``. Its values are
+        consecutive positions in NumPy's default flattened order.
     """
     grid_shape = X_meshgrid.shape
     return np.arange(0, prod(grid_shape)).reshape(grid_shape)
@@ -127,8 +227,15 @@ def position_lookup_matrix(X_meshgrid):
 #----------------------------GAUSSIAN BEAM---------------------------------------
 
 def initial_energy_spread():
-    """
-    Gaussian sample the initial proton energy with % energy spread 
+    """Draw a random initial proton energy from a Gaussian (normal) distribution.
+
+    The distribution is centered on ``E0`` and uses ``energy_sdev`` from
+    ``doseparams`` to set its spread.
+
+    Returns
+    -------
+    float
+        A sampled initial proton energy.
     """
     return np.random.normal(E0, energy_sdev**2)
 
@@ -201,14 +308,15 @@ def coarsen_step(brownian_incs):
         
 #-----------------------MASS MATRIX--------------------------------------------
 
-def linear_lumped_mass_matrix(X_meshgrid, side_len):
+def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     """
-    Calculates the diagonal of the lumped (row sum) mass matrix for (Q1) bi/trilinear basis functions over a regular cubic voxel mesh side length side_len
+    Calculates the diagonal of the lumped (row sum) mass matrix for (Q1) bi/trilinear basis functions over a regular cubic voxel mesh side length side_len.
     Exploits the symmetry and mapping onto the reference cube. Works in 2D or 3D.
     
     Inputs:
         meshgrid: tuple, X,Y,Z
                          X,Y,Z = np.arrays from np.meshgrid indexed by i,j(,k)j
+        spatial_dim: int, number of spatial dimensions (2 or 3)
 
     Returns:
         M_diag, 1D np.array, shape = (number of nodes,) contains the diagonal elements of the diagonal matrix M 
@@ -220,32 +328,32 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len):
     I1 = 4/3 #if different coordinates (1 and -1)
     I2 = 8/3 #if same coords (1 and 1, or -1 and -1)
 
-    lower_pos = tuple([0]*SPATIAL_DIM)
-    pos_1 = tuple([1] + [0]*(SPATIAL_DIM - 1))
+    lower_pos = tuple([0]*spatial_dim)
+    pos_1 = tuple([1] + [0]*(spatial_dim - 1))
     regular_side_length = Xs[pos_1] - Xs[lower_pos]
     print(f'Regular side length is reading as {regular_side_length:.8f}, should be {side_len}.')
     if not(np.isclose(regular_side_length, side_len)): #Only tests if they are almost the same 
         raise ValueError("Meshgrid sidelength must be side_len and it must be uniform.")
 
     #Store the values of all possible volume integrals: 
-    integral_prefactor = (1/(2**SPATIAL_DIM))**2 * (side_len/2)**(SPATIAL_DIM) #From the chain rule and normalisation of basis functions
-    integral_values = np.zeros(SPATIAL_DIM + 1) #Index 0: 0 differences (i.e. same node), 1: 1 coord different, ...
-    for num_differences in range(SPATIAL_DIM + 1):
-        integral_values[num_differences] = I2**(SPATIAL_DIM - num_differences) * I1**(num_differences)
+    integral_prefactor = (1/(2**spatial_dim))**2 * (side_len/2)**(spatial_dim) #From the chain rule and normalisation of basis functions
+    integral_values = np.zeros(spatial_dim + 1) #Index 0: 0 differences (i.e. same node), 1: 1 coord different, ...
+    for num_differences in range(spatial_dim + 1):
+        integral_values[num_differences] = I2**(spatial_dim - num_differences) * I1**(num_differences)
     integral_values *= integral_prefactor 
 
     #If an interior point, the number of nodes of each type surrounding them is:
-    interior_instance_num = [1]*(SPATIAL_DIM + 1) #Start with ni=nj
-    for i in range(1, SPATIAL_DIM + 1):
+    interior_instance_num = [1]*(spatial_dim + 1) #Start with ni=nj
+    for i in range(1, spatial_dim + 1):
         #in 3D this should be: [1, 6, 12, 8], in 2D this should be: [1, 4, 4] 
-        interior_instance_num[i] = comb(SPATIAL_DIM, i) * 2**i
+        interior_instance_num[i] = comb(spatial_dim, i) * 2**i
     interior_instance_num = np.array(interior_instance_num)
     
     #For each type of node, the intersection of supports also changes - must add over all available voxels as well
     #The number of voxels in the intersection of supports is the weight 
     #Exploit symmetry between ni and each node nj of the same type 
 
-    interior_weights = [2**i for i in range(SPATIAL_DIM + 1)]
+    interior_weights = [2**i for i in range(spatial_dim + 1)]
     interior_weights = interior_weights[::-1]
 
     #Obtain the total number of integrals of each type over ONE reference cube
@@ -260,7 +368,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len):
 
     #For a node on a boundary, we need to replace the value of Mii from above
 
-    lower_boundary_index = np.zeros(SPATIAL_DIM) #Index starts from 0 in all coords
+    lower_boundary_index = np.zeros(spatial_dim) #Index starts from 0 in all coords
     upper_boundary_index = np.array(nodes_shape) - 1 #Should give the total number of nodes in each dim, minus 1 since we start indexing at 0
     
     if np.any(lower_boundary_index == upper_boundary_index): #If any were equal then it's just a line
@@ -269,8 +377,8 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len):
     #Make the weight dictionary dependent on how many boundaries ni/nj lie on 
 
     boundary_weighted_integrals = {}
-    ni_boundary_masks = list(product([0, 1], repeat=SPATIAL_DIM)) #1 if ni touches that boundary
-    nj_equal_masks = list(product([0, 1], repeat=SPATIAL_DIM)) #1 if nj and ni match that coordinate (will be used to check if nj is also on a boundary)
+    ni_boundary_masks = list(product([0, 1], repeat=spatial_dim)) #1 if ni touches that boundary
+    nj_equal_masks = list(product([0, 1], repeat=spatial_dim)) #1 if nj and ni match that coordinate (will be used to check if nj is also on a boundary)
 
     #For each combination we will calculate the weight:
     #Boundary mask is over ni, equal mask is over nj 
@@ -278,7 +386,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len):
 
         #Calculate the weight of the node nj (i.e. num voxels)
         nj_num_boundaries = sum(b==1 and e==1 for b,e in zip(boundary_mask, equal_mask)) #Count the number of times nj is on a boundary
-        nj_num_differences = SPATIAL_DIM - np.sum(equal_mask) 
+        nj_num_differences = spatial_dim - np.sum(equal_mask) 
         
         #The weight between ni and nj halves once for each boundary nj is also on 
         weight = interior_weights[nj_num_differences] * (1/2) ** (nj_num_boundaries)
@@ -311,7 +419,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len):
                 difference_mask = 1 - equal_mask_arr #Is 1 if nj is different from ni in this direction
                 
                 number_of_nodes = 1
-                for coord in range(SPATIAL_DIM):
+                for coord in range(spatial_dim):
                     if difference_mask[coord] == 1 and boundary_mask[coord] == 0:
                         number_of_nodes*= 2            
                 
@@ -324,7 +432,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len):
             counter+=1 
                       
     #Final check using the known number of interior nodes:
-    num_interior_nodes = np.array(Xs.shape) - 2*np.ones(SPATIAL_DIM, dtype=int) #Subtract the number of boundary nodes 
+    num_interior_nodes = np.array(Xs.shape) - 2*np.ones(spatial_dim, dtype=int) #Subtract the number of boundary nodes 
     if np.any(num_interior_nodes <= 0):
         print("Note: there are no interior nodes.")
     else:
@@ -334,8 +442,21 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len):
 
     return M_diag
 
-def load_mass_matrix():
-    M_path = os.path.join(file_path, f"{SPATIAL_DIM}D_{dose_shape}_lumped_mass_matrix.npz")
+# added defaults so tests are easier to run
+def load_mass_matrix(
+    file_path=file_path,
+    spatial_dim=SPATIAL_DIM,
+    dose_shape=dose_shape,
+    X_meshgrid=X_meshgrid,
+    Y_meshgrid=Y_meshgrid,
+    side_len=side_len,
+):
+    """Load a cached lumped mass matrix or calculate and save it.
+
+    Optional arguments allow callers to provide a mesh and cache location.
+    When omitted, the corresponding values from ``doseparams`` are used.
+    """
+    M_path = os.path.join(file_path, f"{spatial_dim}D_{dose_shape}_lumped_mass_matrix.npz")
     if os.path.exists(M_path):
         mass_data = np.load(M_path)
         M_diag=mass_data['M_diag']
@@ -344,6 +465,6 @@ def load_mass_matrix():
             raise ValueError(f"Lumped mass matrix shape must equal {dose_shape}, is {mass_shape}.") 
         print("Mass matrix loaded successfully.")
     else:
-        M_diag = linear_lumped_mass_matrix(X_meshgrid,side_len)
+        M_diag = linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=spatial_dim)
         np.savez(M_path, M_diag=M_diag, side_len = side_len, X = X_meshgrid, Y = Y_meshgrid)
     return M_diag

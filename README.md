@@ -1,4 +1,3 @@
-
 # MLMC in Proton Beam Therapy (PBT)
 
 This repository contains the code used to generate results in the following master's thesis:

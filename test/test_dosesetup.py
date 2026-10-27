@@ -7,7 +7,7 @@ from math import prod, comb, cos, sin, exp, log
 from itertools import product
 from src.doseparams import *
 import pytest
-from src.dosesetup import exponential_map_sphere
+from src.dosesetup import exponential_map_sphere, reciprocal_stopping_power
 
 @pytest.mark.parametrize(
     ("omega", "increment", "expected"), # omega = initial direction
@@ -49,8 +49,23 @@ def test_exponential_map_sphere_handles_zero_increment():
     assert np.array_equal(result, omega)
 
 
-def test_reciprocal_stopping_power_matches_drift_formula():
-    pass
+@pytest.mark.parametrize(
+    ("energy", "a", "exponent"),
+    [
+        (1.0, 0.5, 2.0), # todo : check with katie what valid inputs are
+        (4.0, 0.25, 1.5),
+        (10.0, 0.01, 0.75),
+    ],
+)
+def test_reciprocal_stopping_power_matches_drift_formula(energy, a, exponent):
+    # calculate expected drift from its formula: apE^(p - 1).
+    expected = a * exponent * energy ** (exponent - 1)
+
+    # call the function being tested with explicit parameters, independent of module defaults.
+    result = reciprocal_stopping_power(energy, a=a, p=exponent)
+
+    # check the floating-point values with a numerical tolerance.
+    assert np.isclose(result, expected)
 
 
 def test_energy_straggling_term_matches_formula():

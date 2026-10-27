@@ -35,7 +35,25 @@ def exponential_map_sphere(Omega_n, strat_proj_brownian):
 
     return cos(norm) * Omega_n + sin(norm) * (strat_proj_brownian / norm) 
 
-def reciprocal_stopping_power(E, a=ALPHA, p=p): #this is the drift 
+def reciprocal_stopping_power(E, a=ALPHA, p=p): # this is the drift \(a p E^{p-1}\)
+    """Calculate the drift term from the reciprocal stopping power.
+
+    The drift term is given by ``apE^(p - 1)``.
+
+    Parameters
+    ----------
+    E : float
+        Proton energy, which must be positive for non-integer values of ``p``.
+    a : float, optional
+        Stopping-power coefficient. Defaults to ``ALPHA`` from ``doseparams``.
+    p : float, optional
+        Stopping-power exponent. Defaults to ``p`` from ``doseparams``.
+
+    Returns
+    -------
+    float
+        Drift term evaluated at energy ``E``.
+    """
     return a*p*E**(p-1)
 
 def T_energy_stragg(E, kappa = KAPPA):

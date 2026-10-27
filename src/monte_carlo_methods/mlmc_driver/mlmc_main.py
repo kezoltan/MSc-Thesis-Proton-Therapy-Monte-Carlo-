@@ -1,6 +1,6 @@
 import numpy as np
 from src.doseparams import *
-from src.monte_carlo_methods.dose_mlmc import mlmc_parallel as mlmc_parallel_l
+from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel as mlmc_parallel_l
 from src.dosesetup import load_mass_matrix
 from math import ceil 
 import os

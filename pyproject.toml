@@ -9,9 +9,32 @@ authors = [
     {name = "Katie Zoltan", email = "katherine.zoltan@bnc.ox.ac.uk"}
 ]
 readme = "README.md"
-license = {text = "MIT"}
-dependencies = ["numpy", "matplotlib", "scipy", "numba", "pytest", "pylint"]
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = ["numpy", "matplotlib", "scipy", "numba"]
 
-[project.scripts] # Define scripts here if you have any
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+docs = [
+    "sphinx",
+]
 
-[project.optional-dependencies] # Define optional dependencies here if you have any
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+
+[tool.coverage.run]
+source = ["src"]

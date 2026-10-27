@@ -3,12 +3,13 @@
 #Spatial Kernel Dose Method Code
 
 import numpy as np 
-from math import exp, log, pi
+from math import pi
 from concurrent.futures import ProcessPoolExecutor
 from itertools import repeat
 from doseparams import *
 from dosesetup import *
 from scipy.stats import chi2
+from src.sde_model_simulation import *
 
 #Precompute these 
 KERNEL_PREFACTOR = 1/RHO * 1/((2*pi)**(SPATIAL_DIM/2)*SIGMA**SPATIAL_DIM)
@@ -79,21 +80,21 @@ def one_step_dose_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Om
     Compute the next step + compute the dose
     the misc_coeff is different for each scheme 
     """
-    if method=='KZ':
-        E_n1, Omega_n1, s_n1, X_n1 = one_step_KZ_g_euler(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X)
+    if sde_model=='energy':
+        E_n1, Omega_n1, s_n1, X_n1 = energy_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X)
         return spatial_kernel_vectorized(X_n1, nodes_array), E_n1, Omega_n1, s_n1, X_n1
-    elif method=='V':
-        E_n1, Omega_n1, s_n1, X_n1, Y_n1 = one_step_V_g_euler(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y)
+    elif sde_model=='track_length':
+        E_n1, Omega_n1, s_n1, X_n1, Y_n1 = track_length_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y)
         constant = (-E_n1+E)/h
         return constant * spatial_kernel_vectorized(X_n1, nodes_array), E_n1, Omega_n1, s_n1, X_n1, Y_n1
 
-def KZ_one_path_dose_contribution(method, brownian_paths, setup_tuple):
+def energy_one_path_dose_contribution(sde_model, brownian_paths, setup_tuple):
     """
     Estimates the dose due to one proton path using a Gaussian smoothing kernel, not truncated.
     Assumes a composite trapezium rule is used for path integral approximation.  
     
     Inputs:
-        method = "KZ" or "V" to denote which scheme we are using
+        sde_model = "energy" or "track_length" to denote which scheme we are using
         brownian paths = dB1 and dB2 (2D/3D), MUST BE BROWNIAN not standard normal 
 
     Returns: 
@@ -102,8 +103,8 @@ def KZ_one_path_dose_contribution(method, brownian_paths, setup_tuple):
     dose_contribution = np.zeros(dose_shape)
     s, X, Omega, E, Y, h, coeff_prefactor, num_steps = setup_tuple
     dB1, dB2_3D = brownian_paths
-    if method != "KZ": 
-        raise ValueError("must run KZ dose contribution with method KZ.")
+    if sde_model != "energy": 
+        raise ValueError("must run energy dose contribution with sde_model energy.")
     if dose_method != 'SK':
         raise ValueError("must not run dose contribution functions if dose_method not SK.")
     current_step = 0
@@ -136,13 +137,13 @@ def KZ_one_path_dose_contribution(method, brownian_paths, setup_tuple):
 
     return dose_contribution
     
-def V_one_path_dose_contribution(method, rng, level):
+def track_len_one_path_dose_contribution(sde_model, rng, level):
     """
     Estimates the dose due to one proton path using a Gaussian smoothing kernel, not truncated.
     Assumes a composite trapezium rule is used for path integral approximation.  
     
     Inputs:
-        method = "KZ" or "V" to denote which scheme we are using
+        sde_model = "energy" or "track_length" to denote which scheme we are using
 
     Returns: 
         dose_contribution, np.ndarray, shape according to the number of nodes 
@@ -153,8 +154,8 @@ def V_one_path_dose_contribution(method, rng, level):
     coeff = np.sqrt(2*EPS_0)
     initial_constant = stopping_power(E) #For the comp trap
     sqrt = np.sqrt(abs(h)) 
-    if method != "V": 
-        raise ValueError("must run V dose contribution with method V.")
+    if sde_model != "track_length": 
+        raise ValueError("must run track_length dose contribution with sde_model track_length.")
     if dose_method != 'SK':
         raise ValueError("must not run dose contribution functions if dose_method not SK.")
     

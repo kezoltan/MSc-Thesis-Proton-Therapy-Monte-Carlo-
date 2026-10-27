@@ -2,11 +2,49 @@
 import os
 import numpy as np
 from math import ceil, prod
+import warnings 
 
 #Units:
 #length = cm 
 #mass = g
 #Beam axis: x
+
+#=====================================================================================
+#------------KEY PARAMETERS-----------------------------------------------------------
+#=====================================================================================
+
+file_path = "/tmp/CHANGE_THIS" #### SET AS USER
+SPATIAL_DIM = 2 # 2 or 3
+sampling_type= "mlmc" # "mc" or "mlmc"
+sde_model = "energy" # "energy" or "track_length"
+dose_method = "SF" # "SF" or "SK" for (shape function or spatial kernel)
+
+#-----------MC PARAMETERS-----------------------
+
+SIMS_PER_CPU = 1600 #1600
+
+#-----------MLMC PARAMETERS---------------------
+
+MLMC_LEVEL_OFFSET = 5 #5-9
+L_conv_test = 8 #runtime caution if finest level exceeds 12
+N_conv_test = 200000 #minimum: 50k, ideal: >=.100K (runtime caution)
+ 
+Lmax = 17 #max mlmc level before termination 
+Eps = np.array([0.2, 0.1]) #np.array([0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2])
+N0 = 50000 #need large enough to get a good variance estimate
+
+#=====================================================================================
+#-------------------------------------------------------------------------------------
+#=====================================================================================
+
+if dose_method=='SF':
+    theta = 0.25 #proportion allocated to discretisation error 
+if dose_method=='SK':
+    theta=0.5
+
+#Fixed parameters:
+base = 2 
+Lmin = 2 #min mlmc level
 
 NUM_CPUS = os.cpu_count() - 2 #Leave one free 
 E0 = 62 #MeV
@@ -20,11 +58,9 @@ def stopping_power(E, a=ALPHA, p=p):
     return 1/(a*p) * E**(1-p)
 
 RHO = 1 #water is 1gcm^{-3}  
-if RHO <= 0:
-    raise ValueError("density must be positive.")
-l=0.05 #0.02 - this is what V uses for 200k sims
-l_reciprocal=1/l
-SIGMA = l*3/4 #tried making this l/4, definitely too small, images were very rough, i think l/2 is also a bit small, l looks quite bit to me
+side_len=0.05 #0.02 - this is what track_length uses for 200k sims
+len_reciprocal=1/side_len
+SIGMA = side_len*3/4 #tried making this side_len/4, definitely too small, images were very rough, i think side_len/2 is also a bit small, side_len looks quite bit to me
 
 def choose_kappa():
     """
@@ -41,39 +77,6 @@ def choose_kappa():
 master_seed_seq = np.random.SeedSequence(42)
 
 #=====================================================================================
-#------------KEY PARAMETERS-----------------------------------------------------------
-#=====================================================================================
-
-file_path = "/tmp/CHANGE_THIS" #### SET AS USER
-
-sampling_type= "mlmc" #"mc" or "mlmc"
-SPATIAL_DIM = 2 #2 or 3
-method = "KZ"
-dose_method="SF" #"SF" or "SK"
-
-#-----------MC PARAMETERS-----------------------
-
-SIMS_PER_CPU = 1600 #1600
-
-#-----------MLMC PARAMETERS---------------------
-
-MLMC_LEVEL_OFFSET = 5 #5-9
-L_conv_test = 17 #8 #runtime caution if finest level exceeds 12
-N_conv_test = 100 #200000 #minimum: 50k, ideal: >=.100K (runtime caution)
- 
-Lmax = 17 #max mlmc level
-Eps = np.array([0.2, 0.1]) #np.array([0.6, 0.55, 0.5, 0.45, 0.4, 0.35, 0.3, 0.25, 0.2]) #Please keep best acc at the right end, np.array([2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3])
-N0 = 50000 #need large enough to get a good variance estimate
-if dose_method=='SF':
-    theta = 0.25 #proportion allocated to discretisation error 
-if dose_method=='SK':
-    theta=0.5
-
-#Fixed parameters:
-base = 2 
-Lmin = 2 #min mlmc level
-
-#=====================================================================================
 #-------------------------------------------------------------------------------------
 #=====================================================================================
 
@@ -86,7 +89,7 @@ range_allowance = 1.6
 y_scaling = 1.0
 origin=np.array([0.0, 0.0, 0.0])
 
-width_sdev_factor = 3 #how many times l should the width be, also depends on E0 ideally
+width_sdev_factor = 3 #how many times side_len should the width be, also depends on E0 ideally
 width_spread=True
 if width_sdev_factor==0:
     width_spread=False
@@ -103,20 +106,10 @@ t1 = 1/np.sqrt(3)
 quad_nodes = [-t1, t1]
 
 KAPPA = choose_kappa()
-if dose_method not in ["SK", "SF"]:
-    raise ValueError("dose_method must be either SK (spatial kernel) or SF (sbape function).")
-if method not in ["V", "KZ"]:
-    raise ValueError("method must be 'KZ' or 'V'.")
-
-#set up title labels
-if dose_method=='SF':
-    title_seg = f"{'Bilinear' if SPATIAL_DIM==2 else 'Trilinear'} Basis Function"
-elif dose_method=='SK':
-    title_seg = "Spatial Kernel"
 
 def choose_l():
     """
-    Calculates l given the number of simulations N for the given dimension, for the FEM method.
+    Calculates side_len given the number of simulations N for the given dimension, for the FEM method.
     """
     N = SIMS_PER_CPU * NUM_CPUS
     factor = 0.8 #can play with this, have learnt 0.5 is too small
@@ -136,11 +129,11 @@ def calculate_R0():
 Omega0=choose_Omega_0()
 RO=calculate_R0()
 
-def nodes(l):
+def nodes(side_len):
     """
     Defines the length dimensions of the cuboid D and gives the positions of all nodes in D 
     The origin is placed at the corner of the face of domain D where the beam originates, and is such that the coords within D are all positive 
-    ALL nodes coordinates must be exactly divisible by the side length l
+    ALL nodes coordinates must be exactly divisible by the side length side_len
 
     Inputs: 
             range_allowance, float in (1, 2): R0*range_allowance \approx length of D along beam axis 
@@ -158,17 +151,17 @@ def nodes(l):
     lower_x_bd = -9 #needs to be large enough to get hit w ~0% chance
                     #if varying parameters -- this will need to be adjusted
     
-    #Make sure the lengths are divisible by l
-    beam_axis_depth = ceil(range_upper / l)*l 
-    height = ceil(range_upper*y_scaling / l)*l #height from the origin lower corner   
+    #Make sure the lengths are divisible by side_len
+    beam_axis_depth = ceil(range_upper / side_len)*side_len 
+    height = ceil(range_upper*y_scaling / side_len)*side_len #height from the origin lower corner   
     
     #Calculate the total number of nodes in each direction 
-    nx = int(round(beam_axis_depth / l)) + 1
-    ny = int(round(height / l)) + 1 
+    nx = int(round(beam_axis_depth / side_len)) + 1
+    ny = int(round(height / side_len)) + 1 
     
-    #Turn these into node positions with l
-    xs = np.arange(lower_x_bd, nx) * l
-    ys = np.arange(ny) * l  
+    #Turn these into node positions with side_len
+    xs = np.arange(lower_x_bd, nx) * side_len
+    ys = np.arange(ny) * side_len  
     
     if SPATIAL_DIM==3:
         zs = ys #the y and z directions are the same 
@@ -181,16 +174,16 @@ def nodes(l):
         raise ValueError("Dimension (dim) must be either 2D or 3D.")
 
 if SPATIAL_DIM==3:
-    X_meshgrid, Y_meshgrid, Z_meshgrid = nodes(l)
+    X_meshgrid, Y_meshgrid, Z_meshgrid = nodes(side_len)
     meshgrid = X_meshgrid, Y_meshgrid, Z_meshgrid
     nodes_array = np.stack([X_meshgrid.ravel(), Y_meshgrid.ravel(), Z_meshgrid.ravel()], axis=-1)
 if SPATIAL_DIM==2:
-    X_meshgrid, Y_meshgrid= nodes(l)
+    X_meshgrid, Y_meshgrid= nodes(side_len)
     meshgrid = X_meshgrid, Y_meshgrid
     nodes_array = np.stack([X_meshgrid.ravel(), Y_meshgrid.ravel()], axis=-1)
 
 #Store this once
-node_lookup = {tuple(np.rint(node / l).astype(int)): i for i, node in enumerate(nodes_array)}
+node_lookup = {tuple(np.rint(node / side_len).astype(int)): i for i, node in enumerate(nodes_array)}
 
 def choose_X0(meshgrid):
     """
@@ -233,11 +226,41 @@ def choose_X0(meshgrid):
     return X0, domain_lower_bounds, domain_upper_bounds
 
 X0_mean, domain_lower_bounds, domain_upper_bounds = choose_X0(meshgrid)
-
 dose_shape = prod(X_meshgrid.shape) #More accurately this is a length but it works as a 1D shape
 max_steps = sum(X_meshgrid.shape) #All boundaries, just needs to be large enough but relatively small
 
+def verify_params():
+    """
+    Check that all parameters assigned in this file are valid and raise some potential warnings.
+    """
+    if RHO <= 0:
+        raise ValueError("medium density RHO must be positive.")
+    if sde_model not in ['energy', 'track_length']:
+        raise ValueError("sde_model must be either energy or track_length, depending on the independent variable required.")
+    if dose_method not in ['SF', 'SK']:
+        raise ValueError("dose_method must be either SF or SK, for dose computation methods shape function or spatial kernel, respectively.")
+    if sampling_type not in ['mc', 'mlmc']:
+        raise ValueError("sampling_type must be either mc or mlmc for Monte Carlo and Multilevel Monte Carlo sampling, respectively.")
+    if SPATIAL_DIM not in [2, 3]:
+        raise ValueError("spatial dimension must be either 2 or 3.")
+    if theta>1 or theta<0:
+        raise ValueError("mlmc error weighting parameter theta must be in interval [0,1].")    
+    if EMIN > 1:
+        warnings.warn(f"EMIN of {EMIN} may be too large.", UserWarning)
+    if min(Eps) < 0.2 or L_conv_test + MLMC_LEVEL_OFFSET >= 16:
+        warnings.warn(f"mlmc likely to be slow under chosen parameterisation.", RuntimeWarning)
+    if E0 <= 0:
+        raise ValueError("initial energy E0 must be positive.")
+    if not(50 <= E0 <= 250):
+        warnings.warn(f"E0 of {E0} is outside therapeutic energy range.", UserWarning)
+    if N0 < 20000:
+        warnings.warn(f"N0 of {N0} may be too small to achieve suitable variable estimates.")
+verify_params()
 
-
+#set up title labels
+if dose_method=='SF':
+    title_seg = f"{'Bilinear' if SPATIAL_DIM==2 else 'Trilinear'} Basis Function"
+elif dose_method=='SK':
+    title_seg = "Spatial Kernel"
 
 

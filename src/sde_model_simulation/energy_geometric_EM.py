@@ -6,15 +6,15 @@ from doseparams import *
 from dosesetup import *
 from math import log
 
-def n_KZ_path_length_diffusion(E, a=ALPHA, p=p):
+def track_length_diff_coeff(E, a=ALPHA, p=p):
     return a*p*np.sqrt(KAPPA)*E**(p-0.5)
 
-def n_KZ_angular_diffusion(E, Omega, EPS_0=EPS_0, a=ALPHA, p=p):
-    return np.sqrt(2*EPS_0 * a*p)*E**(p/2 - 0.5) * (np.eye(SPATIAL_DIM) - np.outer(Omega, Omega))
+# def n_KZ_angular_diffusion(E, Omega, EPS_0=EPS_0, a=ALPHA, p=p):
+#     return np.sqrt(2*EPS_0 * a*p)*E**(p/2 - 0.5) * (np.eye(SPATIAL_DIM) - np.outer(Omega, Omega))
 
 # Run one step of the scheme
 
-def one_step_KZ_g_euler(h, dB1_onestep, dB2_3D_onestep, coeff_prefactor, E_n, Omega_n, s_n, X_n):
+def energy_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, coeff_prefactor, E_n, Omega_n, s_n, X_n):
     """
     Runs the n+1th step of the geometric Euler scheme for the energy model 
     """
@@ -26,7 +26,7 @@ def one_step_KZ_g_euler(h, dB1_onestep, dB2_3D_onestep, coeff_prefactor, E_n, Om
     #Geometric Scheme
     y = coeff * other_noise
     Omega_n1 = exponential_map_sphere(Omega_n, y)
-    s_n1 = s_n - S_inv * h + n_KZ_path_length_diffusion(E_n) * dB1_onestep
+    s_n1 = s_n - S_inv * h + track_length_diff_coeff(E_n) * dB1_onestep
     path_travelled = s_n1 - s_n  
     X_n1 = X_n + Omega_n * (path_travelled) #Omega n or n1?
     E_n1 = E_n + h
@@ -38,7 +38,7 @@ def one_step_KZ_g_euler(h, dB1_onestep, dB2_3D_onestep, coeff_prefactor, E_n, Om
 
 def sample_gauss_beam(rng, s0=0):
     s = float(s0)
-    X = sample_initial_position(meshgrid, rng, l)
+    X = sample_initial_position(meshgrid, rng, side_len)
     Omega = Omega0
     E = initial_energy_spread() 
     Y = log(E)

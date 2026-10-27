@@ -6,8 +6,7 @@ from datetime import datetime
 from _driver_mlmcv import mlmcv  # Vectorized controller
 from src.doseparams import dose_shape, nodes_array, MLMC_LEVEL_OFFSET
 import matplotlib.pyplot as plt
-from src.doseparams import base, T, dose_method, L_conv_test, N_conv_test, file_path, SPATIAL_DIM, X_meshgrid, Y_meshgrid, dose_shape, nodes_array, l_reciprocal, EPS_0, KAPPA, method, E0, SIGMA, sampling_type, theta, width_sdev_factor, EMIN, title_seg #do not import l side length 
-from src.doseparams import l as side_len
+from src.doseparams import *
 from mlmc_test_plot import *
 
 def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
@@ -40,7 +39,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     start_time = time.perf_counter()
 
     #Create a plot folder:
-    plot_folder = f"mlmc_test_{dose_method}_{method}_N_{N_conv_test}_lvls_{MLMC_LEVEL_OFFSET}_{L_conv_test+MLMC_LEVEL_OFFSET}_l_{side_len}_E0_{E0}_KAPPA_{KAPPA}_EPS0_{EPS_0}_SIGMA_{SIGMA:.3f}_shape_{dose_shape}"
+    plot_folder = f"mlmc_test_{dose_method}_{sde_model}_N_{N_conv_test}_lvls_{MLMC_LEVEL_OFFSET}_{L_conv_test+MLMC_LEVEL_OFFSET}_side_len_{side_len}_E0_{E0}_KAPPA_{KAPPA}_EPS0_{EPS_0}_SIGMA_{SIGMA:.3f}_shape_{dose_shape}"
     folder_path = os.path.join(file_path, plot_folder)
     os.makedirs(folder_path, exist_ok=True)
 
@@ -207,12 +206,6 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     beta_fit = np.polyfit(step_levels[valid], np.log2(V_l[valid]), 1)
     beta_global = -beta_fit[0]
 
-    #set up title labels
-    if dose_method=='SF':
-        title_seg = f"{'Bilinear' if SPATIAL_DIM==2 else 'Trilinear'} Basis Function"
-    elif dose_method=='SK':
-        title_seg = "Spatial Kernel"
-
     def plot_global_beta():
         l_ticks = np.arange(0, L + 1)
 
@@ -249,7 +242,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     plot_negative_alpha_beta_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path)
     plot_negative_estimator_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path)
 
-    npz_save_path = os.path.join(folder_path,f"mlmc_test_data_{dose_method}_N_{N}_L_{L}_offset_{MLMC_LEVEL_OFFSET}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_sigma_{SIGMA:.2f}_kappa_{KAPPA}_eps0_{EPS_0}_theta_{theta}_width_sdev_{width_sdev_factor:.2f}_EMIN_{EMIN}_l_{side_len}.npz")
+    npz_save_path = os.path.join(folder_path,f"mlmc_test_data_{dose_method}_N_{N}_L_{L}_offset_{MLMC_LEVEL_OFFSET}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_sigma_{SIGMA:.2f}_kappa_{KAPPA}_eps0_{EPS_0}_theta_{theta}_width_sdev_{width_sdev_factor:.2f}_EMIN_{EMIN}_side_len_{side_len}.npz")
     np.savez(npz_save_path,nodes_array=nodes_array,mean_diff=del1,mean_fine=del2, var_diff=var1, var_fine=var2, kurtosis_diff=kur1,
             consistency_check=chk1,alpha=alpha,beta=beta,gamma=gamma,cost=cost,N=N,L=L,Lmin=Lmin,Lmax=Lmax,MLMC_LEVEL_OFFSET=MLMC_LEVEL_OFFSET,base=base, beta_global=beta_global)
     print(f"MLMC test data saved to {npz_save_path}.")
@@ -300,7 +293,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         printf(fp, '%5d  %-20s  %11.4e  %11.4e\n', k, nodes_array[k], alpha[k], beta[k])
 
     #Create a new folder for the mlmc data associated to this run - folder name must contain all key params 
-    save_folder = f"{sampling_type}_{dose_method}_{method}_eps_{min(Eps)}_{max(Eps)}_offset_{MLMC_LEVEL_OFFSET}_l_{side_len}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_sigma_{SIGMA:.2f}_kappa_{KAPPA}_eps0_{EPS_0}_theta_{theta}_width_sdev_{width_sdev_factor:.2f}_EMIN_{EMIN}"
+    save_folder = f"{sampling_type}_{dose_method}_{sde_model}_eps_{min(Eps)}_{max(Eps)}_offset_{MLMC_LEVEL_OFFSET}_side_len_{side_len}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_sigma_{SIGMA:.2f}_kappa_{KAPPA}_eps0_{EPS_0}_theta_{theta}_width_sdev_{width_sdev_factor:.2f}_EMIN_{EMIN}"
     folder_path = os.path.join(file_path, save_folder)
     os.makedirs(folder_path, exist_ok=True)
 
@@ -352,7 +345,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         step_levels = np.arange(MLMC_LEVEL_OFFSET, max_num_lvls + MLMC_LEVEL_OFFSET)
         sim_num = np.sum(Nl)
         path_3D=os.path.join(folder_path, f"{sampling_type}_{dose_method}_eps_{eps}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}_Nfull_{np.sum(Nl)}.npz")
-        np.savez(path_3D, dose_expected=mlmc_dose, hybrid_dose_expected=hybrid_dose, accuracy=eps, Nl = Nl, Cl = Cl, std_mlmc_cost=std_mlmc_cost, std_cost=std_cost, step_levels=step_levels, sim_num=sim_num, dose_method=dose_method, method=method, SPATIAL_DIM=SPATIAL_DIM, l=side_len, X_meshgrid=X_meshgrid, Y_meshgrid=Y_meshgrid, title_seg=title_seg, folder_path=folder_path, sigma=SIGMA, dose_shape=dose_shape, KAPPA=KAPPA, EPS_0=EPS_0, sampling_type=sampling_type, num_neg_nodes=num_neg_nodes, mc_replacements=mc_replacements)
+        np.savez(path_3D, dose_expected=mlmc_dose, hybrid_dose_expected=hybrid_dose, accuracy=eps, Nl = Nl, Cl = Cl, std_mlmc_cost=std_mlmc_cost, std_cost=std_cost, step_levels=step_levels, sim_num=sim_num, dose_method=dose_method, sde_model=sde_model, SPATIAL_DIM=SPATIAL_DIM, side_len=side_len, X_meshgrid=X_meshgrid, Y_meshgrid=Y_meshgrid, title_seg=title_seg, folder_path=folder_path, sigma=SIGMA, dose_shape=dose_shape, KAPPA=KAPPA, EPS_0=EPS_0, sampling_type=sampling_type, num_neg_nodes=num_neg_nodes, mc_replacements=mc_replacements)
         
         #We already checked that this is not a duplicate
         f = open(paths_file, "a")

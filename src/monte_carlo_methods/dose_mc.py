@@ -6,11 +6,11 @@ import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 from numpy.random import default_rng
 from doseparams import *
-from dose_computation.dosemap1_shape_function_geoEM import V_one_path_load_contribution, KZ_one_path_load_contribution
-from dose_computation.dosemap2_spatial_kernel_geoEM import V_one_path_dose_contribution, KZ_one_path_dose_contribution
-from dosesetup import full_energy_model_setup
+from dose_computation.dosemap1_shape_function_geoEM import track_len_one_path_load_contribution, energy_one_path_load_contribution
+from dose_computation.dosemap2_spatial_kernel_geoEM import track_len_one_path_dose_contribution, energy_one_path_dose_contribution
+from src.sde_model_simulation.energy_geometric_EM import full_energy_model_setup
 
-def mc_worker(method, dose_method, path_seed_chunk, level):
+def mc_worker(sde_model, dose_method, path_seed_chunk, level):
     """
     This is the worker function telling each CPU what to do 
     Each CPU will run SIMS_PER_CPU independent simulations, and add up the load vectors.
@@ -19,32 +19,32 @@ def mc_worker(method, dose_method, path_seed_chunk, level):
     if dose_method=="SF":
         for path_seed in path_seed_chunk:
             rng=default_rng(path_seed)
-            if method=='KZ': #Generate full brownian paths here
+            if sde_model=='energy': #Generate full brownian paths here
                 setup_tuple, (dZ1, dZ2_3D) = full_energy_model_setup(level, rng)
                 _,_,_,_,_, h,_,_ = setup_tuple
                 sqrt_h = np.sqrt(abs(h))
-                contribution = KZ_one_path_load_contribution(method, (sqrt_h * dZ1,sqrt_h * dZ2_3D), setup_tuple)
+                contribution = energy_one_path_load_contribution(sde_model, (sqrt_h * dZ1,sqrt_h * dZ2_3D), setup_tuple)
                 wc += contribution
 
-            elif method =='V':
-                contribution = V_one_path_load_contribution(method, rng, level)
+            elif sde_model =='track_length':
+                contribution = track_len_one_path_load_contribution(sde_model, rng, level)
                 wc += contribution
     if dose_method=="SK":
         for path_seed in path_seed_chunk:
             rng=default_rng(path_seed)
-            if method == 'KZ':
+            if sde_model == 'energy':
                 setup_tuple, (dZ1, dZ2_3D) = full_energy_model_setup(level, rng)
                 _,_,_,_,_, h,_,_ = setup_tuple
                 sqrt_h = np.sqrt(abs(h))
-                contribution = KZ_one_path_dose_contribution(method, (sqrt_h * dZ1, sqrt_h * dZ2_3D), setup_tuple)
+                contribution = energy_one_path_dose_contribution(sde_model, (sqrt_h * dZ1, sqrt_h * dZ2_3D), setup_tuple)
                 wc += contribution
 
-            if method == 'V':
-                contribution = V_one_path_dose_contribution(method, rng, level)
+            if sde_model == 'track_length':
+                contribution = track_len_one_path_dose_contribution(sde_model, rng, level)
                 wc += contribution
     return wc 
 
-def mc_parallel(method, level, SIMS_PER_CPU = SIMS_PER_CPU, NUM_CPUS = NUM_CPUS):
+def mc_parallel(sde_model, level, SIMS_PER_CPU = SIMS_PER_CPU, NUM_CPUS = NUM_CPUS):
     """
     Retrieves the load vector sums from all CPUs, adds them up, takes expectation.
     Returns the coefficients c_i for the function approximation. 
@@ -58,7 +58,7 @@ def mc_parallel(method, level, SIMS_PER_CPU = SIMS_PER_CPU, NUM_CPUS = NUM_CPUS)
             for i in range(NUM_CPUS)]
 
     with ProcessPoolExecutor(max_workers=NUM_CPUS) as ex: 
-        for wc in ex.map(mc_worker, [method]*NUM_CPUS, [dose_method]*NUM_CPUS, path_seed_chunks, [level]*NUM_CPUS):
+        for wc in ex.map(mc_worker, [sde_model]*NUM_CPUS, [dose_method]*NUM_CPUS, path_seed_chunks, [level]*NUM_CPUS):
             if total_out is None: 
                 total_out = np.array(wc, copy=True)
             else:

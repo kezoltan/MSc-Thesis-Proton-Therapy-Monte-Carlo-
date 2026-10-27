@@ -4,7 +4,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt 
-from matplotlib.colors import PowerNorm 
 from dosesetup import *
 from doseparams import NUM_CPUS, Y_meshgrid #subject to change -- should save ymeshgrid
 from math import ceil
@@ -15,7 +14,7 @@ from concurrent.futures import ProcessPoolExecutor
 #edit-- this code is inefficient + needs updating, parallelisation could be improved
 
 #The number of interpolation points for the SF method, careful of increasing this 
-num_points = ceil(l_reciprocal * max(Y_meshgrid.flatten())*2.5)  
+num_points = ceil(len_reciprocal * max(Y_meshgrid.flatten())*2.5)  
 
 def dose_gy_convert(dose_expected):
     """
@@ -24,7 +23,7 @@ def dose_gy_convert(dose_expected):
     if type(dose_expected) != np.ndarray:
         raise TypeError("dose_expected must be an array.")
     giga_proton=1e9
-    constant = 1.6*1e-10*giga_proton #Directly from V's code 
+    constant = 1.6*1e-10*giga_proton #Directly from track_length's code 
     return dose_expected * constant
 
 #Function to help plot a Bragg curve:
@@ -49,16 +48,16 @@ def depth_dose_beam_axis(fine_dose_field, x_vals, y_vals, relative=True):
 #Vectorised Phi for SF method:
 
 def evaluate_phi(args):
-    X, coeffs, node_coords, l = args
-    phis = Phi_vectorised(l, X, node_coords)
+    X, coeffs, node_coords, side_len = args
+    phis = Phi_vectorised(side_len, X, node_coords)
     return np.dot(coeffs, phis)
 
-def compute_U(Xg, Yg, coeffs, node_coords, l, max_workers=None):
+def compute_U(Xg, Yg, coeffs, node_coords, side_len, max_workers=None):
     if max_workers is None:
         max_workers = ceil(NUM_CPUS / 2)
     
     points = [np.array([Xg[i, j], Yg[i, j]], dtype=float) for i in range(Xg.shape[0]) for j in range(Xg.shape[1])]
-    args = [(X, coeffs, node_coords, l) for X in points]
+    args = [(X, coeffs, node_coords, side_len) for X in points]
 
     #edit: Parallelisation may not be needed 
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -77,9 +76,9 @@ def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
     data = np.load(full_file_path, allow_pickle=True)
     dose = data["dose_expected"]
     sim_num = data["sim_num"]
-    method = data["method"]
+    sde_model = data["sde_model"]
     dose_method = data["dose_method"]
-    l = data["l"]
+    side_len = data["side_len"]
     X_meshgrid = data["X_meshgrid"]
     #Y_meshgrid = data["Y_meshgrid"]
     #title_seg = data["title_seg"]
@@ -119,14 +118,14 @@ def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
         x_vals = np.linspace(X_MIN, X_MAX, n_points)
         y_vals = np.linspace(Y_MIN, Y_MAX, n_points)
         Xg, Yg = np.meshgrid(x_vals, y_vals, indexing="ij")
-        U = compute_U(Xg, Yg, dose, node_coords, l)
+        U = compute_U(Xg, Yg, dose, node_coords, side_len)
         #Convert to Grays + store in 2D
         fine_dose_field = np.asarray(dose_gy_convert(U), dtype=float)
         x_curve, depth_dose_curve, y_beam = depth_dose_beam_axis(fine_dose_field, x_vals, y_vals, sampling_type)
         plot_X = Xg
         plot_Y = Yg
         if sampling_type=='mlmc' and hybrid: #store the hybrid data + plot too
-            U_hybrid=compute_U(Xg, Yg, hybrid_dose, node_coords, l)
+            U_hybrid=compute_U(Xg, Yg, hybrid_dose, node_coords, side_len)
             hybrid_fine_dose_field = np.asarray(dose_gy_convert(U_hybrid), dtype=float)
             hybrid_x_curve, hybrid_depth_dose_curve, y_beam = depth_dose_beam_axis(hybrid_fine_dose_field, x_vals, y_vals)
 
@@ -162,7 +161,7 @@ def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
         # metadata
         "sampling_type": sampling_type,
         "sim_num": sim_num,
-        "method": method,
+        "sde_model": sde_model,
         "dose_method": dose_method,
         "dose_title": dose_title,
 
@@ -221,7 +220,7 @@ def dose_plot_2D(path_3D_list, hybrid=False):
         plot_Y = plot_data["plot_Y"]
         sampling_type = plot_data["sampling_type"]
         sim_num = plot_data["sim_num"]
-        method = plot_data["method"]
+        sde_model = plot_data["sde_model"]
         dose_title = plot_data["dose_title"]
         name = plot_data["name"]
         y_beam = plot_data["y_beam"]
@@ -267,9 +266,9 @@ def dose_plot_2D(path_3D_list, hybrid=False):
         accuracy = "" if sampling_type=='mc' else f"RMSE {eps:.2f}, "
         step_lvls = "" if sampling_type=='mc' else f", L={L_final}"
 
-        if method == "V":
+        if sde_model == "track_length":
             title = "Track Length Model"
-        elif method == "KZ":
+        elif sde_model == "energy":
             title = "Energy Model"
         #Dose map
         if sampling_type=="mc":
@@ -335,14 +334,14 @@ def dose_plot_2D(path_3D_list, hybrid=False):
     return fine_dose_field, x_curve, depth_dose_curve, file_save_path
 
 #Needs update to combine this with the above, not implemented 
-def dose_plot_3D(method, dose_method, path_3D, n_points=num_points, av_width=0.1, curve_factor=8):
+def dose_plot_3D(sde_model, dose_method, path_3D, n_points=num_points, av_width=0.1, curve_factor=8):
     raise NotImplementedError("dose_plot_3D is incomplete and not vectorised, please edit before use.")
     
     if SPATIAL_DIM != 3:
         raise ValueError("dose_plot_3D requires SPATIAL_DIM == 3.")
-    if method == "V":
+    if sde_model == "track_length":
         title = "Track Length Model"
-    elif method == "KZ":
+    elif sde_model == "energy":
         title = "Energy Model"
 
     grid_shape = X_meshgrid.shape
@@ -377,7 +376,7 @@ def dose_plot_3D(method, dose_method, path_3D, n_points=num_points, av_width=0.1
         y_vals = np.linspace(Y_MIN, Y_MAX, n_points)
         Xg, Yg = np.meshgrid(x_vals, y_vals, indexing="ij")
 
-        U = compute_U(Xg, Yg, coeffs, node_coords, l, n_points)
+        U = compute_U(Xg, Yg, coeffs, node_coords, side_len, n_points)
 
         #U = np.zeros_like(Xg, dtype=float)
         #for i in range(n_points):
@@ -385,7 +384,7 @@ def dose_plot_3D(method, dose_method, path_3D, n_points=num_points, av_width=0.1
         #        X_eval = np.array([Xg[i, j], Yg[i, j], Z_BEAM], dtype=float)
         #        val = 0.0
         #        for c, node in zip(coeffs, node_coords):
-        #            val += c * Phi(l, X_eval, node)
+        #            val += c * Phi(side_len, X_eval, node)
         #        U[i, j] = val
 
         fine_dose_field = np.asarray(dose_gy_convert(U), dtype=float)
@@ -406,7 +405,7 @@ def dose_plot_3D(method, dose_method, path_3D, n_points=num_points, av_width=0.1
                 X_eval = np.array([x, y, Z_BEAM], dtype=float)
                 val = 0.0
                 for c, node in zip(coeffs, node_coords):
-                    val += c * Phi(l, X_eval, node)
+                    val += c * Phi(side_len, X_eval, node)
                 dose_across_y[iy] = val
             dose_curve_raw[ix] = np.mean(dose_across_y)
 

@@ -1,6 +1,5 @@
 import numpy as np
-from src.doseparams import MLMC_LEVEL_OFFSET, dose_shape, nodes_array, Lmin, Lmax, N0, Eps, X_meshgrid, Y_meshgrid, SIGMA, SPATIAL_DIM, dose_shape, dose_method, method, sampling_type, E0, N_conv_test, L_conv_test, file_path, theta
-from src.doseparams import l as side_len
+from src.doseparams import *
 from src.monte_carlo_methods.dose_mlmc import mlmc_parallel as mlmc_parallel_l
 from src.dosesetup import load_mass_matrix
 from math import ceil 
@@ -216,8 +215,8 @@ if __name__ == "__main__":
     
     #We save one for the doseplot function separately
     sim_num = np.sum(Nl)
-    path_3D = os.path.join(folder_path, f"notest_{sampling_type}_{dose_method}_{method}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_l_{side_len:.3f}_eps_{eps}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}_sigma_{SIGMA:.3f}.npz") 
-    np.savez(path_3D, dose_expected=mlmc_dose, hybrid_dose_expected=hybrid_dose, accuracy=eps, Nl = Nl, Cl = Cl, step_levels=step_levels, sim_num=sim_num, dose_method=dose_method, SPATIAL_DIM=SPATIAL_DIM, l=side_len, X_meshgrid = X_meshgrid, title_seg=title_seg, folder_path=folder_path, sigma=SIGMA)
+    path_3D = os.path.join(folder_path, f"notest_{sampling_type}_{dose_method}_{sde_model}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_l_{side_len:.3f}_eps_{eps}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}_sigma_{SIGMA:.3f}.npz") 
+    np.savez(path_3D, dose_expected=mlmc_dose, hybrid_dose_expected=hybrid_dose, accuracy=eps, Nl = Nl, Cl = Cl, step_levels=step_levels, sim_num=sim_num, dose_method=dose_method, SPATIAL_DIM=SPATIAL_DIM, side_len=side_len, X_meshgrid = X_meshgrid, title_seg=title_seg, folder_path=folder_path, sigma=SIGMA)
     print(f"MLMC data saved at {path_3D}")
     print("Now plotting...")
     if SPATIAL_DIM==2:

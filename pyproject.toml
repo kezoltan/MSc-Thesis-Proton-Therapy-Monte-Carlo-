@@ -34,7 +34,7 @@ select = ["E", "F", "W", "B"]
 convention = "numpy"
 
 [tool.pytest.ini_options]
-testpaths = ["test"]
+testpaths = ["test/unit_tests"]
 pythonpath = ["."]
 
 [tool.coverage.run]

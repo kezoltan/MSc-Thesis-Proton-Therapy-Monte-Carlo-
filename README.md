@@ -5,7 +5,7 @@ This repository contains the code used to generate results in the following mast
 
 **Thesis Title:** Stochastic Modelling of Proton Transport and Spatial Therapeutic Dose Prediction with Multilevel Monte Carlo (MLMC)  
 **Author:** Katie Zoltan  
-**Institution:** University of Oxford 
+**Institution:** University of Oxford
 **Research Group:** Numerical Analysis Group, Mathematical Institute  
 **Supervisor(s):** Professor Mike Giles FRS  
 **Academic Year:** 2025-26

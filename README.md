@@ -1,5 +1,5 @@
 
-# Applications of MLMC in Proton Beam Therapy (PBT)
+# MLMC in Proton Beam Therapy (PBT)
 
 This repository contains the code used to generate results in the following master's thesis:
 
@@ -27,11 +27,11 @@ Overall, the main contribution of this work was that, using the new simulation a
 
 ### HPC Hardware
 
-Due to the high objective computational complexity of this task, access to a High-Performance Computing (HPC) cluster is recommended for running large-scale experiments. For example, running MLMC with root mean-square-error $\eps < 10^{-1}$ is likely to require at least $\mathcal{O}(10^{7})$ proton simulations in 2D, based on our use of this code. In 3D, we expect the complexity to worsen significantly for all methods with the current setup. 
+Due to the high objective computational complexity of this task, access to a High-Performance Computing (HPC) cluster is recommended for running large-scale experiments. For example, running MLMC with root mean-square-error $\epsilon < 10^{-1}$ is likely to require at least $\mathcal{O}(10^{7})$ proton simulations in 2D, based on our use of this code. In 3D, we expect the complexity to worsen significantly for all methods with the current setup. 
 
-The experiments presented in this thesis were performed using the an HPC cluster owned by the University of Oxford. 128 CPU cores were used over which proton simulations were run in parallel. No job scheduler was used, and Linux OS was used. One full dose map under the conditions described above in 2D was produced in the order of hours. Note that improving the error requirement can notably increase the runtime.   
+The experiments presented in this thesis were performed using the an HPC cluster owned by the University of Oxford. 128 CPU cores were used over which proton simulations were run in parallel. No job scheduler was used, and Linux OS was used. One full dose map under the conditions described above in 2D was produced in the order of hours. Note that improving the error requirement can notably increase the runtime. Further information about the HPC cluster can be provided upon reasonable request.  
 
-Smaller plots (e.g. large $\eps \sim \\mathcal{O}(1)$, Monte Carlo dose maps using $\mathcal{O}(10^{5})$ simulations) and unit tests may be executed locally. 
+Smaller plots (e.g. large $\epsilon \sim \\mathcal{O}(1)$, Monte Carlo dose maps using $\mathcal{O}(10^{5})$ simulations) and unit tests may be executed locally. 
 
 ### Software Requirements
 
@@ -89,7 +89,7 @@ python src/dose_main.py
 All parameters can be set inside of src/doseparams.py. We provide default parameters for most variables for the purposes of testing, however we expect to provide alternative presets (e.g. for different materials) in future. Currently, the user should pay attention to:
 
 | Core Parameter Name | Function | Suggested Default* |
-|----------|----------|
+|----------|----------|----------|
 | sde_model | Select which proton SDE is used | 'energy' |
 | dose_method | Select which dose computation technique is used | 'SF' |
 | sampling_type |  Select which Monte Carlo method is used | 'mlmc' |
@@ -126,11 +126,11 @@ DOI or journal publication does not yet exist.
 
 This project was developed by Katie Zoltan and Professor Mike Giles FRS. Our main contributors are Peiren Wang and Alice Watts.
 
-See [CONTRIBUTING] for further information.
+See ['CONTRIBUTING.md'](CONTRIBUTING.md) for further information.
 
 ## License
 
-This project is distributed under the MIT License. See [LICENSE] for details.
+This project is distributed under the MIT License. See ['LICENSE.md'](LICENSE.md) for details.
 
 ## Contact
 

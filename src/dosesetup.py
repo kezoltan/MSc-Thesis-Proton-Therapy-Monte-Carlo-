@@ -38,7 +38,7 @@ def exponential_map_sphere(Omega_n, strat_proj_brownian):
 def reciprocal_stopping_power(E, a=ALPHA, p=p): # this is the drift \(a p E^{p-1}\)
     """Calculate the drift term from the reciprocal stopping power.
 
-    The drift term is given by ``apE^(p - 1)``.
+    The drift term is given by ``apE^(p-1)``.
 
     Parameters
     ----------
@@ -57,31 +57,67 @@ def reciprocal_stopping_power(E, a=ALPHA, p=p): # this is the drift \(a p E^{p-1
     return a*p*E**(p-1)
 
 def T_energy_stragg(E, kappa = KAPPA):
+    """Calculate the energy straggling diffusion term.
+
+    The term is ``kappa * E * stopping_power(E)``.
+
+    Parameters
+    ----------
+    E : float
+        Proton energy.
+    kappa : float, optional
+        Energy straggling strength. Defaults to ``KAPPA`` from ``doseparams``.
+
+    Returns
+    -------
+    float
+        Energy straggling term evaluated at energy ``E``.
+    """
     return kappa*E*stopping_power(E)
 
 def reference_cube_mapping(side_len, center, coordinate):
-    """
-    Maps the global coordinates inside a given voxel onto the reference cube [-1, 1] 
+    """Map a global coordinate in a voxel to the reference cube ``[-1, 1]^d``.
 
-    Inputs: as numpy arrays 
-        center = the (global) center of the given voxel 
-        coordinate = the (global) coordinate that we wish to transform (i.e. could be a node or a proton position)
+    Parameters
+    ----------
+    side_len : float
+        Side length of the voxel.
+    center : numpy.ndarray, shape (d,)
+        Global coordinates of the voxel center.
+    coordinate : numpy.ndarray, shape (d,)
+        Global coordinates to map, such as a node or proton position.
 
-    Returns:
-        np.array, the transformed coordinate in [-1, 1]^3 
+    Returns
+    -------
+    numpy.ndarray, shape (d,)
+        Coordinate mapped relative to the voxel center. The voxel center maps
+        to zero and its corners map to coordinates with components ``-1`` or
+        ``1``.
     """
     return 2*(coordinate - center) / side_len
 
 def Phi(side_len, X, n_i):
-    """
-    The basis function Phi_i attached to the ith node, defined over the whole domain 
+    """Evaluate the basis function ``Phi_i`` attached to the ``i``th node.
 
-    Inputs: as numpy arrays 
-        X = np.array(x,y,z), a 2D or 3D position in space (at which Phi(ni) is evaluated)
-        n_i = 2D or 3D coordinates of the node to which Phi is attached 
+    The basis function is defined over the whole domain. ``X`` is the position
+    at which ``Phi_i`` is evaluated, and ``n_i`` is the coordinate of the node
+    to which the basis function is attached. The function is zero outside the
+    node's support. Coordinates on voxel boundaries follow the mesh convention.
 
-    Returns: t
-        The value of Phi_i at one point, X_3D 
+    Parameters
+    ----------
+    side_len : float
+        Side length of a mesh voxel.
+    X : numpy.ndarray, shape (d,)
+        2D or 3D position at which to evaluate ``Phi_i``.
+    n_i : numpy.ndarray, shape (d,)
+        2D or 3D coordinates of the node to which ``Phi_i`` is attached.
+
+    Returns
+    -------
+    float
+        Basis function value at ``X``. Returns zero when ``X`` is outside
+        the node's support.
     """
 
     if not np.all(np.abs(X - n_i) <= side_len):
@@ -111,8 +147,26 @@ def Phi(side_len, X, n_i):
     return phi
 
 def Phi_vectorised(side_len, X, nodes):
-    """
-    Receives all nodes and evaluates all corresponding Phi simultaneously at X.  
+    """Evaluate basis functions for multiple nodes at one point.
+
+    Computes the same values as calling :func:`Phi` once for each node, while
+    evaluating all supplied nodes together. Nodes outside the point's support
+    receive a value of zero. Voxel-boundary coordinates follow the same
+    convention as :func:`Phi`.
+
+    Parameters
+    ----------
+    side_len : float
+        Side length of a mesh voxel.
+    X : numpy.ndarray, shape (d,)
+        2D or 3D point at which to evaluate the basis functions.
+    nodes : numpy.ndarray, shape (n_nodes, d)
+        Coordinates of the mesh nodes whose basis functions are evaluated.
+
+    Returns
+    -------
+    numpy.ndarray, shape (n_nodes,)
+        Basis function value for each row of ``nodes``, in the same order.
     """
     X = np.asarray(X)
     nodes = np.asarray(nodes)

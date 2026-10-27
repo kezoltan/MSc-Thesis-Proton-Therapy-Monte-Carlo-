@@ -2,7 +2,7 @@
 
 Implement these cases incrementally, starting with the pure helper functions.
 """
-import numpy as np 
+import numpy as np
 from math import prod, comb, cos, sin, exp, log
 from itertools import product
 from src.doseparams import *
@@ -41,7 +41,7 @@ from src.dosesetup import (
     ],
 )
 def test_exponential_map_sphere_returns_unit_direction(omega, increment, expected):
-    # call the function that is being tested - 
+    # call the function that is being tested -
     result = exponential_map_sphere(omega, increment)
 
     # check that the expected result occured

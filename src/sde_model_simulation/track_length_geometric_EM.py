@@ -24,7 +24,7 @@ def log_energy_diff_coeff(L):
 
 def track_length_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, coeff, E_n, Omega_n, s_n, X_n, Y_n):
     """
-    Runs the n+1th step of the geometric Euler scheme for the energy model 
+    Runs the n+1th step of the geometric Euler scheme for the energy model
     """
     other_noise = dB2_3D_onestep - Omega_n * np.dot(Omega_n, dB2_3D_onestep)
 
@@ -37,4 +37,4 @@ def track_length_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, coeff, E_n, Omeg
     s_n1 = s_n + h
 
     #The outputs are now at step n+1
-    return E_n1, Omega_n1, s_n1, X_n1, Y_n1 
+    return E_n1, Omega_n1, s_n1, X_n1, Y_n1

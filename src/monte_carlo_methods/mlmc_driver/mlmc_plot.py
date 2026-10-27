@@ -152,7 +152,7 @@ def plot_alpha_beta_map(alpha, beta, folder_path):
     fig, axes = plt.subplots(1, 2, figsize=(10, 5), constrained_layout=True)
     vmin = min(np.nanmin(alpha), np.nanmin(beta))
     vmax = max(np.nanmax(alpha), np.nanmax(beta))
-    
+
     axes[0].scatter(nodes_array[:, 0],nodes_array[:, 1],c=alpha, vmin=vmin, vmax=vmax)
     axes[0].set_title(r"$\alpha$", fontsize=14)
     axes[0].set_xlabel(r"Depth $x$, cm", fontsize=12)
@@ -176,7 +176,7 @@ def plot_alpha_beta_map(alpha, beta, folder_path):
     plt.savefig(ab_save_path, dpi=300, bbox_inches="tight")
     plt.show()
 
-    #Beam axis plot showing how they vary 
+    #Beam axis plot showing how they vary
     ys = np.unique(Y_meshgrid.flatten())
     y_center = ceil(len(ys)/2)*side_len
     center_mask = np.isclose(nodes_array[:, 1], y_center)
@@ -207,14 +207,14 @@ def plot_alpha_beta_map(alpha, beta, folder_path):
 
 def plot_mlmc_test(named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path, y_coord=None):
     """
-    Produce the standard report style mlmc plots. 
-    Named nodes should be in the order you want it to come out from left to right 
+    Produce the standard report style mlmc plots.
+    Named nodes should be in the order you want it to come out from left to right
     """
     if SPATIAL_DIM!=2:
-        raise NotImplementedError(f"alpha/beta regression plots not implemented in {SPATIAL_DIM}D.")     
+        raise NotImplementedError(f"alpha/beta regression plots not implemented in {SPATIAL_DIM}D.")
 
     #Sort in increasing x
-    named_nodes.sort(key=lambda x: nodes_array[x[0]][0]) 
+    named_nodes.sort(key=lambda x: nodes_array[x[0]][0])
     nodes = [x[0] for x in named_nodes]
 
     l_ticks = np.arange(0, L + 1)
@@ -223,7 +223,7 @@ def plot_mlmc_test(named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, 
     else:
         y_coord = rf"$y$={y_coord:.2f} "
 
-    #Print the raw data into the file 
+    #Print the raw data into the file
     output_txt_path = os.path.join(folder_path, f"plot_mlmc_raw_regression_data_N_{N_conv_test}.txt")
     file_ptr = open(output_txt_path, "a")
 
@@ -254,13 +254,13 @@ def plot_mlmc_test(named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, 
     axes[3, 0].set_ylabel(r"$\log_2 variance$", fontsize=10)
     axes[4, 0].set_ylabel("Kurtosis", fontsize=10)
     axes[5, 0].set_ylabel("Consistency Check", fontsize=10)
-    
+
     for i, (node, name) in enumerate(named_nodes):
         #Show which node is being plotted + why
         name_label=f" ({name})" if name != None else ""
         axes[0, i].set_title(f"Node {nodes_array[node]}\n{name_label}")
         axes[2, i].set_title(rf"$\alpha={alpha[node]:.3f}$")
-        axes[3, i].set_title(rf"$\beta={beta[node]:.3f}$") 
+        axes[3, i].set_title(rf"$\beta={beta[node]:.3f}$")
 
         mean_data = np.abs(del1[node, 1:])
         payoff_diff = del1[node, 1:]
@@ -272,7 +272,7 @@ def plot_mlmc_test(named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, 
         mean_masks = mean_data < trunc_tol
         payoff_masks = payoff_data < trunc_tol
         var_masks = var_data < trunc_tol
-        var2_masks = var2_data < trunc_tol 
+        var2_masks = var2_data < trunc_tol
 
         #Cut them off to avoid 0 again
         mean_data = np.maximum(mean_data, trunc_tol)
@@ -280,7 +280,7 @@ def plot_mlmc_test(named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, 
         var_data = np.maximum(var_data, trunc_tol)
         var2_data = np.maximum(var2_data, trunc_tol)
 
-        kurt_data = kur1[node, 1:] 
+        kurt_data = kur1[node, 1:]
         chk_data = chk1[node, 1:]
 
         axes[2, i].scatter(l_ticks[1:][~mean_masks], np.log2(mean_data[~mean_masks]))
@@ -334,8 +334,8 @@ def plot_mlmc_test(named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, 
     fig.suptitle(f"{title_seg} MLMC Test: {plot_keyword.title()} Statistics {y_coord}(M={N_conv_test})", fontsize=16)
     mlmc_plot_path=os.path.join(folder_path, f"{plot_keyword}_regression_data_N_{N_conv_test}")
     plt.savefig(mlmc_plot_path, dpi=300)
-    plt.show()  
-    return  
+    plt.show()
+    return
 
 #Beam axis plot:
 def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path):
@@ -346,10 +346,10 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
     y_coord = ceil(len(ys)/2)*side_len
 
     beamline_mask = nodes_array[:,1] == y_coord
-    beam_nodes = nodes_array[beamline_mask] 
+    beam_nodes = nodes_array[beamline_mask]
     beam_nodes_numbers = np.flatnonzero(beamline_mask) #gives you the node numbers on the beamline
     payoff_fine = del2[beamline_mask,-1]
-    
+
     #Select the beta node
     #At each level, find the beamline node with maximum V_l
     var_payoff_diff = var1[beamline_mask, 1:]
@@ -366,7 +366,7 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
 
     same_node=False
     if node4 == node3: #likely this could happen
-        nodes=[node1, node2, node3] 
+        nodes=[node1, node2, node3]
         names=[r"Max $P_L$", r"$\beta$, Beamline" ,r"Max $\alpha_i$, $\beta_i$"] #r"Min $P_\ell$",
         same_node=True
     else:
@@ -379,7 +379,7 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
         names.append(None)
 
     #If there is a node with nonzero but small payoff, show it
-    domain_mask = beam_nodes[:, 0] >= 0 
+    domain_mask = beam_nodes[:, 0] >= 0
     domain_payoff_fine = payoff_fine[domain_mask]
     valid = domain_payoff_fine > 0.5
     if np.any(valid):
@@ -403,7 +403,7 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
         node_idx=beam_nodes_numbers[negative_nodes[-1]]
         if nodes_array[node_idx][0] >= 0:
             nodes.append(node_idx)
-            names.append(f'Y < 0')            
+            names.append(f'Y < 0')
 
     #Remove repeats:
     seen = set()
@@ -424,7 +424,7 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
 def plot_negative_alpha_beta_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path, max_nodes=8):
     """
     This is the same function as plot mlmc test but with different nodes selected
-    update 
+    update
     """
     if SPATIAL_DIM != 2:
         raise NotImplementedError(f"Negative alpha/beta regression plots not implemented in {SPATIAL_DIM}D.")
@@ -456,7 +456,7 @@ def plot_negative_estimator_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, 
     if len(negative_nodes) == 0:
         print(f"\nNo nodes found with negative estimator")
         return
-    
+
     order = negative_nodes[np.argsort(mlmc_estimator[negative_nodes])]
     if len(order) <= max_nodes:
         nodes = order

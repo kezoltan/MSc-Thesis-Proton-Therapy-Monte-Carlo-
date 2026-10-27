@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import os
 
 if __name__ == "__main__":
-    
+
     plot_only=False
 
     if plot_only:
@@ -59,7 +59,7 @@ if __name__ == "__main__":
             folder_path = os.path.join(file_path, save_folder)
             os.makedirs(folder_path, exist_ok=True)
 
-            path_3D = os.path.join(folder_path, f"{sampling_type}_{dose_method}_{sde_model}.npz")  
+            path_3D = os.path.join(folder_path, f"{sampling_type}_{dose_method}_{sde_model}.npz")
             np.savez(path_3D, dose_expected=dose_expected, sim_num=sim_num, sde_model=sde_model, dose_method=dose_method, absolute_h=h, SPATIAL_DIM=SPATIAL_DIM, side_len=side_len, X_meshgrid = X_meshgrid, Y_meshgrid = Y_meshgrid, sigma=SIGMA, folder_path=folder_path, dose_shape=dose_shape, KAPPA=KAPPA, EPS_0=EPS_0, sampling_type=sampling_type, EMIN=EMIN, E0=E0)
 
             print("Now plotting MC data...")
@@ -79,7 +79,7 @@ if __name__ == "__main__":
                 raise ValueError("spatial dimension must be either 2 or 3.")
             if dose_method not in ['SF', 'SK']:
                 raise ValueError("dose method must be either SF or SK.")
-            
+
             #This is hardcoded from the dose_mlmc file
             #print("The following stats will be calculated by MLMC test:"
             #    "\n  E[P_l - P_{l-1}]"
@@ -116,7 +116,7 @@ if __name__ == "__main__":
                 std_mlmc_costs.append(mlmc_data['std_mlmc_cost'])
             std_MC_costs=np.asarray(std_MC_costs)
             std_mlmc_costs=np.asarray(std_mlmc_costs)
-            Eps=np.asarray(Eps) 
+            Eps=np.asarray(Eps)
 
             #To save as arrays, need to standardise the length:
             max_num_lvls = max(len(Nl) for Nl in all_Nls) #since Nl includes lvl 0
@@ -137,7 +137,7 @@ if __name__ == "__main__":
                 max_num_lvls = max(len(Nl) for Nl in all_Nls) #since Nl includes lvl 0
                 step_levels = np.arange(MLMC_LEVEL_OFFSET, max_num_lvls + MLMC_LEVEL_OFFSET)
 
-                #Log scale on y axis 
+                #Log scale on y axis
                 for i, Nl in enumerate(all_Nls):
                     Nl_extend = np.zeros(max_num_lvls)
                     Nl_extend[0:len(Nl)] = Nl #and any outlying elts are 0
@@ -166,10 +166,10 @@ if __name__ == "__main__":
                 axes[1].set_ylabel(r"$\epsilon^2$ Cost", fontsize=16)
                 axes[1].legend(fontsize=16)
 
-                out_mlmc_plot_path=os.path.join(folder_path, f"mlmc_plot_{dose_method}_{sde_model}_eps_{Eps[0]}_{Eps[-1]}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}.png") 
+                out_mlmc_plot_path=os.path.join(folder_path, f"mlmc_plot_{dose_method}_{sde_model}_eps_{Eps[0]}_{Eps[-1]}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}.png")
                 plt.tight_layout()
                 plt.savefig(out_mlmc_plot_path, dpi=300)
-                plt.show()    
+                plt.show()
             plot_mlmc()
 
             #Find the highest accuracy result to plot

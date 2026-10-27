@@ -1,9 +1,9 @@
 
 #July 2026
-#Code to create dose maps 
+#Code to create dose maps
 
 import numpy as np
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 from dosesetup import *
 from doseparams import NUM_CPUS, Y_meshgrid #subject to change -- should save ymeshgrid
 from math import ceil
@@ -13,21 +13,21 @@ from concurrent.futures import ProcessPoolExecutor
 
 #edit-- this code is inefficient + needs updating, parallelisation could be improved
 
-#The number of interpolation points for the SF method, careful of increasing this 
-num_points = ceil(len_reciprocal * max(Y_meshgrid.flatten())*2.5)  
+#The number of interpolation points for the SF method, careful of increasing this
+num_points = ceil(len_reciprocal * max(Y_meshgrid.flatten())*2.5)
 
 def dose_gy_convert(dose_expected):
     """
-    Convert expected dose output from Monte Carlo to Gy, measured for one gigaproton.  
+    Convert expected dose output from Monte Carlo to Gy, measured for one gigaproton.
     """
     if type(dose_expected) != np.ndarray:
         raise TypeError("dose_expected must be an array.")
     giga_proton=1e9
-    constant = 1.6*1e-10*giga_proton #Directly from track_length's code 
+    constant = 1.6*1e-10*giga_proton #Directly from track_length's code
     return dose_expected * constant
 
 #Function to help plot a Bragg curve:
-#   we would like to plot the dose along the central line    
+#   we would like to plot the dose along the central line
 
 def depth_dose_beam_axis(fine_dose_field, x_vals, y_vals, relative=True):
     """
@@ -35,8 +35,8 @@ def depth_dose_beam_axis(fine_dose_field, x_vals, y_vals, relative=True):
 
     fine_dose_field is already in Gy
     """
-    y0 = 0.5 * (y_vals[0] + y_vals[-1]) #halfway point 
-    y_idx = np.argmin(np.abs(y_vals - y0)) #locate points closest 
+    y0 = 0.5 * (y_vals[0] + y_vals[-1]) #halfway point
+    y_idx = np.argmin(np.abs(y_vals - y0)) #locate points closest
     y_coord = y_vals[y_idx] #coordinate along which we do the beamline
     dose_line = fine_dose_field[:, y_idx]
     if relative: #relative dose
@@ -55,23 +55,23 @@ def evaluate_phi(args):
 def compute_U(Xg, Yg, coeffs, node_coords, side_len, max_workers=None):
     if max_workers is None:
         max_workers = ceil(NUM_CPUS / 2)
-    
+
     points = [np.array([Xg[i, j], Yg[i, j]], dtype=float) for i in range(Xg.shape[0]) for j in range(Xg.shape[1])]
     args = [(X, coeffs, node_coords, side_len) for X in points]
 
-    #edit: Parallelisation may not be needed 
+    #edit: Parallelisation may not be needed
     with ProcessPoolExecutor(max_workers=max_workers) as executor:
         values = executor.map(evaluate_phi, args)
 
     return np.asarray(list(values), dtype=float).reshape(Xg.shape)
 
-#2D plotter 
+#2D plotter
 
 def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
     """
     Loads all the data for one path for one plot
     """
-    #Load the data 
+    #Load the data
     full_file_path = path_3D
     data = np.load(full_file_path, allow_pickle=True)
     dose = data["dose_expected"]
@@ -113,8 +113,8 @@ def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
 
         dose_title = title_seg
         node_coords = np.column_stack([arr.ravel() for arr in (X_meshgrid, Y_meshgrid)])
-        
-        #Generate a fine(r) grid over which to plot the heat map 
+
+        #Generate a fine(r) grid over which to plot the heat map
         x_vals = np.linspace(X_MIN, X_MAX, n_points)
         y_vals = np.linspace(Y_MIN, Y_MAX, n_points)
         Xg, Yg = np.meshgrid(x_vals, y_vals, indexing="ij")
@@ -169,7 +169,7 @@ def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
         "eps": eps if sampling_type == "mlmc" else None,
         "step_lvls": step_lvls if sampling_type == "mlmc" else None,
         "min_step_lvl": min_step_lvl if sampling_type == "mlmc" else None,
-        "max_step_lvl": max_step_lvl if sampling_type == "mlmc" else None, 
+        "max_step_lvl": max_step_lvl if sampling_type == "mlmc" else None,
         "mc_replacements": mc_replacements if hybrid and sampling_type == "mlmc" else None,
         "num_neg_nodes": num_neg_nodes if hybrid and sampling_type == "mlmc" else None}
 
@@ -177,13 +177,13 @@ def dose_map_2D(path_3D, n_points = num_points, hybrid=False):
         dose_data["x_curve"] = hybrid_x_curve
         dose_data["depth_dose_curve"] = hybrid_depth_dose_curve
         dose_data["fine_dose_field"] = hybrid_fine_dose_field
-        dose_data["name"] = "Hybrid" 
+        dose_data["name"] = "Hybrid"
     return dose_data
 
 
 def dose_plot_2D(path_3D_list, hybrid=False):
     """
-    2D dose plot with dose map + Bragg curve along beam axis 
+    2D dose plot with dose map + Bragg curve along beam axis
     """
     full_dose_data = []
     for path_3D in path_3D_list:
@@ -231,13 +231,13 @@ def dose_plot_2D(path_3D_list, hybrid=False):
         if sampling_type == "mlmc":
             eps = plot_data["eps"]
             step_lvls = plot_data["step_lvls"]
-            max_step_lvl = plot_data["max_step_lvl"]  
-            min_step_lvl = plot_data["min_step_lvl"] 
+            max_step_lvl = plot_data["max_step_lvl"]
+            min_step_lvl = plot_data["min_step_lvl"]
             L_final = max_step_lvl - min_step_lvl
             num_neg_nodes = plot_data["num_neg_nodes"]
             mc_replacements = plot_data["mc_replacements"]
 
-        #Resizing between the two plots 
+        #Resizing between the two plots
         row = i // num_cols
         col = i % num_cols
 
@@ -310,7 +310,7 @@ def dose_plot_2D(path_3D_list, hybrid=False):
         else:
             ax_bottom.tick_params(axis="x", which="both", bottom=True, labelbottom=False)
             ax_bottom.set_xlabel("")
-                
+
     plot_name=""
     if name=='Hybrid ' and hybrid:
         plot_name="_hybrid"
@@ -333,10 +333,10 @@ def dose_plot_2D(path_3D_list, hybrid=False):
 
     return fine_dose_field, x_curve, depth_dose_curve, file_save_path
 
-#Needs update to combine this with the above, not implemented 
+#Needs update to combine this with the above, not implemented
 def dose_plot_3D(sde_model, dose_method, path_3D, n_points=num_points, av_width=0.1, curve_factor=8):
     raise NotImplementedError("dose_plot_3D is incomplete and not vectorised, please edit before use.")
-    
+
     if SPATIAL_DIM != 3:
         raise ValueError("dose_plot_3D requires SPATIAL_DIM == 3.")
     if sde_model == "track_length":
@@ -517,21 +517,21 @@ def dose_plot_3D(sde_model, dose_method, path_3D, n_points=num_points, av_width=
 
 if __name__ == '__main__':
 
-    #Set up file with names of data files inside 
+    #Set up file with names of data files inside
 
-    file_names = [os.path.join(file_path, "mlmc_results.txt")] #os.path.join(file_path, "mc_results.txt") 
+    file_names = [os.path.join(file_path, "mlmc_results.txt")] #os.path.join(file_path, "mc_results.txt")
     for file in file_names:
         with open(file, "r") as f:
             strings = [line.strip() for line in f]
             data_path=strings[0]
         path_3d_list = [os.path.join(data_path, path) for path in strings[1:]]
         dose_plot_2D(path_3d_list)
-    
-
-    
 
 
-    
+
+
+
+
 
 
 

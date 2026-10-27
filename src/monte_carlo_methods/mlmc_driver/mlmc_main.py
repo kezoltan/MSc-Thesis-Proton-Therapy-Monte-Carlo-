@@ -2,7 +2,7 @@ import numpy as np
 from src.doseparams import *
 from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel as mlmc_parallel_l
 from src.dosesetup import load_mass_matrix
-from math import ceil 
+from math import ceil
 import os
 from src.doseplot import dose_plot_2D, dose_plot_3D
 from functools import partial
@@ -10,7 +10,7 @@ from functools import partial
 def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
     """
     Multi-level Monte Carlo estimation.
-    Dynamically vectorized to handle the Primal value and an arbitrary 
+    Dynamically vectorized to handle the Primal value and an arbitrary
     number of sensitivities simultaneously.
 
     num_q: number of outputs, supplied by mlmc test
@@ -25,8 +25,8 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
         raise ValueError("error: needs N0 > 0, eps > 0")
 
     # Initialization -- expect 1.0 for dose EM
-    alpha = max(0.0, min(1.0, alpha0))   
-    beta  = max(0.0, beta0) 
+    alpha = max(0.0, min(1.0, alpha0))
+    beta  = max(0.0, beta0)
 
     #Hardcode these from 100k runs levels 5-13 MLMC test
     if dose_method=='SK':
@@ -51,19 +51,19 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
                 #print(f"START mlmc level {l}, step level {l+MLMC_LEVEL_OFFSET}: running {dNl[l]} simulations", flush=True)
                 sums, cost = mlmc_parallel_l(l, dNl[l], *args)
 
-                #check the dose shape 
+                #check the dose shape
                 if sums.shape != (dose_shape, 6):
                     raise ValueError(f"mlmc sums vs. dose shape mismatch: expected {(dose_shape, 6)}, got {sums.shape}.")
 
                 Nl[l] += dNl[l]
                 costl[l] += cost
-                
+
                 for k in range(dose_shape):
                     suml[4 * k, l]     += sums[k,0]      # diff accumulation
                     suml[4 * k + 1, l] += sums[k,1]      # diff**2 accumulation
 
                     #Edit-- for the dose application
-                    #   The MLMC estimator can be negative which we do not want 
+                    #   The MLMC estimator can be negative which we do not want
                     #   This is likely to occur at nodes with very low payoff/variance where the hit rate is ~0
                     #   In these cases we should able to replace with the MC estimator with no loss of accuracy
 
@@ -79,8 +79,8 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
         #Store the mc values as well:
         mc_ml = np.abs(suml_reshaped[:, 2, :] / Nl)
         mc_variances = np.maximum(0.0, suml_reshaped[:, 3, :] / Nl - mc_ml**2)
-        
-        #Using acta numerica we maximise to ensure criteria met for all nodes 
+
+        #Using acta numerica we maximise to ensure criteria met for all nodes
         for l in range(L + 1):
             k = np.argmax(Vl[:, l])
             print(f"level {l}: max variance node={nodes_array[k]}, Vl={Vl[k,l]:.6e}, mean={ml[k,l]:.6e}")
@@ -136,13 +136,13 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
                 else:
                     #adds another level if weak convergence not met
                     L += 1
-                    
+
                     # Expand arrays dynamically for the new level
 
                     #Extrapolate !
                     Vl_max = np.append(Vl_max, Vl_max[-1] / (2.0**beta))
                     Cl = np.append(Cl, Cl[-1] * (2.0**gamma))
-                    
+
                     Nl = np.append(Nl, 0)
                     suml = np.column_stack((suml, np.zeros(4 * dose_shape)))
                     costl = np.append(costl, 0.0)
@@ -151,7 +151,7 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
                     Ns = np.ceil(np.sqrt(Vl_max / Cl) * np.sum(np.sqrt(Vl_max * Cl)) / ((1 - theta) * eps**2))
                     dNl = np.maximum(0, Ns - Nl).astype(int)
 
-                    #Added a check! Because it was taking too long 
+                    #Added a check! Because it was taking too long
                     print("\nMLMC allocation:")
                     print("eps =", eps)
                     print("current Nl =", Nl)
@@ -167,7 +167,7 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
 
     P_neg_mask = P_estimates_hybrid < 0.0
     neg_idxs = np.arange(dose_shape)[P_neg_mask] #get the node index
-    
+
     num_negative_nodes=np.count_nonzero(P_neg_mask)
     print(f"MLMC with eps={eps} finished, number of negative payoff nodes={num_negative_nodes}."
           f"\nTesting for MC estimator replacement (no new simulations) for hybrid estimator...")
@@ -175,14 +175,14 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
     for idx in neg_idxs:
         mc_variances_idx = mc_variances[idx, L] #finest level only where weak error was tested
         mc_cost_mask = mc_variances_idx / Nl[L] <= eps**2 * (1-theta) #checks if accuracy is good enough at level L where weak error is verified
-        if mc_cost_mask: 
+        if mc_cost_mask:
             P_estimates_hybrid[idx] = mc_ml[idx, L]
             mc_replacements+=1
 
-    P_neg_mask = P_estimates_hybrid < 0.0   
+    P_neg_mask = P_estimates_hybrid < 0.0
 
     # Return estimates as a flattened tuple followed by Nl and Cl for clean unpacking
-    return tuple(P_estimates) + tuple(P_estimates_hybrid) + (Nl, Cl, num_negative_nodes, mc_replacements) 
+    return tuple(P_estimates) + tuple(P_estimates_hybrid) + (Nl, Cl, num_negative_nodes, mc_replacements)
 
 
 if __name__ == "__main__":
@@ -212,10 +212,10 @@ if __name__ == "__main__":
     plot_folder = f"notest_mlmc_{dose_method}_Nfull_{np.sum(Nl)}_lvls_{MLMC_LEVEL_OFFSET}_{len(Nl)-1+MLMC_LEVEL_OFFSET}_l_{side_len}_eps_{eps}"
     folder_path = os.path.join(file_path, plot_folder)
     os.makedirs(folder_path, exist_ok=True)
-    
+
     #We save one for the doseplot function separately
     sim_num = np.sum(Nl)
-    path_3D = os.path.join(folder_path, f"notest_{sampling_type}_{dose_method}_{sde_model}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_l_{side_len:.3f}_eps_{eps}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}_sigma_{SIGMA:.3f}.npz") 
+    path_3D = os.path.join(folder_path, f"notest_{sampling_type}_{dose_method}_{sde_model}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_l_{side_len:.3f}_eps_{eps}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}_sigma_{SIGMA:.3f}.npz")
     np.savez(path_3D, dose_expected=mlmc_dose, hybrid_dose_expected=hybrid_dose, accuracy=eps, Nl = Nl, Cl = Cl, step_levels=step_levels, sim_num=sim_num, dose_method=dose_method, SPATIAL_DIM=SPATIAL_DIM, side_len=side_len, X_meshgrid = X_meshgrid, title_seg=title_seg, folder_path=folder_path, sigma=SIGMA)
     print(f"MLMC data saved at {path_3D}")
     print("Now plotting...")

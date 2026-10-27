@@ -20,7 +20,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         N: sample number for convergence testing (complexity theorem)
         L: max lvl in conv test
         N0: level 0 starting sample count
-        Eps, array: error tolerances 
+        Eps, array: error tolerances
         Lmin/max: min max level numbers allowed
         fp: output file (?)
         (*args means any other outputs e.g. params from user file)
@@ -59,19 +59,19 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     del1 = np.zeros((dose_shape, L + 1), dtype=float)
     del2 = np.zeros((dose_shape, L + 1), dtype=float)
     var1 = np.zeros((dose_shape, L + 1), dtype=float)
-    var2 = np.zeros((dose_shape, L + 1), dtype=float) 
+    var2 = np.zeros((dose_shape, L + 1), dtype=float)
     var2_trunc = np.zeros((dose_shape, L + 1), dtype=float) #this one will get truncated earlier
     trunc_tol = 1e-15
     kur1 = np.zeros((dose_shape, L + 1), dtype=float)
     chk1 = np.zeros((dose_shape, L + 1), dtype=float)
-    cost = np.zeros(L + 1, dtype=float) #store the per level cost 
+    cost = np.zeros(L + 1, dtype=float) #store the per level cost
 
     for l in range(L + 1):
         print(f'Starting parameter testing for mlmc level {l}, stepsize level {l+MLMC_LEVEL_OFFSET}')
 
         stats_sum_l, cst_sum_l = mlmc_parallel_l(l, N, *args)
         if stats_sum_l.shape != (dose_shape,6):
-            raise ValueError(f"shape mismatch between dose_mlmc output {stats_sum_l.shape} and dose_shape stats (global) {(dose_shape, 6)}.") 
+            raise ValueError(f"shape mismatch between dose_mlmc output {stats_sum_l.shape} and dose_shape stats (global) {(dose_shape, 6)}.")
 
         E_stats_sums_l = np.array(stats_sum_l, dtype=float) / N
         E_cost_l = cst_sum_l / N
@@ -79,7 +79,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
 
         for k in range(dose_shape):
             s0, s1, s2, s3, s4, s5 = E_stats_sums_l[k, :]
-            
+
             del1[k, l] = s0 #expected payoff diff
             del2[k, l] = s4 #expected payoff
             var1[k, l] = s1 - s0**2 #diff variance
@@ -93,9 +93,9 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
                 # Protect against division-by-zero errors in case variance hits zero floor
                 denom = max(s1 - s0**2, 1e-12)
                 kur1[k, l] = (s3 - 4*s2*s0 + 6*s1*(s0**2) - 3*(s0**4)) / (denom**2)
-                
+
                 chk1[k, l] = (del1[k, l] + del2[k, l-1] - del2[k, l]) / \
-                             (3.0 * (np.sqrt(var1[k, l]) + np.sqrt(var2_trunc[k, l-1]) + np.sqrt(var2_trunc[k, l])) / np.sqrt(N)) #div by sampling error 
+                             (3.0 * (np.sqrt(var1[k, l]) + np.sqrt(var2_trunc[k, l-1]) + np.sqrt(var2_trunc[k, l])) / np.sqrt(N)) #div by sampling error
 
     #Call all the plots you want
 
@@ -108,7 +108,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     for k in range(dose_shape):
         name = f"NODE: {nodes_array[k]}"
         #for the nodes high kurtosis at the edges is inevitable - replace this with a heatmap
-        if kur1[k, -1] > 100.0: 
+        if kur1[k, -1] > 100.0:
             printf(fp, '\n WARNING: mask kurtosis on finest level for %s = %f \n', name, kur1[k, -1], printout=False)
             printf(fp, ' indicates MLMC correction dominated by a few rare paths. \n', printout=False)
         if max(chk1[k, :]) > 1.0: #i.e. the error in the tele sum >> sampling error
@@ -156,7 +156,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         #First shield from taking log of 0
         del_filtered = np.where(np.abs(del1[k, 1:L+1]) > trunc_tol, np.abs(del1[k, 1:L+1]), trunc_tol)
         var_filtered = np.where(np.abs(var1[k, 1:L+1]) > trunc_tol, np.abs(var1[k, 1:L+1]), trunc_tol)
-        
+
         #at each data point test the alpha/beta condition
         a_mask = del_filtered <= c2 * step_sizes ** alpha_expected
         b_mask = var_filtered <= c3 * step_sizes ** beta_expected
@@ -167,19 +167,19 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
 
         if np.all(a_mask): #if all pass the test already
             alpha[k] = alpha_expected
-        else: 
+        else:
             #reject regression if insufficient data
-            if np.count_nonzero(del_mask) < 3: 
+            if np.count_nonzero(del_mask) < 3:
                 alpha[k] = np.nan
-                a_nan_total+=1 
+                a_nan_total+=1
             else:
                 pa = np.polyfit(step_levels[del_mask], np.log2(del_filtered[del_mask]), 1)
                 alpha[k] = -pa[0] #keep the raw data for the heatmap + reconcile global alpha/beta later
                 a_regression_mask[k] = True
-        
+
         if np.all(b_mask):
             beta[k] = beta_expected
-        else: 
+        else:
             #the regression assumes sufficient sampling/regularity, place a catch here
             if np.count_nonzero(var_mask) < 3:
                 beta[k] = np.nan
@@ -259,7 +259,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     printf(fp, '*** Linear regression estimates of MLMC parameters ***\n')
     printf(fp, '******************************************************\n')
     printf(fp, ' gamma = %f  (exponent for MLMC cost) \n', gamma)
-    
+
     for k in range(dose_shape):
         name = f"NODE {k}, {nodes_array[k]}"
         printf(fp, '\n --- %s ---\n', name, printout=False)
@@ -292,7 +292,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     for k in best_nodes:
         printf(fp, '%5d  %-20s  %11.4e  %11.4e\n', k, nodes_array[k], alpha[k], beta[k])
 
-    #Create a new folder for the mlmc data associated to this run - folder name must contain all key params 
+    #Create a new folder for the mlmc data associated to this run - folder name must contain all key params
     save_folder = f"{sampling_type}_{dose_method}_{sde_model}_eps_{min(Eps)}_{max(Eps)}_offset_{MLMC_LEVEL_OFFSET}_side_len_{side_len}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_sigma_{SIGMA:.2f}_kappa_{KAPPA}_eps0_{EPS_0}_theta_{theta}_width_sdev_{width_sdev_factor:.2f}_EMIN_{EMIN}"
     folder_path = os.path.join(file_path, save_folder)
     os.makedirs(folder_path, exist_ok=True)
@@ -340,23 +340,23 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
         var2_max = max([var2[k, idx] for k in range(dose_shape)]) #finds the max variance across all outputs at this eps
         std_cost = var2_max * Cl[-1] / ((1.0 - theta) * eps**2)
 
-        #Save the data per epsilon: 
+        #Save the data per epsilon:
         max_num_lvls = len(Nl) #since Nl includes lvl 0
         step_levels = np.arange(MLMC_LEVEL_OFFSET, max_num_lvls + MLMC_LEVEL_OFFSET)
         sim_num = np.sum(Nl)
         path_3D=os.path.join(folder_path, f"{sampling_type}_{dose_method}_eps_{eps}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}_Nfull_{np.sum(Nl)}.npz")
         np.savez(path_3D, dose_expected=mlmc_dose, hybrid_dose_expected=hybrid_dose, accuracy=eps, Nl = Nl, Cl = Cl, std_mlmc_cost=std_mlmc_cost, std_cost=std_cost, step_levels=step_levels, sim_num=sim_num, dose_method=dose_method, sde_model=sde_model, SPATIAL_DIM=SPATIAL_DIM, side_len=side_len, X_meshgrid=X_meshgrid, Y_meshgrid=Y_meshgrid, title_seg=title_seg, folder_path=folder_path, sigma=SIGMA, dose_shape=dose_shape, KAPPA=KAPPA, EPS_0=EPS_0, sampling_type=sampling_type, num_neg_nodes=num_neg_nodes, mc_replacements=mc_replacements)
-        
+
         #We already checked that this is not a duplicate
         f = open(paths_file, "a")
         f.write(path_3D + "\n")
         f.close()
-        
+
         print(f"\nMLMC data for eps={eps} saved at {path_3D}.")
-    
+
     end_time = time.perf_counter()
     elapsed = end_time - start_time
-    
+
     printf(fp, '\n===================================================================\n')
     printf(fp, '>>> MLMC and MLMC test successfully completed in %.2f seconds.\n', elapsed)
     printf(fp, '===================================================================\n\n')

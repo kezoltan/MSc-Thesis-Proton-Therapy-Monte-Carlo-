@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools", "wheel"] # setuptools and wheel are necessary for the build
+
+[project]
+name = "pbt-mlmc"
+version = "0.1"
+description = "A package to analyse timeseries"
+authors = [
+    {name = "Katie Zoltan", email = "katherine.zoltan@bnc.ox.ac.uk"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+dependencies = ["numpy", "matplotlib", "scipy", "numba", "pytest", "pylint"]
+
+[project.scripts] # Define scripts here if you have any
+
+[project.optional-dependencies] # Define optional dependencies here if you have any

@@ -7,9 +7,9 @@ import numpy as np
 from doseparams import *
 from doseplot import dose_plot_2D, dose_plot_3D
 from dosesetup import choose_dE_ds, load_mass_matrix
-from monte_carlo_methods.dose_mc import mc_parallel
-from monte_carlo_methods.dose_mlmc import mlmc_parallel
-from src.monte_carlo_methods._driver_mlmc_testv import mlmc_testv
+from src.monte_carlo_methods.mc_parallel import mc_parallel
+from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel
+from src.monte_carlo_methods.mlmc_driver.mlmc_test import mlmc_testv
 from functools import partial
 import matplotlib.pyplot as plt
 import os

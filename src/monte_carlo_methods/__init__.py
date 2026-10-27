@@ -1,2 +1,2 @@
-from .dose_mc import *
-from .dose_mlmc import *
+from .mc_parallel import *
+from .mlmc_parallel import *

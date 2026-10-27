@@ -14,7 +14,12 @@ from src.dosesetup import (
     reference_cube_mapping,
     Phi,
     Phi_vectorised,
+    position_lookup_matrix,
+    initial_energy_spread,
+    domain_exit_check,
+    coarsen_step,
 )
+
 
 @pytest.mark.parametrize(
     ("omega", "increment", "expected"), # omega = initial direction
@@ -217,13 +222,35 @@ def test_vectorised_phi_returns_zeros_when_no_nodes_are_active(coordinate, nodes
     assert np.array_equal(result, np.zeros(len(nodes)))
 
 
-def test_position_lookup_matrix_matches_mesh_shape_and_flat_order():
-    pass
+@pytest.mark.parametrize(
+    "X_meshgrid",
+    [
+        np.zeros((2, 3)),
+        np.zeros((2, 3, 4)),
+    ],
+)
+def test_position_lookup_matrix_matches_mesh_shape_and_flat_order(X_meshgrid):
+    result = position_lookup_matrix(X_meshgrid)
+    expected = np.arange(X_meshgrid.size).reshape(X_meshgrid.shape)
+
+    assert result.shape == X_meshgrid.shape
+    assert np.array_equal(result, expected)
 
 
-def test_initial_energy_spread_is_reproducible_when_random_state_is_seeded():
-    pass
+@pytest.mark.parametrize("seed", [0, 42, 1234])
+def test_initial_energy_spread_is_reproducible_when_random_state_is_seeded(seed):
+    # Save the current global random state so this test does not affect others.
+    original_state = np.random.get_state()
+    try:
+        np.random.seed(seed)
+        first_sample = initial_energy_spread()
 
+        np.random.seed(seed)
+        second_sample = initial_energy_spread()
+    finally:
+        np.random.set_state(original_state)
+
+    assert first_sample == second_sample
 
 def test_sample_initial_position_is_centered_on_expected_beam_position():
     pass
@@ -232,29 +259,78 @@ def test_sample_initial_position_is_centered_on_expected_beam_position():
 def test_sample_initial_position_uses_expected_spread_in_2d_and_3d():
     pass
 
+@pytest.mark.parametrize(
+    "point_type",
+    ["inside", "lower_boundary", "upper_boundary"],
+)
+def test_domain_exit_check_is_false_inside_or_on_domain_boundary(point_type):
+    if point_type == "inside":
+        position = (domain_lower_bounds + domain_upper_bounds) / 2
+    elif point_type == "lower_boundary":
+        position = domain_lower_bounds.copy()
+    else:
+        position = domain_upper_bounds.copy()
 
-def test_domain_exit_check_is_false_inside_or_on_domain_boundary():
-    pass
-
-
-def test_domain_exit_check_is_true_outside_each_domain_boundary():
-    pass
-
-
-def test_coarsen_step_sums_groups_of_one_dimensional_increments():
-    pass
-
-
-def test_coarsen_step_sums_groups_of_multidimensional_increments():
-    pass
+    assert not bool(domain_exit_check(position))
 
 
-def test_coarsen_step_rejects_non_geometric_step_count():
-    pass
+@pytest.mark.parametrize(
+    ("boundary", "axis"),
+    [("lower", axis) for axis in range(SPATIAL_DIM)]
+    + [("upper", axis) for axis in range(SPATIAL_DIM)],
+)
+def test_domain_exit_check_is_true_outside_each_domain_boundary(boundary, axis):
+    epsilon = np.max(domain_upper_bounds - domain_lower_bounds) * 1e-6
+    if boundary == "lower":
+        position = domain_lower_bounds.copy()
+        position[axis] -= epsilon
+    else:
+        position = domain_upper_bounds.copy()
+        position[axis] += epsilon
+
+    assert bool(domain_exit_check(position))
 
 
-def test_coarsen_step_rejects_unsupported_array_dimensions():
-    pass
+@pytest.mark.parametrize(
+    ("increments", "expected"),
+    [
+        (np.array([1.0, 2.0, 3.0, 4.0]), np.array([3.0, 7.0])),
+        (np.arange(1.0, 9.0), np.array([3.0, 7.0, 11.0, 15.0])),
+    ],
+)
+def test_coarsen_step_sums_groups_of_one_dimensional_increments(
+    increments, expected
+):
+    assert np.array_equal(coarsen_step(increments), expected)
+
+
+@pytest.mark.parametrize(
+    "increments",
+    [
+        np.arange(8.0).reshape(4, 2),
+        np.arange(24.0).reshape(8, 3),
+    ],
+)
+def test_coarsen_step_sums_groups_of_multidimensional_increments(increments):
+    expected = increments.reshape(-1, base, increments.shape[1]).sum(axis=1)
+
+    assert np.array_equal(coarsen_step(increments), expected)
+
+
+@pytest.mark.parametrize("num_steps", [3, 6])
+def test_coarsen_step_rejects_non_geometric_step_count(num_steps):
+    increments = np.ones(num_steps)
+
+    with pytest.raises(ValueError, match="geometric step size"):
+        coarsen_step(increments)
+
+
+@pytest.mark.parametrize("shape", [(4, 2, 1), (8, 1, 2)])
+def test_coarsen_step_rejects_unsupported_array_dimensions(shape):
+    increments = np.ones(shape)
+
+    with pytest.raises(ValueError, match="shape is incompatible"):
+        coarsen_step(increments)
 
 
 def test_linear_lumped_mass_matrix_has_expected_shape_and_positive_entries():

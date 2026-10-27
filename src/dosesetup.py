@@ -205,11 +205,21 @@ def Phi_vectorised(side_len, X, nodes):
     return phis 
 
 def position_lookup_matrix(X_meshgrid):
-    """
-    Provide the first array of an np.meshgrid, return a 1D position lookup matrix. Compute once.
-    
-    How to use the output matrix:
-        Given an ijk index for the node on the grid, returns a 1D index 0,1,2,.. position for storage in F.
+    """Give each point in a mesh its position in a one-dimensional list.
+
+    The returned array has the same shape as the mesh. Each entry contains
+    the point's index in a flattened version of the mesh, starting at zero.
+
+    Parameters
+    ----------
+    X_meshgrid : numpy.ndarray
+        A coordinate array from the meshgrid. Only its shape is used.
+
+    Returns
+    -------
+    numpy.ndarray
+        Integer array with the same shape as ``X_meshgrid``. Its values are
+        consecutive positions in NumPy's default flattened order.
     """
     grid_shape = X_meshgrid.shape
     return np.arange(0, prod(grid_shape)).reshape(grid_shape)
@@ -217,8 +227,15 @@ def position_lookup_matrix(X_meshgrid):
 #----------------------------GAUSSIAN BEAM---------------------------------------
 
 def initial_energy_spread():
-    """
-    Gaussian sample the initial proton energy with % energy spread 
+    """Draw a random initial proton energy from a Gaussian (normal) distribution.
+
+    The distribution is centered on ``E0`` and uses ``energy_sdev`` from
+    ``doseparams`` to set its spread.
+
+    Returns
+    -------
+    float
+        A sampled initial proton energy.
     """
     return np.random.normal(E0, energy_sdev**2)
 

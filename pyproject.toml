@@ -39,3 +39,4 @@ pythonpath = ["."]
 
 [tool.coverage.run]
 source = ["src"]
+omit = ["src/doseparams.py", "src/dose_main.py", "src/mlmc_driver", "src/doseplot.py"]

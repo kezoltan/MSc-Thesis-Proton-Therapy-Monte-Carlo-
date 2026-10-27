@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools", "wheel"] # setuptools and wheel are necessary for the build
+
+[project]
+name = "pbt-mlmc"
+version = "0.1"
+description = "A package to analyse timeseries"
+authors = [
+    {name = "Katie Zoltan", email = "katherine.zoltan@bnc.ox.ac.uk"}
+]
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+dependencies = ["numpy", "matplotlib", "scipy", "numba"]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+]
+docs = [
+    "sphinx",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+
+[tool.coverage.run]
+source = ["src"]

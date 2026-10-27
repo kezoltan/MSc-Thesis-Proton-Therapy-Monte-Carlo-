@@ -35,6 +35,7 @@ convention = "numpy"
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
+pythonpath = ["."]
 
 [tool.coverage.run]
 source = ["src"]

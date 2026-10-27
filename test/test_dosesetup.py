@@ -41,7 +41,12 @@ def test_exponential_map_sphere_returns_unit_direction(omega, increment, expecte
 
 
 def test_exponential_map_sphere_handles_zero_increment():
-    pass
+    omega = np.array([1.0, 0.0])
+    zero_increment = np.zeros_like(omega)
+
+    result = exponential_map_sphere(omega, zero_increment)
+
+    assert np.array_equal(result, omega)
 
 
 def test_reciprocal_stopping_power_matches_drift_formula():

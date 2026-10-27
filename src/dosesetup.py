@@ -19,15 +19,20 @@ def exponential_map_sphere(Omega_n, strat_proj_brownian):
     Omega_n : numpy.ndarray, shape (d,)
         Current unit direction vector.
     strat_proj_brownian : numpy.ndarray, shape (d,)
-        Nonzero Brownian increment projected onto the tangent space at
+        Brownian increment projected onto the tangent space at
         ``Omega_n``.
 
     Returns
     -------
     numpy.ndarray, shape (d,)
-        Updated direction vector on the sphere.
+        Updated direction vector on the sphere. 
+        If the increment is zero, this is equal to ``Omega_n``.
     """
     norm = np.linalg.norm(strat_proj_brownian)
+
+    if norm == 0:
+        return np.asarray(Omega_n).copy() # copy is used so Omega_n is not modified
+
     return cos(norm) * Omega_n + sin(norm) * (strat_proj_brownian / norm) 
 
 def reciprocal_stopping_power(E, a=ALPHA, p=p): #this is the drift 

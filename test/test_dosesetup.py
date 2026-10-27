@@ -18,6 +18,8 @@ from src.dosesetup import (
     initial_energy_spread,
     domain_exit_check,
     coarsen_step,
+    linear_lumped_mass_matrix,
+    load_mass_matrix,
 )
 
 
@@ -333,25 +335,117 @@ def test_coarsen_step_rejects_unsupported_array_dimensions(shape):
         coarsen_step(increments)
 
 
-def test_linear_lumped_mass_matrix_has_expected_shape_and_positive_entries():
-    pass
+@pytest.mark.parametrize("dimension", [2, 3])
+def test_linear_lumped_mass_matrix_has_expected_shape_and_positive_entries(
+    dimension,
+):
+    shape = (3,) * dimension
+    X_meshgrid = np.meshgrid(*[np.arange(3.0)] * dimension, indexing="ij")[0]
+
+    result = linear_lumped_mass_matrix(X_meshgrid, side_len=1.0, spatial_dim=dimension)
+
+    assert result.shape == (int(np.prod(shape)),)
+    assert np.all(result > 0.0)
 
 
-def test_linear_lumped_mass_matrix_is_symmetric_across_regular_mesh():
-    pass
+@pytest.mark.parametrize("dimension", [2, 3])
+def test_linear_lumped_mass_matrix_is_symmetric_across_regular_mesh(
+    dimension,
+):
+    shape = (3,) * dimension
+    X_meshgrid = np.meshgrid(*[np.arange(3.0)] * dimension, indexing="ij")[0]
+    mass_diagonal = linear_lumped_mass_matrix(
+        X_meshgrid, side_len=1.0, spatial_dim=dimension
+    ).reshape(shape)
+
+    for axis in range(dimension):
+        assert np.allclose(mass_diagonal, np.flip(mass_diagonal, axis=axis))
 
 
-def test_linear_lumped_mass_matrix_rejects_nonuniform_or_wrong_spacing():
-    pass
+@pytest.mark.parametrize(
+    ("dimension", "coordinates", "side_len"),
+    [
+        (2, np.array([0.0, 1.0, 2.0]), 0.5),
+        (3, np.array([0.0, 1.5, 2.5]), 1.0),
+    ],
+)
+def test_linear_lumped_mass_matrix_rejects_nonuniform_or_wrong_spacing(
+    dimension, coordinates, side_len
+):
+    X_meshgrid = np.meshgrid(*[coordinates] * dimension, indexing="ij")[0]
+
+    with pytest.raises(ValueError, match="sidelength"):
+        linear_lumped_mass_matrix(
+            X_meshgrid, side_len=side_len, spatial_dim=dimension
+        )
 
 
-def test_linear_lumped_mass_matrix_rejects_mesh_without_interior_extent():
-    pass
+@pytest.mark.parametrize("dimension", [2, 3])
+def test_linear_lumped_mass_matrix_handles_mesh_without_interior_extent(
+    dimension,
+):
+    shape = (2,) * dimension
+    coordinates = [np.arange(size, dtype=float) for size in shape]
+    X_meshgrid = np.meshgrid(*coordinates, indexing="ij")[0]
+
+    result = linear_lumped_mass_matrix(
+        X_meshgrid, side_len=1.0, spatial_dim=dimension
+    )
+
+    assert result.shape == (2**dimension,)
+    assert np.all(result > 0.0)
 
 
-def test_load_mass_matrix_loads_cached_matrix(tmp_path, monkeypatch):
-    pass
+@pytest.mark.parametrize("dimension", [2, 3])
+def test_load_mass_matrix_loads_cached_matrix(tmp_path, dimension):
+    mesh_shape = (3,) * dimension
+    meshgrid = np.meshgrid(
+        *[np.arange(size, dtype=float) for size in mesh_shape], indexing="ij"
+    )
+    dose_shape = int(np.prod(mesh_shape))
+    expected = np.arange(1.0, dose_shape + 1)
+    side_len = 1.0
+    cache_path = tmp_path / f"{dimension}D_{expected.size}_lumped_mass_matrix.npz"
+    np.savez(cache_path, M_diag=expected)
+
+    result = load_mass_matrix(
+        file_path=str(tmp_path),
+        spatial_dim=dimension,
+        dose_shape=dose_shape,
+        X_meshgrid=meshgrid[0],
+        Y_meshgrid=meshgrid[1],
+        side_len=side_len,
+    )
+
+    assert np.array_equal(result, expected)
 
 
-def test_load_mass_matrix_computes_and_saves_when_cache_is_missing(tmp_path, monkeypatch):
-    pass
+@pytest.mark.parametrize("dimension", [2, 3])
+def test_load_mass_matrix_computes_and_saves_when_cache_is_missing(
+    tmp_path, dimension
+):
+    mesh_shape = (3,) * dimension
+    side_len = 0.5
+    meshgrid = np.meshgrid(
+        *[np.arange(size, dtype=float) * side_len for size in mesh_shape],
+        indexing="ij",
+    )
+    dose_shape = int(np.prod(mesh_shape))
+    expected = linear_lumped_mass_matrix(
+        meshgrid[0], side_len, spatial_dim=dimension
+    )
+
+    result = load_mass_matrix(
+        file_path=str(tmp_path),
+        spatial_dim=dimension,
+        dose_shape=dose_shape,
+        X_meshgrid=meshgrid[0],
+        Y_meshgrid=meshgrid[1],
+        side_len=side_len,
+    )
+    cache_path = tmp_path / f"{dimension}D_{dose_shape}_lumped_mass_matrix.npz"
+
+    assert np.array_equal(result, expected)
+    assert cache_path.exists()
+    with np.load(cache_path) as cache:
+        assert np.array_equal(cache["M_diag"], expected)

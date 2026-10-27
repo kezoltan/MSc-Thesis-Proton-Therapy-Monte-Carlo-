@@ -5,14 +5,27 @@
 import numpy as np 
 from math import prod, comb, cos, sin, exp, log
 from itertools import product
-from doseparams import *
+from .doseparams import *
 
 def exponential_map_sphere(Omega_n, strat_proj_brownian):
-    """
-    The exponential map Exp_{Omega}(y) on the sphere acts on the term y to generate each update.
-    It follows the geodesic starting from the value of the scheme at the previous step (Omega_n)
-    which is constructed by following the direction y for unit time. (see ref)
-    y is the diffusion * brownian term in Strat form (i.e. drift is 0, do not convert to Ito form) 
+    """Update a direction vector along a geodesic on the unit sphere.
+
+    The projected Brownian increment defines the tangent direction and the
+    geodesic distance for the update. It is the diffusion multiplied by the
+    Brownian increment in Stratonovich form; do not convert it to Itô form.
+
+    Parameters
+    ----------
+    Omega_n : numpy.ndarray, shape (d,)
+        Current unit direction vector.
+    strat_proj_brownian : numpy.ndarray, shape (d,)
+        Nonzero Brownian increment projected onto the tangent space at
+        ``Omega_n``.
+
+    Returns
+    -------
+    numpy.ndarray, shape (d,)
+        Updated direction vector on the sphere.
     """
     norm = np.linalg.norm(strat_proj_brownian)
     return cos(norm) * Omega_n + sin(norm) * (strat_proj_brownian / norm) 

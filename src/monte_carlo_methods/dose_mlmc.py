@@ -2,19 +2,20 @@
 #August 2026 
 #Multilevel Dose Contributionn User Input (at one level, for driver code)
 
-from dose_computation.dosemap1_shape_function_geoEM import KZ_one_path_load_contribution, one_step_F_contribution
-from dose_computation.dosemap2_spatial_kernel_geoEM import KZ_one_path_dose_contribution
+from dose_computation.dosemap1_shape_function_geoEM import energy_one_path_load_contribution, one_step_F_contribution
+from dose_computation.dosemap2_spatial_kernel_geoEM import energy_one_path_dose_contribution
 from dosesetup import *
 from numpy.random import default_rng
 from concurrent.futures import ProcessPoolExecutor
 import numpy as np 
 import os 
-import matplotlib.pyplot as plt 
+from src.sde_model_simulation.energy_geometric_EM import full_energy_model_setup
 
 #Don't import dE and ds
-from doseparams import method, dose_method, dose_shape, energy_sdev
+from doseparams import sde_model, dose_method, dose_shape, energy_sdev
 
 #---------------------------------MLMC LEVEL WORKER FUNCTIONS-----------------------------------------
+
 def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
     """
     Runs the dose method on level l of MLMC + calculates coarse/fine diff, + other statistics for testing
@@ -32,8 +33,8 @@ def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
 
     if energy_spread:
         raise ValueError(f"Gaussian beam energy sampling cannot be active for MLMC. Energy deviation is {energy_sdev}, E0 is {E0}.")
-    if method!="KZ":
-        raise ValueError("mlmc can only be run with the energy model (KZ).")
+    if sde_model!="energy":
+        raise ValueError("mlmc can only be run with the energy model (energy).")
     sim_counter = 0
 
     wc_stats = np.zeros((dose_shape, 6)) #6 statistics, hardcode
@@ -68,10 +69,10 @@ def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
 
         #Generate final dose payoff, fine path
         if dose_method == "SF":
-            load_f = KZ_one_path_load_contribution(method, (dB1_fine, dB2_3D_fine), setup_tuple)
+            load_f = energy_one_path_load_contribution(sde_model, (dB1_fine, dB2_3D_fine), setup_tuple)
             dose_f = load_f / M_diag
         elif dose_method == "SK":
-            dose_f = KZ_one_path_dose_contribution(method, (dB1_fine, dB2_3D_fine), setup_tuple)
+            dose_f = energy_one_path_dose_contribution(sde_model, (dB1_fine, dB2_3D_fine), setup_tuple)
         else:
             raise ValueError(f"invalid dose method: {dose_method}")
         if level == 0: #mlmc level!
@@ -89,11 +90,11 @@ def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
                 raise ValueError(f"nc should not change during one mlmc level. initially sampled as {nc} at level {level}, now reads as {len(dB1_coarse)}")
             
             if dose_method == "SF":
-                load_c = KZ_one_path_load_contribution(method, (dB1_coarse, dB2_3D_coarse), setup_tuple)
+                load_c = energy_one_path_load_contribution(sde_model, (dB1_coarse, dB2_3D_coarse), setup_tuple)
                 dose_c = load_c / M_diag
                 payoff_diff = dose_f - dose_c
             elif dose_method == "SK":
-                dose_c = KZ_one_path_dose_contribution(method, (dB1_coarse, dB2_3D_coarse), setup_tuple)
+                dose_c = energy_one_path_dose_contribution(sde_model, (dB1_coarse, dB2_3D_coarse), setup_tuple)
                 payoff_diff = dose_f - dose_c
         else:
             raise ValueError(f"mlmc level should not be negative: {level}.")

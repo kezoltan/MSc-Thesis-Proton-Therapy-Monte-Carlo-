@@ -23,7 +23,7 @@ def reciprocal_stopping_power(E, a=ALPHA, p=p): #this is the drift
 def T_energy_stragg(E, kappa = KAPPA):
     return kappa*E*stopping_power(E)
 
-def reference_cube_mapping(l, center, coordinate):
+def reference_cube_mapping(side_len, center, coordinate):
     """
     Maps the global coordinates inside a given voxel onto the reference cube [-1, 1] 
 
@@ -34,9 +34,9 @@ def reference_cube_mapping(l, center, coordinate):
     Returns:
         np.array, the transformed coordinate in [-1, 1]^3 
     """
-    return 2*(coordinate - center) / l
+    return 2*(coordinate - center) / side_len
 
-def Phi(l, X, n_i):
+def Phi(side_len, X, n_i):
     """
     The basis function Phi_i attached to the ith node, defined over the whole domain 
 
@@ -48,40 +48,40 @@ def Phi(l, X, n_i):
         The value of Phi_i at one point, X_3D 
     """
 
-    if not np.all(np.abs(X - n_i) <= l):
+    if not np.all(np.abs(X - n_i) <= side_len):
         return 0.0
 
-    scaled = X / l
+    scaled = X / side_len
     floors = np.floor(scaled)
     ceils = np.ceil(scaled)
 
     #Preliminary center (will be correct if we are not on a voxel boundary)
-    center = (floors + ceils) * l / 2
+    center = (floors + ceils) * side_len / 2
 
     # Boundary corrections
     for d in range(len(X)): #Testing each coord in turn
         if floors[d] == ceils[d]:
-            node_index = round(n_i[d] / l) 
+            node_index = round(n_i[d] / side_len) 
             if floors[d] == node_index: #if the node and position are on the same side of the cube
-                center[d] = n_i[d] - l/2 #convention: push the midpoint backwards into a voxel (i.e. this will set this node coord to 1)
+                center[d] = n_i[d] - side_len/2 #convention: push the midpoint backwards into a voxel (i.e. this will set this node coord to 1)
             else:
-                center[d] = (node_index + floors[d]) * l / 2
+                center[d] = (node_index + floors[d]) * side_len / 2
 
     #Map inputs and node ni onto the reference cube:
-    X_ref = reference_cube_mapping(l,center, X)
-    n_ref = reference_cube_mapping(l,center, n_i)
+    X_ref = reference_cube_mapping(side_len,center, X)
+    n_ref = reference_cube_mapping(side_len,center, n_i)
 
     phi = np.prod((1 + n_ref * X_ref) / 2)
     return phi
 
-def Phi_vectorised(l, X, nodes):
+def Phi_vectorised(side_len, X, nodes):
     """
     Receives all nodes and evaluates all corresponding Phi simultaneously at X.  
     """
     X = np.asarray(X)
     nodes = np.asarray(nodes)
 
-    active_nodes_mask = np.all(np.abs(X-nodes) <= l, axis=1) 
+    active_nodes_mask = np.all(np.abs(X-nodes) <= side_len, axis=1) 
     phis = np.zeros(len(nodes), dtype=float)
     active_nodes = nodes[active_nodes_mask]
 
@@ -89,26 +89,26 @@ def Phi_vectorised(l, X, nodes):
         return phis
 
     #X tells you which voxel you are in
-    scaled = X / l
+    scaled = X / side_len
     floors = np.floor(scaled)
     ceils = np.ceil(scaled)
-    center = (floors + ceils) * l / 2 #an array 
+    center = (floors + ceils) * side_len / 2 #an array 
 
     #We need this repeated for all active nodes (copy is needed else array is read only)
     centers = np.broadcast_to(center, active_nodes.shape).copy()
 
     #Correct centres for boundary X values:
     X_boundaries = floors == ceils
-    active_bdry_node_indx = np.rint(active_nodes[:, X_boundaries] / l) #rowwise mask
+    active_bdry_node_indx = np.rint(active_nodes[:, X_boundaries] / side_len) #rowwise mask
 
     #Node and position same side of cube:
     same_side = floors[X_boundaries] == active_bdry_node_indx
 
     #Replace based on this condition (i.e. same side, not same side)
-    centers[:, X_boundaries] = np.where(same_side, active_nodes[:, X_boundaries] - l/2, (active_bdry_node_indx + floors[X_boundaries])*l/2)
+    centers[:, X_boundaries] = np.where(same_side, active_nodes[:, X_boundaries] - side_len/2, (active_bdry_node_indx + floors[X_boundaries])*side_len/2)
 
-    X_ref = reference_cube_mapping(l, centers, X)
-    n_ref = reference_cube_mapping(l, centers, active_nodes)
+    X_ref = reference_cube_mapping(side_len, centers, X)
+    n_ref = reference_cube_mapping(side_len, centers, active_nodes)
 
     #Fill in all nonzero values:
     phis[active_nodes_mask] = np.prod((1 + n_ref * X_ref) / 2, axis=1)
@@ -132,23 +132,23 @@ def initial_energy_spread():
     """
     return np.random.normal(E0, energy_sdev**2)
 
-def sample_initial_position(meshgrid, rng, l): 
+def sample_initial_position(meshgrid, rng, side_len): 
     """
     Gaussian sample the initial beam position given the X0 mean. 
-    The spread (i.e. the standard dev) should be order l
+    The spread (i.e. the standard dev) should be order side_len
     """
     X0_mean,_,_ = choose_X0(meshgrid)
 
     if SPATIAL_DIM == 2:
         #we only need to sample the back "wall" where the beam originates
         x0,y0 = X0_mean
-        width_sdev = width_sdev_factor * l
+        width_sdev = width_sdev_factor * side_len
         y = rng.normal(loc=y0, scale=width_sdev)
         return np.array([x0, y], dtype=float)
 
     elif SPATIAL_DIM == 3:
         x0,y0,z0 = X0_mean
-        width_sdev = width_sdev_factor * l
+        width_sdev = width_sdev_factor * side_len
         y = rng.normal(loc=y0, scale=width_sdev)
         z = rng.normal(loc=z0, scale=width_sdev)
         return np.array([x0, y, z], dtype=float)
@@ -201,9 +201,9 @@ def coarsen_step(brownian_incs):
         
 #-----------------------MASS MATRIX--------------------------------------------
 
-def linear_lumped_mass_matrix(X_meshgrid, l):
+def linear_lumped_mass_matrix(X_meshgrid, side_len):
     """
-    Calculates the diagonal of the lumped (row sum) mass matrix for (Q1) bi/trilinear basis functions over a regular cubic voxel mesh side length l
+    Calculates the diagonal of the lumped (row sum) mass matrix for (Q1) bi/trilinear basis functions over a regular cubic voxel mesh side length side_len
     Exploits the symmetry and mapping onto the reference cube. Works in 2D or 3D.
     
     Inputs:
@@ -223,12 +223,12 @@ def linear_lumped_mass_matrix(X_meshgrid, l):
     lower_pos = tuple([0]*SPATIAL_DIM)
     pos_1 = tuple([1] + [0]*(SPATIAL_DIM - 1))
     regular_side_length = Xs[pos_1] - Xs[lower_pos]
-    print(f'Regular side length is reading as {regular_side_length:.8f}, should be {l}.')
-    if not(np.isclose(regular_side_length, l)): #Only tests if they are almost the same 
-        raise ValueError("Meshgrid sidelength must be l and it must be uniform.")
+    print(f'Regular side length is reading as {regular_side_length:.8f}, should be {side_len}.')
+    if not(np.isclose(regular_side_length, side_len)): #Only tests if they are almost the same 
+        raise ValueError("Meshgrid sidelength must be side_len and it must be uniform.")
 
     #Store the values of all possible volume integrals: 
-    integral_prefactor = (1/(2**SPATIAL_DIM))**2 * (l/2)**(SPATIAL_DIM) #From the chain rule and normalisation of basis functions
+    integral_prefactor = (1/(2**SPATIAL_DIM))**2 * (side_len/2)**(SPATIAL_DIM) #From the chain rule and normalisation of basis functions
     integral_values = np.zeros(SPATIAL_DIM + 1) #Index 0: 0 differences (i.e. same node), 1: 1 coord different, ...
     for num_differences in range(SPATIAL_DIM + 1):
         integral_values[num_differences] = I2**(SPATIAL_DIM - num_differences) * I1**(num_differences)
@@ -344,6 +344,6 @@ def load_mass_matrix():
             raise ValueError(f"Lumped mass matrix shape must equal {dose_shape}, is {mass_shape}.") 
         print("Mass matrix loaded successfully.")
     else:
-        M_diag = linear_lumped_mass_matrix(X_meshgrid,l)
-        np.savez(M_path, M_diag=M_diag, l = l, X = X_meshgrid, Y = Y_meshgrid)
+        M_diag = linear_lumped_mass_matrix(X_meshgrid,side_len)
+        np.savez(M_path, M_diag=M_diag, side_len = side_len, X = X_meshgrid, Y = Y_meshgrid)
     return M_diag

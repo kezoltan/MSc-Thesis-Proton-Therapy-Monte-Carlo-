@@ -10,7 +10,8 @@ from src.doseparams import NUM_CPUS as num_CPUs
 from src.doseparams import X0_mean as X0
 from src.doseparams import ALPHA as alpha
 from src.doseparams import EPS_0 as eps_0
-from src.dosesetup import coarsen_step, one_step_KZ_g_euler
+from src.dosesetup import coarsen_step
+from src.sde_model_simulation import energy_one_step_geoEM
 import matplotlib.pyplot as plt
 
 largest_exponent = 22 #if largest_exp = m then the reference/"exact" timestep size is base**(-m)
@@ -27,7 +28,7 @@ fine_num_E_steps = base**largest_exponent
 hs_rev = np.asarray(hs[::-1]) #flip order so it corresponds to the above order
 hs_plot = np.abs(hs_rev[1::]) #Cut off the finest step since the error (which is 0) was removed above 
 
-def one_sim_strong_conv_EM_KZ(fine_num_E_steps, hs, rng, E0=E0, Omega0=Omega0, X0=X0, largest_exponent=largest_exponent, s0 = 0, a=alpha, p=p):
+def energy_one_sim_strong_conv_EM(fine_num_E_steps, hs, rng, E0=E0, Omega0=Omega0, X0=X0, largest_exponent=largest_exponent, s0 = 0, a=alpha, p=p):
     """
     """
     fine_dE = hs[-1] #smallest value
@@ -56,7 +57,7 @@ def one_sim_strong_conv_EM_KZ(fine_num_E_steps, hs, rng, E0=E0, Omega0=Omega0, X
         for k in range(len(dB1)): #Simulate lengths but only store the end point
             dB1_onestep = dB1[k] 
             dB2_3D_onestep = dB2_3D[k]
-            E, Omega, s, X = one_step_KZ_g_euler(h, dB1_onestep, dB2_3D_onestep, coeff_prefactor, E, Omega, s, X)
+            E, Omega, s, X = energy_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, coeff_prefactor, E, Omega, s, X)
         final_lengths.append(s) #store the final path length for that step size and that sim 
         final_omegas.append(Omega)
         final_pos.append(X)
@@ -82,7 +83,7 @@ def worker(path_seed_chunk, fine_num_E_steps, hs):
 
     for path_seed in path_seed_chunk:
         rng=np.random.default_rng(path_seed)
-        path_update, angle_update, pos_update = one_sim_strong_conv_EM_KZ(fine_num_E_steps, hs, rng)
+        path_update, angle_update, pos_update = energy_one_sim_strong_conv_EM(fine_num_E_steps, hs, rng)
         abs_path_error_sum += path_update  
         abs_angle_error_sum += angle_update
         abs_pos_error_sum += pos_update
@@ -90,7 +91,7 @@ def worker(path_seed_chunk, fine_num_E_steps, hs):
 
 #Chat is helping with the next part, which is the actual parallelisation:
 
-def parallel_KZ_strong_conv(fine_num_E_steps, hs):
+def energy_parallel_strong_conv(fine_num_E_steps, hs):
     """
     """
     total_sims = sims_per_CPU * num_CPUs
@@ -156,10 +157,10 @@ if __name__ == "__main__":
         ax2.tick_params(axis='both', labelsize=12)
 
         fig.tight_layout()
-        save_path = os.path.join(file_path, f"plot_full_KZ_EM_strong_conv_X_pairwise_{num_CPUs * sims_per_CPU}_eps0_{eps_0}_L_{largest_exponent}.png")
+        save_path = os.path.join(file_path, f"plot_full_energy_EM_strong_conv_X_pairwise_{num_CPUs * sims_per_CPU}_eps0_{eps_0}_L_{largest_exponent}.png")
         fig.savefig(save_path, dpi=300)
 
-    save_loc_name = os.path.join(file_path, f"full_KZ_EM_strong_conv_{num_CPUs * sims_per_CPU}_eps0_{eps_0}_L_{largest_exponent}.npz")
+    save_loc_name = os.path.join(file_path, f"full_energy_EM_strong_conv_{num_CPUs * sims_per_CPU}_eps0_{eps_0}_L_{largest_exponent}.npz")
 
     if plot_only:
         print("Plotting only...")
@@ -178,7 +179,7 @@ if __name__ == "__main__":
 
     else:
         print("Running full sims with geometric euler: path angle and position.") #
-        path_errors, exp_angle_errors, exp_position_errors = parallel_KZ_strong_conv(fine_num_E_steps, hs)
+        path_errors, exp_angle_errors, exp_position_errors = energy_parallel_strong_conv(fine_num_E_steps, hs)
         np.savez(save_loc_name, total_simulations=np.array([sims_per_CPU * num_CPUs]),
                 hs = hs_plot, path_errors=path_errors, exp_angle_errors=exp_angle_errors, exp_pos_errors=exp_position_errors, largest_exponent=largest_exponent)  
 

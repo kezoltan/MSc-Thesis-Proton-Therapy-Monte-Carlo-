@@ -7,9 +7,10 @@ from math import ceil, prod, floor, exp, log
 from numba import njit
 from dosesetup import *
 from doseparams import *
+from src.sde_model_simulation import *
 
 def storage_position_convention(node_coordinate):
-    grid_coordinate = tuple(np.rint(node_coordinate / l).astype(int))
+    grid_coordinate = tuple(np.rint(node_coordinate / side_len).astype(int))
     try:
         return node_lookup[grid_coordinate]
     except KeyError:
@@ -37,7 +38,7 @@ def linear_path_parameterise(start, end, points=quad_nodes):
     points = np.asarray(points)
     return start + 0.5 * (points[:, None] + 1) * (end - start)
 
-max_steps = sum(nodes(l)[0].shape) #All boundaries, just needs to be large enough but relatively small
+max_steps = sum(nodes(side_len)[0].shape) #All boundaries, just needs to be large enough but relatively small
 
 def traversal_alg(start, end, rounding_tol = 8, max_steps = max_steps, corner_tol = 10**(-4)):
     """
@@ -57,7 +58,7 @@ def traversal_alg(start, end, rounding_tol = 8, max_steps = max_steps, corner_to
 def traversal_alg_numba(start, end, rounding_tol, max_steps, corner_tol):
     """
     Fast voxel/cell traversal algorithm (based on Amanatides and Woo) for identifying where a straight line proton path (the ray) crosses boundaries on a Cartesian grid
-    Requires that the proton belong to a uniform voxel grid of side length l 
+    Requires that the proton belong to a uniform voxel grid of side length side_len 
     To be executed once per linear segment of a single proton path 
 
     Inputs:
@@ -86,11 +87,11 @@ def traversal_alg_numba(start, end, rounding_tol, max_steps, corner_tol):
         dir_i = direction[i]
 
         if dir_i > 0:
-            tdelta = l/dir_i
+            tdelta = side_len/dir_i
             tdeltas[i] = tdelta
 
             #Locate nearest boundary along direction from start
-            nearest_bdry = ceil(round(start_i * l_reciprocal, rounding_tol)) * l
+            nearest_bdry = ceil(round(start_i * len_reciprocal, rounding_tol)) * side_len
             t = (nearest_bdry - start_i) / dir_i #If further than end[i], will be > 1           
             if t >= t_upper: #If the nearest boundary overshoots end or is end
                 tmaxs[i] = np.inf  
@@ -102,10 +103,10 @@ def traversal_alg_numba(start, end, rounding_tol, max_steps, corner_tol):
                 tmaxs[i] = t
 
         elif dir_i < 0:
-            tdelta = -l/dir_i
+            tdelta = -side_len/dir_i
             tdeltas[i] = tdelta
 
-            nearest_bdry = floor(round(start_i * l_reciprocal, rounding_tol)) * l
+            nearest_bdry = floor(round(start_i * len_reciprocal, rounding_tol)) * side_len
             t = (nearest_bdry - start_i) / dir_i 
             if t >= t_upper: 
                 tmaxs[i] = np.inf
@@ -193,25 +194,25 @@ def subsegment_voxel_vertices_numba(start, end, rounding_tol = 8):
 
         start_i = start[i]
         end_i = end[i]
-        lo = floor(round(start_i * l_reciprocal, rounding_tol))
-        hi = ceil(round(start_i * l_reciprocal, rounding_tol)) 
+        lo = floor(round(start_i * len_reciprocal, rounding_tol))
+        hi = ceil(round(start_i * len_reciprocal, rounding_tol)) 
 
-        lo_end = floor(round(end_i * l_reciprocal, rounding_tol))
-        hi_end = ceil(round(end_i * l_reciprocal, rounding_tol)) 
+        lo_end = floor(round(end_i * len_reciprocal, rounding_tol))
+        hi_end = ceil(round(end_i * len_reciprocal, rounding_tol)) 
         if lo_end < lo:
             lo = lo_end
         if hi_end > hi:
             hi = hi_end
 
         if lo == hi: #If equal then we lose this direction 
-            val = lo*l
+            val = lo*side_len
             bounds[i, 0] = val
             bounds[i, 1] = val 
             idx_vals.append((i,val))
             #vertices[:, i] = val
         else:
-            bounds[i,0] = lo*l 
-            bounds[i,1] = hi*l
+            bounds[i,0] = lo*side_len 
+            bounds[i,1] = hi*side_len
             varying_axes.append(i) #Store the axis index if we are moving in this direction
 
         num_vertices = 2**len(varying_axes)
@@ -247,17 +248,17 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
     Returns:
         one_step, np.ndarray, 1D, same shape as F_current: one linear segment contribution to the dose
     """
-    #This takes care of the last step for the V method
-    final_V_step = type(E) == tuple and type(X) == tuple and method=='V'
+    #This takes care of the last step for the track_length model
+    final_V_step = type(E) == tuple and type(X) == tuple and sde_model=='track_length'
     if final_V_step: 
         start, end = X
         E_start, E_end = E
         one_step = np.zeros(dose_shape)
     else:
-        if method=='KZ':
-            E_n1, Omega_n1, s_n1, X_n1 = one_step_KZ_g_euler(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X)
-        elif method=='V':
-            E_n1, Omega_n1, s_n1, X_n1, Y_n1 = one_step_V_g_euler(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y)
+        if sde_model=='energy':
+            E_n1, Omega_n1, s_n1, X_n1 = energy_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X)
+        elif sde_model=='track_length':
+            E_n1, Omega_n1, s_n1, X_n1, Y_n1 = track_length_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y)
         if E_n1 < 0:
             raise ValueError(f"E became negative.")
 
@@ -268,9 +269,9 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
         one_step = np.zeros(dose_shape) 
         if domain_exit_check(X_n1) and not(final_V_step): #If we left the domain during the simulation
             print(f"Track exited the domain between {X} and {X_n1}.")
-            if method=='KZ':
+            if sde_model=='energy':
                 return one_step, E_n1, Omega_n1, s_n1, X_n1
-            elif method=='V':
+            elif sde_model=='track_length':
                 return one_step, E_n1, Omega_n1, s_n1, X_n1, Y_n1  
 
     if len(quad_nodes) != 2:
@@ -282,7 +283,7 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
     if direction_sq == 0:
         raise ValueError("segment direction vector should not be 0.")
     if E_start - E_end <= 0:
-        if method=="KZ": #Energy should be controlled - this shouldn't happen
+        if sde_model=="energy": #Energy should be controlled - this shouldn't happen
             print(f"{start, end}, {E_start, E_end}")
             raise ValueError("full segment energy must be strictly decreasing.")
 
@@ -303,16 +304,16 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
         sub_E_end   = E_start + t1 * (E_end - E_start)
 
         if sub_E_start - sub_E_end <= 0:
-            if method=='KZ':
+            if sde_model=='energy':
                 print(f"{sub_start, sub_end}: {sub_E_start, sub_E_end} at {t0, t1}")
                 raise ValueError("subsegment energy must be strictly decreasing.")
 
         energy_length = sub_E_start - sub_E_end
 
-        if method=="V": 
+        if sde_model=="track_length": 
             gamma_t1_point, gamma_t2_point = linear_path_parameterise(sub_start, sub_end) 
 
-        elif method=="KZ":
+        elif sde_model=="energy":
             #This is the value of E(t1) and E(t2), not X
             E_t1_point, E_t2_point = linear_path_parameterise(sub_E_start, sub_E_end).flatten() 
             #Use a linear path approximation to get X(E1) and X(E2)
@@ -321,8 +322,8 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
         nodes_touched = subsegment_voxel_vertices_numba(sub_start, sub_end)   
 
         #Vectorisation - compute all Phi at once at all relevant nodes
-        phi1 = Phi_vectorised(l, gamma_t1_point, nodes_touched)
-        phi2 = Phi_vectorised(l, gamma_t2_point, nodes_touched)
+        phi1 = Phi_vectorised(side_len, gamma_t1_point, nodes_touched)
+        phi2 = Phi_vectorised(side_len, gamma_t2_point, nodes_touched)
         node_contributions = (energy_length / 2)*(phi1+phi2)/RHO #array
         
         for node, contribution in zip(nodes_touched, node_contributions):
@@ -332,34 +333,34 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
         #Where to store for each node: (old, not vectorised)
         #for node in nodes_touched:
         #    position = storage_position_convention(node)
-        #    phi1 = Phi(l, gamma_t1_point, node)
-        #    phi2 = Phi(l, gamma_t2_point, node)
+        #    phi1 = Phi(side_len, gamma_t1_point, node)
+        #    phi2 = Phi(side_len, gamma_t2_point, node)
         #    node_contribution = (energy_length / 2) * (phi1 + phi2) / RHO
         #    one_step[position] += node_contribution
 
     if final_V_step:
         return one_step
     else:   
-        if method=='KZ':
+        if sde_model=='energy':
             return one_step, E_n1, Omega_n1, s_n1, X_n1 
-        elif method=='V':
+        elif sde_model=='track_length':
             return one_step, E_n1, Omega_n1, s_n1, X_n1, Y_n1 
 
-def KZ_one_path_load_contribution(method, brownian_paths, setup_tuple):
+def energy_one_path_load_contribution(sde_model, brownian_paths, setup_tuple):
     """
     Generates the load vector contribution for one full proton path simulation.
     Does not store the path - at each step, run one_step_F_contribution. These are totalled up and returned.
     Does not reflect the Gaussian increment is ds becomes negative.   
     
     Inputs:
-        method = "KZ" or "V" to denote which scheme we are using
+        sde_model = "energy" or "track_length" to denote which scheme we are using
         brownian_paths, tuple: precomputed dB1 and dB2 for this scheme
 
     Returns: 
         total load vector contribution from this simulation, 1D np.ndarray 
     """ 
-    if method != "KZ": #Runs the scheme in independent energy
-        raise ValueError("must run KZ load contribution with method KZ.")
+    if sde_model != "energy": #Runs the scheme in independent energy
+        raise ValueError("must run energy load contribution with sde_model energy.")
     if dose_method != 'SF':
         raise ValueError("must not run load contribution functions if dose_method not SF.")
 
@@ -379,14 +380,14 @@ def KZ_one_path_load_contribution(method, brownian_paths, setup_tuple):
             break
     return one_path_load_contribution
 
-def V_one_path_load_contribution(method, rng, level):
+def track_len_one_path_load_contribution(sde_model, rng, level):
     """
     Generates the load vector contribution for one full proton path simulation.
     Does not store the path - at each step, run one_step_F_contribution. These are totalled up and returned.
     Does not reflect the Gaussian increment is ds becomes negative.   
     
     Inputs:
-        method = "KZ" or "V" to denote which scheme we are using
+        sde_model = "energy" or "track_length" to denote which scheme we are using
 
     Returns: 
         total load vector contribution from this simulation, 1D np.ndarray 
@@ -402,8 +403,8 @@ def V_one_path_load_contribution(method, rng, level):
     Omega_start = Omega
     s_start=s
     sqrt = np.sqrt(abs(h)) 
-    if method != "V": #Runs the scheme in independent energy
-        raise ValueError("must run V load contribution with method V.")
+    if sde_model != "track_length": #Runs the scheme in independent energy
+        raise ValueError("must run track_length load contribution with sde_model track_length.")
     if dose_method != 'SF':
         raise ValueError("must not run load contribution functions if dose_method not SF.")
 

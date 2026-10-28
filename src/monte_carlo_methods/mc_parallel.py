@@ -20,10 +20,10 @@ def mc_worker(sde_model, dose_method, path_seed_chunk, level):
         for path_seed in path_seed_chunk:
             rng=default_rng(path_seed)
             if sde_model=='energy': #Generate full brownian paths here
-                setup_tuple, (dZ1, dZ2_3D) = full_energy_model_setup(level, rng)
-                _,_,_,_,_, h,_,_ = setup_tuple
+                setup_tuple, (dZ1, dZ2_spatial_dim) = full_energy_model_setup(level, rng)
+                _,_,_,_,_, h,_ = setup_tuple
                 sqrt_h = np.sqrt(abs(h))
-                contribution = energy_one_path_load_contribution(sde_model, (sqrt_h * dZ1,sqrt_h * dZ2_3D), setup_tuple)
+                contribution = energy_one_path_load_contribution(sde_model, (sqrt_h * dZ1,sqrt_h * dZ2_spatial_dim), setup_tuple)
                 wc += contribution
 
             elif sde_model =='track_length':
@@ -33,10 +33,10 @@ def mc_worker(sde_model, dose_method, path_seed_chunk, level):
         for path_seed in path_seed_chunk:
             rng=default_rng(path_seed)
             if sde_model == 'energy':
-                setup_tuple, (dZ1, dZ2_3D) = full_energy_model_setup(level, rng)
-                _,_,_,_,_, h,_,_ = setup_tuple
+                setup_tuple, (dZ1, dZ2_spatial_dim) = full_energy_model_setup(level, rng)
+                _,_,_,_,_, h,_ = setup_tuple
                 sqrt_h = np.sqrt(abs(h))
-                contribution = energy_one_path_dose_contribution(sde_model, (sqrt_h * dZ1, sqrt_h * dZ2_3D), setup_tuple)
+                contribution = energy_one_path_dose_contribution(sde_model, (sqrt_h * dZ1, sqrt_h * dZ2_spatial_dim), setup_tuple)
                 wc += contribution
 
             if sde_model == 'track_length':

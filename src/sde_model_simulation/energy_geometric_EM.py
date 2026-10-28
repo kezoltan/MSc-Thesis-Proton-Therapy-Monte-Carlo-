@@ -14,17 +14,38 @@ def track_length_diff_coeff(E, a=ALPHA, p=p):
 
 # Run one step of the scheme
 
-def energy_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, coeff_prefactor, E_n, Omega_n, s_n, X_n):
-    """
-    Runs the n+1th step of the geometric Euler scheme for the energy model 
+def energy_one_step_geoEM(h, dB1_onestep, dB2_spatial_dim_onestep, E_n, Omega_n, s_n, X_n):
+    """ Simulate one step of the geometric Euler scheme for the energy model.
+
+    Parameters
+    ----------
+    h : float
+        The step-size of the scheme, parameterised in energy (loss). 
+    dB1_onestep : float
+         
+    dB2_spatial_dim_onestep : numpy.ndarray, shape (d,)
+         
+    E_n : float
+        The energy of the proton at the start of the step, must be nonegative.
+    Omega_n : numpy.ndarray, shape (d,)
+        The direction of the proton at the start of the step.  
+    s_n : float
+        The accumulated track length of the proton track at the start of the step. 
+    X_n : numpy.ndarray, shape (d,)
+        The spatial position of the proton at the start of the step. 
+
+    Returns
+    -------
+    tuple
+        The energetic, directional and positional state of the proton at the end of the step. 
     """
     #Set up
     S_inv = reciprocal_stopping_power(E_n) 
-    coeff = coeff_prefactor*E_n**(p/2 - 0.5)   
-    other_noise = dB2_3D_onestep - Omega_n * np.dot(Omega_n, dB2_3D_onestep)
+    omega_scheme_coeff = calculate_coeff(E_n, sde_model='energy') # coeff_prefactor*E_n**(p/2 - 0.5)
+    other_noise = dB2_spatial_dim_onestep - Omega_n * np.dot(Omega_n, dB2_spatial_dim_onestep)
 
     #Geometric Scheme
-    y = coeff * other_noise
+    y = omega_scheme_coeff * other_noise
     Omega_n1 = exponential_map_sphere(Omega_n, y)
     s_n1 = s_n - S_inv * h + track_length_diff_coeff(E_n) * dB1_onestep
     path_travelled = s_n1 - s_n  
@@ -75,15 +96,13 @@ def energy_model_initialise(dE, E_start, a=ALPHA, p=p):
         num_steps = int(T // (-h))
         if abs(T % (-h)) > 1e-6:
             raise ValueError(f"energy step size is not geometric, h: {h}, base: {base}, T: {E0-EMIN}, num_steps: {num_steps}") 
-    #Other setup
-    coeff_prefactor = np.sqrt(2*EPS_0 * a*p) 
-    return h, coeff_prefactor, num_steps
+    return h, num_steps
 
 def full_energy_model_setup(level, rng):
     s, X, Omega, E, Y = sample_gauss_beam(rng)
     dE, _ = choose_dE_ds(level)
-    h, coeff_prefactor, num_steps = energy_model_initialise(dE, E)
-    setup_tuple = s, X, Omega, E, Y, h, coeff_prefactor, num_steps
+    h, num_steps = energy_model_initialise(dE, E)
+    setup_tuple = s, X, Omega, E, Y, h, num_steps
     dZ1 = rng.standard_normal(num_steps) 
-    dZ2_3D = rng.standard_normal((num_steps, SPATIAL_DIM))
-    return setup_tuple, (dZ1, dZ2_3D)
+    dZ2_spatial_dim = rng.standard_normal((num_steps, SPATIAL_DIM))
+    return setup_tuple, (dZ1, dZ2_spatial_dim)

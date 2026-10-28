@@ -75,16 +75,15 @@ def spatial_kernel_vectorized(X_i, nodes_array, truncate=True, allowed_sd=4):
 
 #-----------------------DOSE CALCULATION W/ EM SCHEMES-----------------------------------
 
-def one_step_dose_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y):
+def one_step_dose_contribution(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y):
     """
     Compute the next step + compute the dose
-    the misc_coeff is different for each scheme 
     """
     if sde_model=='energy':
-        E_n1, Omega_n1, s_n1, X_n1 = energy_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X)
+        E_n1, Omega_n1, s_n1, X_n1 = energy_one_step_geoEM(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X)
         return spatial_kernel_vectorized(X_n1, nodes_array), E_n1, Omega_n1, s_n1, X_n1
     elif sde_model=='track_length':
-        E_n1, Omega_n1, s_n1, X_n1, Y_n1 = track_length_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y)
+        E_n1, Omega_n1, s_n1, X_n1, Y_n1 = track_length_one_step_geoEM(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y)
         constant = (-E_n1+E)/h
         return constant * spatial_kernel_vectorized(X_n1, nodes_array), E_n1, Omega_n1, s_n1, X_n1, Y_n1
 
@@ -101,8 +100,8 @@ def energy_one_path_dose_contribution(sde_model, brownian_paths, setup_tuple):
         dose_contribution, np.ndarray, shape according to the number of nodes 
     """ 
     dose_contribution = np.zeros(dose_shape)
-    s, X, Omega, E, Y, h, coeff_prefactor, num_steps = setup_tuple
-    dB1, dB2_3D = brownian_paths
+    s, X, Omega, E, Y, h, num_steps = setup_tuple
+    dB1, dB2_spatial_dim = brownian_paths
     if sde_model != "energy": 
         raise ValueError("must run energy dose contribution with sde_model energy.")
     if dose_method != 'SK':
@@ -120,9 +119,9 @@ def energy_one_path_dose_contribution(sde_model, brownian_paths, setup_tuple):
             dose_contribution += abs(h)/2 * spatial_kernel_vectorized(X, nodes_array)
         else: 
             dB1_onestep = dB1[k] 
-            dB2_3D_onestep = dB2_3D[k]
+            dB2_spatial_dim_onestep = dB2_spatial_dim[k]
             X_start = X
-            one_step, E, Omega, s, X = one_step_dose_contribution(h, coeff_prefactor, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y) #Y will not be used or returned
+            one_step, E, Omega, s, X = one_step_dose_contribution(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y) #Y will not be used or returned
             if domain_exit_check(X): #If we left the domain 
                 print(f"Track exited the domain between {X_start} and {X}.")
                 domain_check = False    
@@ -151,7 +150,6 @@ def track_len_one_path_dose_contribution(sde_model, rng, level):
     dose_contribution = np.zeros(dose_shape)
     s, X, Omega, E, Y = sample_gauss_beam(rng)
     _, h = choose_dE_ds(level)
-    coeff = np.sqrt(2*EPS_0)
     initial_constant = stopping_power(E) #For the comp trap
     sqrt = np.sqrt(abs(h)) 
     if sde_model != "track_length": 
@@ -170,8 +168,8 @@ def track_len_one_path_dose_contribution(sde_model, rng, level):
             dose_contribution += abs(h)/2 * initial_constant * spatial_kernel_vectorized(X, nodes_array)
         else: 
             dB1_onestep = sqrt * rng.standard_normal() 
-            dB2_3D_onestep = sqrt * rng.standard_normal(SPATIAL_DIM)
-            one_step, E, Omega, s, X, Y = one_step_dose_contribution(h, coeff, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y)
+            dB2_spatial_dim_onestep = sqrt * rng.standard_normal(SPATIAL_DIM)
+            one_step, E, Omega, s, X, Y = one_step_dose_contribution(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y)
             E_end = E
             X_end = X
             dose_contribution += abs(h) * one_step

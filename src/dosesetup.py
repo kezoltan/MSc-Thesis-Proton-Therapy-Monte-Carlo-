@@ -3,24 +3,19 @@
 #Dose basic functions 
 
 import numpy as np 
-from math import prod, comb, cos, sin, exp, log
+from math import prod, comb, cos, sin, log
 from itertools import product
 from .doseparams import *
 
 def exponential_map_sphere(Omega_n, strat_proj_brownian):
     """Update a direction vector along a geodesic on the unit sphere.
 
-    The projected Brownian increment defines the tangent direction and the
-    geodesic distance for the update. It is the diffusion multiplied by the
-    Brownian increment in Stratonovich form; do not convert it to Itô form.
-
     Parameters
     ----------
     Omega_n : numpy.ndarray, shape (d,)
         Current unit direction vector.
     strat_proj_brownian : numpy.ndarray, shape (d,)
-        Brownian increment projected onto the tangent space at
-        ``Omega_n``.
+        Velocity travelled along geodesic. 
 
     Returns
     -------
@@ -35,45 +30,27 @@ def exponential_map_sphere(Omega_n, strat_proj_brownian):
 
     return cos(norm) * Omega_n + sin(norm) * (strat_proj_brownian / norm) 
 
-def reciprocal_stopping_power(E, a=ALPHA, p=p): # this is the drift \(a p E^{p-1}\)
-    """Calculate the drift term from the reciprocal stopping power.
-
-    The drift term is given by ``apE^(p-1)``.
+def reciprocal_stopping_power(E, a=ALPHA, p=p):
+    """Calculate the reciprocal of the Bragg Kleeman stopping power.
+    Given by ``apE^(p-1)``.
 
     Parameters
     ----------
     E : float
-        Proton energy, which must be positive for non-integer values of ``p``.
+        Energy, must be nonegative.
     a : float, optional
-        Stopping-power coefficient. Defaults to ``ALPHA`` from ``doseparams``.
+        Medium dependent coefficient. 
+        Default medium is water, default value is ``ALPHA`` from ``doseparams``.
     p : float, optional
-        Stopping-power exponent. Defaults to ``p`` from ``doseparams``.
+        Medium dependent coefficient.
+        Default medium is water, default value is ``p`` from ``doseparams``.
 
     Returns
     -------
     float
-        Drift term evaluated at energy ``E``.
+        The value of the Bragg Kleeman stopping power. 
     """
     return a*p*E**(p-1)
-
-def T_energy_stragg(E, kappa = KAPPA):
-    """Calculate the energy straggling diffusion term.
-
-    The term is ``kappa * E * stopping_power(E)``.
-
-    Parameters
-    ----------
-    E : float
-        Proton energy.
-    kappa : float, optional
-        Energy straggling strength. Defaults to ``KAPPA`` from ``doseparams``.
-
-    Returns
-    -------
-    float
-        Energy straggling term evaluated at energy ``E``.
-    """
-    return kappa*E*stopping_power(E)
 
 def reference_cube_mapping(side_len, center, coordinate):
     """Map a global coordinate in a voxel to the reference cube ``[-1, 1]^d``.
@@ -260,18 +237,20 @@ def sample_initial_position(meshgrid, rng, side_len):
         z = rng.normal(loc=z0, scale=width_sdev)
         return np.array([x0, y, z], dtype=float)
 
-# def retrieve_h(setup_tuple):
-#     """
-#     Retrieves the final stepsize (which will be simulated) from the setup tuple
-#     This exists purely to avoid mistakes -- can update + make setup_tuple and setup_dict instead 
-#     """
-#     return setup_tuple[5]
-
 def domain_exit_check(X) -> bool:
     """
     Returns True if the position X is outside the domain D
     """
     return np.any(X > domain_upper_bounds) or np.any(X < domain_lower_bounds)
+
+def calculate_coeff(E_n, EPS_0 = EPS_0, sde_model = sde_model, a=ALPHA, p=p):
+    if sde_model == 'track_length':
+        coeff = np.sqrt(2*EPS_0)
+    elif sde_model == 'energy':
+        coeff = np.sqrt(2*EPS_0 * a * p) * E_n**(p/2 - 0.5)
+    else:
+        raise ValueError(f"sde_model {sde_model} does not exist - try energy or track_length.")
+    return coeff
 
 #----------------------------MLMC----------------------------------------------
 

@@ -2,6 +2,7 @@
 #July 2026
 #Supporting function to run the geometric EM scheme for the track length model
 
+from math import exp
 from doseparams import *
 from dosesetup import *
 from math import exp
@@ -100,4 +101,4 @@ def track_length_one_step_geoEM(h, dB1_onestep, dB2_spatial_dim_onestep, E_n, Om
     s_n1 = s_n + h
 
     #The outputs are now at step n+1
-    return E_n1, Omega_n1, s_n1, X_n1, Y_n1 
+    return E_n1, Omega_n1, s_n1, X_n1, Y_n1

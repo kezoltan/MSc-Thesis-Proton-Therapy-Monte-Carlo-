@@ -7,6 +7,6 @@
 
 - CI/CD for documentation and testing
 - Code efficiency and runtime, in Python or other languages
-- UX/UI for parameter selection and interdisciplinary accessibility 
+- UX/UI for parameter selection and interdisciplinary accessibility
 
 ###### We are currently working on restructuring this project to include continuously integrated documentation and basic testing regimes, and are not actively looking for new contributors. However, if you would like to assist this project please contact the owner via email: katherine.zoltan@bnc.ox.ac.uk.

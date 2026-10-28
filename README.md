@@ -4,10 +4,10 @@ This repository contains the code used to generate results in the following mast
 
 **Thesis Title:** Stochastic Modelling of Proton Transport and Spatial Therapeutic Dose Prediction with Multilevel Monte Carlo (MLMC)  
 **Author:** Katie Zoltan  
-**Institution:** University of Oxford
+**Institution:** University of Oxford  
 **Research Group:** Numerical Analysis Group, Mathematical Institute  
 **Supervisor(s):** Professor Mike Giles FRS  
-**Academic Year:** 2025-26
+**Academic Year:** 2025-26  
 **Course:** MSc in Mathematical Modelling and Scientific Computing
 
 ## Overview and Objectives
@@ -18,7 +18,7 @@ The function of this code is to estimate the absorbed dose of a monoenergetic pr
 - (2) the dose computation technique used to convert a simulated energetic proton and its track into a dose map in 2D or 3D space
 - (3) the Monte Carlo method used estimate the overall dose map resulting from millions of proton simulations   
 
-Firstly, we evaluate a pair of SDE proton transport models, the first of which originates from _Chronholm and Pryer, 2026_ (see _References_) simulated with the Euler-Maruyama discretisation (specifically, a geometry preserving scheme using the Riemannian exponential map on the sphere) where one is parameterised in energy and the other in track length. Secondly, the compare the existing dose computation method in _Chronholm and Pryer_ with a smoother alternative using finite element methods, which is developed in the adjoining thesis to this work. Thirdly, we compare the use of these methods with standard Monte Carlo against Multilevel Monte Carlo for this task, alongside suggesting techniques for ensuring dose positivity. 
+Firstly, we evaluate a pair of SDE proton transport models, the first of which originates from _Chronholm and Pryer, 2026_ (see _References_) simulated with the Euler-Maruyama discretisation (specifically, a geometry preserving scheme using the Riemannian exponential map on the sphere) where one is parameterised in energy and the other in track length. Secondly, we compare the existing dose computation method in _Chronholm and Pryer_ with a smoother alternative using finite element methods, which is developed in the adjoining thesis to this work. Thirdly, we compare the use of these methods with standard Monte Carlo against Multilevel Monte Carlo for this task, alongside suggesting techniques for ensuring dose positivity. 
 
 Overall, the main contribution of this work was that, using the new simulation and dose computation method that we developed, the MLMC was successful at achieving significantly improved computational complexity over standard Monte Carlo, in the homogeneous medium tested. Future work would aim to extend this work to include other media, inhomogeneity, more complex geometric structures, and explore other variants of MLMC such as antithetic MLMC. Further details are given in the written work, for which a URL will be provided in due course.
 

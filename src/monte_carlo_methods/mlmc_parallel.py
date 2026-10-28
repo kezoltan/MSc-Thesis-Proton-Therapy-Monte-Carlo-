@@ -1,14 +1,13 @@
 
-#August 2026 
+#August 2026
 #Multilevel Dose Contributionn User Input (at one level, for driver code)
 
-from dose_computation.dosemap1_shape_function_geoEM import energy_one_path_load_contribution, one_step_F_contribution
+from dose_computation.dosemap1_shape_function_geoEM import energy_one_path_load_contribution
 from dose_computation.dosemap2_spatial_kernel_geoEM import energy_one_path_dose_contribution
 from dosesetup import *
 from numpy.random import default_rng
 from concurrent.futures import ProcessPoolExecutor
-import numpy as np 
-import os 
+import numpy as np
 from src.sde_model_simulation.energy_geometric_EM import full_energy_model_setup
 
 #Don't import dE and ds
@@ -43,7 +42,7 @@ def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
     #i.e. we will begin the mlmc from a finer level than actual 0
     stepsize_level = level + MLMC_LEVEL_OFFSET
 
-    for path_seed in path_seed_chunk_l: #number of monte carlo sims 
+    for path_seed in path_seed_chunk_l: #number of monte carlo sims
         rng=default_rng(path_seed)
 
         #initialise the path at level l, the fine(r) path, this gets fed straight in
@@ -76,7 +75,7 @@ def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
         else:
             raise ValueError(f"invalid dose method: {dose_method}")
         if level == 0: #mlmc level!
-            payoff_diff = dose_f 
+            payoff_diff = dose_f
             dose_c=0.0
         elif level > 0:
             dB1_coarse = coarsen_step(dB1_fine)
@@ -88,7 +87,7 @@ def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
 
             if nc != len(dB1_coarse):
                 raise ValueError(f"nc should not change during one mlmc level. initially sampled as {nc} at level {level}, now reads as {len(dB1_coarse)}")
-            
+
             if dose_method == "SF":
                 load_c = energy_one_path_load_contribution(sde_model, (dB1_coarse, dB2_3D_coarse), setup_tuple)
                 dose_c = load_c / M_diag
@@ -108,10 +107,10 @@ def mlmc_coarse_fine_worker(level:int, path_seed_chunk_l, M_diag):
         #for each sim, sum up (for mc estimator)
         for k in range(6):
             if k <= 3:
-                wc_stats[:, k] += payoff_diff**(k+1) 
+                wc_stats[:, k] += payoff_diff**(k+1)
             else:
                 wc_stats[:, k] += dose_f**(k-3)
-                           
+
     return wc_stats, nf
 
 def mlmc_parallel(level, Ml:int, M_diag):
@@ -129,15 +128,15 @@ def mlmc_parallel(level, Ml:int, M_diag):
     if Ml == 0:
         raise ValueError(f"number of sims at mlmc level {level} is zero.")
     use_cpus = min(NUM_CPUS, Ml) #if not enough sims, reduce num cpus
-    total_out = None 
+    total_out = None
 
     #Setting seeds per worker
-    path_seeds = master_seed_seq.spawn(total_sims) #Make enough for all paths 
+    path_seeds = master_seed_seq.spawn(total_sims) #Make enough for all paths
     path_seed_chunks = np.array_split(path_seeds, use_cpus)
 
-    with ProcessPoolExecutor(max_workers=use_cpus) as ex: 
+    with ProcessPoolExecutor(max_workers=use_cpus) as ex:
         for wc in ex.map(mlmc_coarse_fine_worker, [level]*use_cpus, path_seed_chunks, [M_diag]*use_cpus):
-            if total_out is None: 
+            if total_out is None:
                 total_out, nf = np.array(wc[0], copy=True), wc[1]
             else:
                 total_out += wc[0]

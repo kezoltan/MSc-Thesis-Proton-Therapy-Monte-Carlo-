@@ -8,7 +8,7 @@ import numpy as np
 from src.doseparams import *
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator
-from math import ceil, log
+from math import ceil
 from src.dose_computation.dosemap1_shape_function_geoEM import storage_position_convention
 
 def printf(file_ptr, fmt, *pargs, printout=True):
@@ -72,8 +72,8 @@ def plot_kurtosis_variance_heatmap(L, kur1, var1, del1, del2, folder_path, log_k
     cbar.ax.tick_params(labelsize=smallsize)
     #cbar.set_label("log10(1 + kurtosis)" if log_kurt else "Kurtosis", fontsize=8)
 
-    axes[1].plot(x_center[order], kurt_norm, label=rf"Kurtosis, $\kappa_\ell$", color="C0", alpha=0.8)
-    axes[1].plot(x_center[order], var_norm, label=rf"Variance, $\mathbb{{V}}[Q_{{\ell}}]$", color="C1", alpha=0.8)
+    axes[1].plot(x_center[order], kurt_norm, label=r"Kurtosis, $\kappa_\ell$", color="C0", alpha=0.8)
+    axes[1].plot(x_center[order], var_norm, label=r"Variance, $\mathbb{V}[Q_{\ell}]$", color="C1", alpha=0.8)
     axes[1].plot(x_center[order], payoff_diff_norm, label=r"$|E[P^f_\ell-P^c_{\ell-1}]|$", color="C2", alpha=0.8)
     axes[1].plot(x_center[order], payoff_norm, label=r"$E[P^f_\ell]$", color="C3", alpha=0.8)
     axes[1].set_title(rf"Estimated Beam Axis Node Statistics ($y$={y_center:.2f})", fontsize=medsize)
@@ -306,16 +306,16 @@ def plot_mlmc_test(named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, 
         #Draw on the regression
         if np.count_nonzero(~mean_masks) >= 3:
             mean_fit = np.polyfit(l_ticks[1:][~mean_masks], np.log2(mean_data[~mean_masks]), 1)
-            axes[2, i].plot(l_ticks[1:], np.polyval(mean_fit, l_ticks[1:]), linestyle="-", label=rf'$P^f_\ell - P^c_{{\ell-1}}$')
+            axes[2, i].plot(l_ticks[1:], np.polyval(mean_fit, l_ticks[1:]), linestyle="-", label=r'$P^f_\ell - P^c_{\ell-1}$')
         if np.count_nonzero(~var_masks) >= 3:
             var_fit = np.polyfit(l_ticks[1:][~var_masks], np.log2(var_data[~var_masks]), 1)
-            axes[3, i].plot(l_ticks[1:], np.polyval(var_fit, l_ticks[1:]), linestyle="-", label=rf'$P^f_\ell - P^c_{{\ell-1}}$')
+            axes[3, i].plot(l_ticks[1:], np.polyval(var_fit, l_ticks[1:]), linestyle="-", label=r'$P^f_\ell - P^c_{\ell-1}$')
 
         payoff_fit = np.polyfit(l_ticks, np.log2(payoff_data), 1)
         var2_fit = np.polyfit(l_ticks, np.log2(var2_data), 1)
 
-        axes[2, i].plot(l_ticks, np.polyval(payoff_fit, l_ticks), linestyle="--", label=rf'$P^f_\ell$', color='red')
-        axes[3, i].plot(l_ticks, np.polyval(var2_fit, l_ticks), linestyle="--", label=rf'$P^f_\ell$', color='red')
+        axes[2, i].plot(l_ticks, np.polyval(payoff_fit, l_ticks), linestyle="--", label=r'$P^f_\ell$', color='red')
+        axes[3, i].plot(l_ticks, np.polyval(var2_fit, l_ticks), linestyle="--", label=r'$P^f_\ell$', color='red')
         axes[2, 0].legend()
         axes[3, 0].legend()
 
@@ -398,12 +398,12 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
         node_idx=beam_nodes_numbers[negative_nodes[0]]
         if nodes_array[node_idx][0] >= 0: #exclude if it is behind the beam axis
             nodes.append(node_idx)
-            names.append(f'Y < 0')
+            names.append('Y < 0')
     if len(negative_nodes) > 1:
         node_idx=beam_nodes_numbers[negative_nodes[-1]]
         if nodes_array[node_idx][0] >= 0:
             nodes.append(node_idx)
-            names.append(f'Y < 0')
+            names.append('Y < 0')
 
     #Remove repeats:
     seen = set()
@@ -454,7 +454,7 @@ def plot_negative_estimator_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, 
     mlmc_estimator = del2[:, 0] + np.sum(del1[:, 1:], axis=1)
     negative_nodes = np.flatnonzero(mlmc_estimator < 0)
     if len(negative_nodes) == 0:
-        print(f"\nNo nodes found with negative estimator")
+        print("\nNo nodes found with negative estimator")
         return
 
     order = negative_nodes[np.argsort(mlmc_estimator[negative_nodes])]

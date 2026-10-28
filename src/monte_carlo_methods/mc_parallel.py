@@ -12,7 +12,7 @@ from src.sde_model_simulation.energy_geometric_EM import full_energy_model_setup
 
 def mc_worker(sde_model, dose_method, path_seed_chunk, level):
     """
-    This is the worker function telling each CPU what to do 
+    This is the worker function telling each CPU what to do
     Each CPU will run SIMS_PER_CPU independent simulations, and add up the load vectors.
     """
     wc = np.zeros(dose_shape) #worker contribution
@@ -42,24 +42,24 @@ def mc_worker(sde_model, dose_method, path_seed_chunk, level):
             if sde_model == 'track_length':
                 contribution = track_len_one_path_dose_contribution(sde_model, rng, level)
                 wc += contribution
-    return wc 
+    return wc
 
 def mc_parallel(sde_model, level, SIMS_PER_CPU = SIMS_PER_CPU, NUM_CPUS = NUM_CPUS):
     """
     Retrieves the load vector sums from all CPUs, adds them up, takes expectation.
-    Returns the coefficients c_i for the function approximation. 
+    Returns the coefficients c_i for the function approximation.
     """
     total_sims = SIMS_PER_CPU * NUM_CPUS
-    total_out = None 
+    total_out = None
 
     #Setting seeds per worker
-    path_seeds = master_seed_seq.spawn(total_sims) #Make enough for all paths 
+    path_seeds = master_seed_seq.spawn(total_sims) #Make enough for all paths
     path_seed_chunks = [path_seeds[i * SIMS_PER_CPU : (i + 1) * SIMS_PER_CPU]
             for i in range(NUM_CPUS)]
 
-    with ProcessPoolExecutor(max_workers=NUM_CPUS) as ex: 
+    with ProcessPoolExecutor(max_workers=NUM_CPUS) as ex:
         for wc in ex.map(mc_worker, [sde_model]*NUM_CPUS, [dose_method]*NUM_CPUS, path_seed_chunks, [level]*NUM_CPUS):
-            if total_out is None: 
+            if total_out is None:
                 total_out = np.array(wc, copy=True)
             else:
                 total_out += wc

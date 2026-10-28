@@ -2,7 +2,6 @@ import numpy as np
 from src.doseparams import *
 from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel as mlmc_parallel_l
 from src.dosesetup import load_mass_matrix
-from math import ceil
 import os
 from src.doseplot import dose_plot_2D, dose_plot_3D
 from functools import partial

@@ -388,8 +388,8 @@ def energy_one_path_load_contribution(sde_model, brownian_paths, setup_tuple):
     if len(dB1) != num_steps:
         raise ValueError(f"Length of dZ1 is {len(dB1)}, should be {num_steps}.")
 
-    for k in range(num_steps):  
-        dB1_onestep = dB1[k] 
+    for k in range(num_steps):
+        dB1_onestep = dB1[k]
         dB2_spatial_dim_onestep = dB2_3D[k]
         one_step, E, Omega, s, X = one_step_F_contribution(
           h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y
@@ -416,7 +416,7 @@ def track_len_one_path_load_contribution(sde_model, rng, level):
     s, X, Omega, E, Y = sample_gauss_beam(rng)
 
     _, h = choose_dE_ds(level)
-    X_start = X #For the path segment calculation  
+    X_start = X #For the path segment calculation
     E_start = E
     Y_start = log(E_start)
     Omega_start = Omega
@@ -427,13 +427,13 @@ def track_len_one_path_load_contribution(sde_model, rng, level):
     if dose_method != "SF":
         raise ValueError("must not run load contribution functions if dose_method not SF.")
 
-    while E > EMIN: #Unknown end point 
-        dB1_onestep = sqrt * rng.standard_normal() 
+    while E > EMIN: #Unknown end point
+        dB1_onestep = sqrt * rng.standard_normal()
         dB2_spatial_dim_onestep = sqrt * rng.standard_normal(SPATIAL_DIM)
         one_step, E, Omega, s, X, Y = one_step_F_contribution(
           h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y
         )
-        
+
         if E - E_start > 0: #Energy spuriously increased in this step
             #Rerun this step
             print("Spurious energy increase, rerunning step.")

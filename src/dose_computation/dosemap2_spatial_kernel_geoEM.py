@@ -106,7 +106,7 @@ def energy_one_path_dose_contribution(sde_model, brownian_paths, setup_tuple):
     dose_contribution = np.zeros(dose_shape)
     s, X, Omega, E, Y, h, num_steps = setup_tuple
     dB1, dB2_spatial_dim = brownian_paths
-    if sde_model != "energy": 
+    if sde_model != "energy":
         raise ValueError("must run energy dose contribution with sde_model energy.")
     if dose_method != 'SK':
         raise ValueError("must not run dose contribution functions if dose_method not SK.")
@@ -121,14 +121,14 @@ def energy_one_path_dose_contribution(sde_model, brownian_paths, setup_tuple):
         #We include step 0 in the comp trap
         if current_step == 0:
             dose_contribution += abs(h)/2 * spatial_kernel_vectorized(X, nodes_array)
-        else: 
-            dB1_onestep = dB1[k] 
+        else:
+            dB1_onestep = dB1[k]
             dB2_spatial_dim_onestep = dB2_spatial_dim[k]
             X_start = X
             one_step, E, Omega, s, X = one_step_dose_contribution(
               h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y
             ) #Y will not be used or returned
-            if domain_exit_check(X): #If we left the domain 
+            if domain_exit_check(X): #If we left the domain
                 print(f"Track exited the domain between {X_start} and {X}.")
                 domain_check = False
                 break
@@ -172,8 +172,8 @@ def track_len_one_path_dose_contribution(sde_model, rng, level):
 
         if current_step == 0:
             dose_contribution += abs(h)/2 * initial_constant * spatial_kernel_vectorized(X, nodes_array)
-        else: 
-            dB1_onestep = sqrt * rng.standard_normal() 
+        else:
+            dB1_onestep = sqrt * rng.standard_normal()
             dB2_spatial_dim_onestep = sqrt * rng.standard_normal(SPATIAL_DIM)
             one_step, E, Omega, s, X, Y = one_step_dose_contribution(
               h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y

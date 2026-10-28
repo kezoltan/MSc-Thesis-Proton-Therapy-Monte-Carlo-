@@ -15,7 +15,7 @@ def exponential_map_sphere(Omega_n, strat_proj_brownian):
     Omega_n : numpy.ndarray, shape (d,)
         Current unit direction vector.
     strat_proj_brownian : numpy.ndarray, shape (d,)
-        Velocity travelled along geodesic. 
+        Velocity travelled along geodesic.
 
     Returns
     -------
@@ -39,7 +39,7 @@ def reciprocal_stopping_power(E, a=ALPHA, p=p):
     E : float
         Energy, must be nonegative.
     a : float, optional
-        Medium dependent coefficient. 
+        Medium dependent coefficient.
         Default medium is water, default value is ``ALPHA`` from ``doseparams``.
     p : float, optional
         Medium dependent coefficient.
@@ -48,7 +48,7 @@ def reciprocal_stopping_power(E, a=ALPHA, p=p):
     Returns
     -------
     float
-        The value of the Bragg Kleeman stopping power. 
+        The value of the Bragg Kleeman stopping power.
     """
     return a * p * E ** (p - 1)
 

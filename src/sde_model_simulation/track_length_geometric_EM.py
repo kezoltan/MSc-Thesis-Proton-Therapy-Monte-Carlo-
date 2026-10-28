@@ -5,7 +5,6 @@
 from math import exp
 from doseparams import *
 from dosesetup import *
-from math import exp
 
 def V_energy_loss_var_pul(E, kappa = KAPPA):
     """Calculates the energy loss variance per unit track length (pul).
@@ -30,12 +29,12 @@ def log_energy_drift_coeff(L):
     Parameters
     ----------
     L : float
-        Logarithm of nonegative energy. 
+        Logarithm of nonegative energy.
 
     Returns
     -------
     float
-        The value of the drift coefficient. 
+        The value of the drift coefficient.
     """
     return -stopping_power(L)*L**(-1) - 0.5*V_energy_loss_var_pul(L)*L**(-2)
 
@@ -45,12 +44,12 @@ def log_energy_diff_coeff(L):
     Parameters
     ----------
     L : float
-        Logarithm of nonegative energy. 
+        Logarithm of nonegative energy.
 
     Returns
     -------
     float
-        The value of the diffusion coefficient. 
+        The value of the diffusion coefficient.
     """
     return np.sqrt(V_energy_loss_var_pul(L))*L**(-1)
 
@@ -68,26 +67,26 @@ def track_length_one_step_geoEM(h, dB1_onestep, dB2_spatial_dim_onestep, E_n, Om
     Parameters
     ----------
     h : float
-        The step-size of the scheme, parameterised in track length. 
+        The step-size of the scheme, parameterised in track length.
     dB1_onestep : float
-         
+
     dB2_spatial_dim_onestep : numpy.ndarray, shape (d,)
-         
+
     E_n : float
         The energy of the proton at the start of the step, must be nonegative.
     Omega_n : numpy.ndarray, shape (d,)
-        The direction of the proton at the start of the step.  
+        The direction of the proton at the start of the step.
     s_n : float
-        The accumulated track length of the proton track at the start of the step. 
+        The accumulated track length of the proton track at the start of the step.
     X_n : numpy.ndarray, shape (d,)
-        The spatial position of the proton at the start of the step. 
+        The spatial position of the proton at the start of the step.
     Y_n : float
-        The logarithm of the E_n. 
+        The logarithm of the E_n.
 
     Returns
     -------
     tuple
-        The energetic, directional and positional state of the proton at the end of the step. 
+        The energetic, directional and positional state of the proton at the end of the step.
     """
     coeff = calculate_coeff(E_n, sde_model='track_length')
     other_noise = dB2_spatial_dim_onestep - Omega_n * np.dot(Omega_n, dB2_spatial_dim_onestep)

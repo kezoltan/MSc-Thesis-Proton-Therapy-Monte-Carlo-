@@ -324,7 +324,7 @@ def plot_mlmc_test(
 
     for i, (node, name) in enumerate(named_nodes):
         # Show which node is being plotted + why
-        name_label = f" ({name})" if name != None else ""
+        name_label = f" ({name})" if name is not None else ""
         axes[0, i].set_title(f"Node {nodes_array[node]}\n{name_label}")
         axes[2, i].set_title(rf"$\alpha={alpha[node]:.3f}$")
         axes[3, i].set_title(rf"$\beta={beta[node]:.3f}$")
@@ -545,7 +545,7 @@ def plot_negative_estimator_nodes(
         nodes = np.concatenate((order[:n], order[-n:]))
 
     names = [f"Y={mlmc_estimator[node_idx]:.2f}" for node_idx in nodes]
-    named_nodes = [(node_number, name) for node_number, name in zip(nodes, names)]
+    named_nodes = [(node_number, name) for node_number, name in zip(nodes, names, strict=False)]
     plot_keyword = "negative estimator"
     plot_mlmc_test(
         named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path, None

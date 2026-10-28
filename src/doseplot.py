@@ -20,7 +20,7 @@ def dose_gy_convert(dose_expected):
     """
     Convert expected dose output from Monte Carlo to Gy, measured for one gigaproton.
     """
-    if type(dose_expected) != np.ndarray:
+    if not isinstance(dose_expected, np.ndarray):
         raise TypeError("dose_expected must be an array.")
     giga_proton = 1e9
     constant = 1.6 * 1e-10 * giga_proton  # Directly from track_length's code

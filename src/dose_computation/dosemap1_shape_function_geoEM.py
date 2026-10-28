@@ -13,8 +13,8 @@ def storage_position_convention(node_coordinate):
     grid_coordinate = tuple(np.rint(node_coordinate / side_len).astype(int))
     try:
         return node_lookup[grid_coordinate]
-    except KeyError:
-        raise ValueError(f"No node found at coordinate {node_coordinate}.")
+    except KeyError as err:
+        raise ValueError(f"No node found at coordinate {node_coordinate}.") from err
 
 
 lookup_matrix = position_lookup_matrix(X_meshgrid)
@@ -49,7 +49,7 @@ def traversal_alg(start, end, rounding_tol=8, max_steps=max_steps, corner_tol=10
     Runs all validation checks for the traversal algorithm below before running the alg with Numba
     Call this function to run the algorithm fully
     """
-    if type(start) != np.ndarray or type(end) != np.ndarray:
+    if not isinstance(start, np.ndarray) or not isinstance(end, np.ndarray):
         raise TypeError("start and end points must be np.ndarrays arrays.")
     if start.shape != (SPATIAL_DIM,):
         raise ValueError("start and end must have shape (n,) for n spatial dimensions.")
@@ -190,7 +190,6 @@ def subsegment_voxel_vertices_numba(start, end, rounding_tol=8):
     """
     # We need the start and end in case one is on a boundary
 
-    direction = end - start
     bounds = np.empty((SPATIAL_DIM, 2))  # Store a pair of bounds in each direction
 
     # Outdated code (though caused no bugs)
@@ -259,7 +258,7 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
         one_step, np.ndarray, 1D, same shape as F_current: one linear segment contribution to the dose
     """
     # This takes care of the last step for the track_length model
-    final_V_step = type(E) == tuple and type(X) == tuple and sde_model == "track_length"
+    final_V_step = isinstance(E, tuple) and isinstance(X, tuple) and sde_model == "track_length"
     if final_V_step:
         start, end = X
         E_start, E_end = E

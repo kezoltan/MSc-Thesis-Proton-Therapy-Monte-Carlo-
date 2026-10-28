@@ -4,8 +4,7 @@
 import numpy as np
 from math import prod, comb, cos, sin, log
 from itertools import product
-from .doseparams import *
-
+from doseparams import *
 
 def exponential_map_sphere(Omega_n, strat_proj_brownian):
     """Update a direction vector along a geodesic on the unit sphere.

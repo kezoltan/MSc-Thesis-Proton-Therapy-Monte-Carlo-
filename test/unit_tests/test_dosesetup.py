@@ -8,7 +8,6 @@ import pytest
 from src.dosesetup import (
     exponential_map_sphere,
     reciprocal_stopping_power,
-    T_energy_stragg,
     reference_cube_mapping,
     Phi,
     Phi_vectorised,
@@ -19,6 +18,7 @@ from src.dosesetup import (
     linear_lumped_mass_matrix,
     load_mass_matrix,
 )
+from src.sde_model_simulation.track_length_geometric_EM import V_energy_loss_var_pul
 
 
 @pytest.mark.parametrize(
@@ -90,7 +90,7 @@ def test_energy_straggling_term_matches_formula(energy, kappa):
     expected = kappa * energy ** (2 - p) / (ALPHA * p)
 
     # Pass kappa explicitly so the case does not depend on its default value.
-    result = T_energy_stragg(energy, kappa=kappa)
+    result = V_energy_loss_var_pul(energy, kappa=kappa)
 
     assert np.isclose(result, expected)
 

@@ -38,28 +38,27 @@ def energy_one_sim_strong_conv_EM(
     final_pos = []
 
     dZ1 = rng.standard_normal(fine_num_E_steps)
-    dZ2_3D = rng.standard_normal((fine_num_E_steps, SPATIAL_DIM))
+    dZ2_spatial_dim = rng.standard_normal((fine_num_E_steps, SPATIAL_DIM))
 
     # Generate new Gaussians ahead of time so they are the same for every h:
     dB1 = np.sqrt(abs(fine_dE)) * dZ1
-    dB2_3D = np.sqrt(abs(fine_dE)) * dZ2_3D
-    coeff_prefactor = np.sqrt(2 * eps_0 * a * p)
+    dB2_spatial_dim = np.sqrt(abs(fine_dE)) * dZ2_spatial_dim
 
-    for i in range(largest_exponent + 1):  # We will reduce the timestep repeatedly
+    for i in range(largest_exponent + 1): # We will reduce the timestep repeatedly
         if i != 0:
-            dB1 = coarsen_step(dB1)  # now increase the energy step size
-            dB2_3D = coarsen_step(dB2_3D)
+            dB1 = coarsen_step(dB1) # now increase the energy step size
+            dB2_spatial_dim = coarsen_step(dB2_spatial_dim)
 
         s = float(s0)
         E = float(E0)
         Omega = np.array(Omega0)
         X = np.array(X0)
-        h = hs[-1 - i]  # set the energy step size, starting with the finest
-        for k in range(len(dB1)):  # Simulate lengths but only store the end point
+        h = hs[-1-i] # set the energy step size, starting with the finest
+        for k in range(len(dB1)): # Simulate lengths but only store the end point
             dB1_onestep = dB1[k]
-            dB2_3D_onestep = dB2_3D[k]
-            E, Omega, s, X = energy_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, coeff_prefactor, E, Omega, s, X)
-        final_lengths.append(s)  # store the final path length for that step size and that sim
+            dB2_spatial_dim_onestep = dB2_spatial_dim[k]
+            E, Omega, s, X = energy_one_step_geoEM(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X)
+        final_lengths.append(s) # store the final path length for that step size and that sim
         final_omegas.append(Omega)
         final_pos.append(X)
 

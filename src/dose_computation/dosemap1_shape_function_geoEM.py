@@ -240,8 +240,7 @@ def subsegment_voxel_vertices_numba(start, end, rounding_tol=8):
 
     return vertices
 
-
-def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y):
+def one_step_F_contribution(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y):
     """
     Computes on step of proton path
     Add the contribution from one linear step ds of the proton path simulation to the load vector.
@@ -264,13 +263,13 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
         E_start, E_end = E
         one_step = np.zeros(dose_shape)
     else:
-        if sde_model == "energy":
+        if sde_model=='energy':
             E_n1, Omega_n1, s_n1, X_n1 = energy_one_step_geoEM(
-                h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X
+              h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X
             )
-        elif sde_model == "track_length":
+        elif sde_model=='track_length':
             E_n1, Omega_n1, s_n1, X_n1, Y_n1 = track_length_one_step_geoEM(
-                h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y
+              h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y
             )
         if E_n1 < 0:
             raise ValueError("E became negative.")
@@ -383,7 +382,7 @@ def energy_one_path_load_contribution(sde_model, brownian_paths, setup_tuple):
         raise ValueError("must not run load contribution functions if dose_method not SF.")
 
     one_path_load_contribution = np.zeros(dose_shape)
-    s, X, Omega, E, Y, h, coeff_prefactor, num_steps = setup_tuple
+    s, X, Omega, E, Y, h, num_steps = setup_tuple
     dB1, dB2_3D = brownian_paths
 
     if len(dB1) != num_steps:
@@ -391,9 +390,9 @@ def energy_one_path_load_contribution(sde_model, brownian_paths, setup_tuple):
 
     for k in range(num_steps):
         dB1_onestep = dB1[k]
-        dB2_3D_onestep = dB2_3D[k]
+        dB2_spatial_dim_onestep = dB2_3D[k]
         one_step, E, Omega, s, X = one_step_F_contribution(
-            h, coeff_prefactor, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y
+          h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y
         )
         one_path_load_contribution += one_step
         if domain_exit_check(X):
@@ -417,8 +416,7 @@ def track_len_one_path_load_contribution(sde_model, rng, level):
     s, X, Omega, E, Y = sample_gauss_beam(rng)
 
     _, h = choose_dE_ds(level)
-    coeff = np.sqrt(2 * EPS_0)
-    X_start = X  # For the path segment calculation
+    X_start = X #For the path segment calculation
     E_start = E
     Y_start = log(E_start)
     Omega_start = Omega
@@ -429,13 +427,15 @@ def track_len_one_path_load_contribution(sde_model, rng, level):
     if dose_method != "SF":
         raise ValueError("must not run load contribution functions if dose_method not SF.")
 
-    while E > EMIN:  # Unknown end point
+    while E > EMIN: #Unknown end point
         dB1_onestep = sqrt * rng.standard_normal()
-        dB2_3D_onestep = sqrt * rng.standard_normal(SPATIAL_DIM)
-        one_step, E, Omega, s, X, Y = one_step_F_contribution(h, coeff, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y)
+        dB2_spatial_dim_onestep = sqrt * rng.standard_normal(SPATIAL_DIM)
+        one_step, E, Omega, s, X, Y = one_step_F_contribution(
+          h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y
+        )
 
-        if E - E_start > 0:  # Energy spuriously increased in this step
-            # Rerun this step
+        if E - E_start > 0: #Energy spuriously increased in this step
+            #Rerun this step
             print("Spurious energy increase, rerunning step.")
             E = E_start
             Y = Y_start
@@ -453,9 +453,9 @@ def track_len_one_path_load_contribution(sde_model, rng, level):
             X_end = X_start + (X_end - X_start) * t_min
             E_end = EMIN
 
-            # Need to be tuples here for the function to work correctly
+            #Need to be tuples here for the function to work correctly
             one_step = one_step_F_contribution(
-                h, coeff, dB1_onestep, dB2_3D_onestep, (E_start, E_end), Omega, s, (X_start, X_end), Y
+              h, dB1_onestep, dB2_spatial_dim_onestep, (E_start, E_end), Omega, s, (X_start, X_end), Y
             )
             one_path_load_contribution += one_step
             return one_path_load_contribution

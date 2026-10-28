@@ -1,5 +1,5 @@
 # August 2026
-# Multilevel Dose Contributionn User Input (at one level, for driver code)
+# Multilevel Dose Contribution User Input (at one level, for driver code)
 
 from dose_computation.dosemap1_shape_function_geoEM import energy_one_path_load_contribution
 from dose_computation.dosemap2_spatial_kernel_geoEM import energy_one_path_dose_contribution
@@ -47,11 +47,11 @@ def mlmc_coarse_fine_worker(level: int, path_seed_chunk_l, M_diag):
     for path_seed in path_seed_chunk_l:  # number of monte carlo sims
         rng = default_rng(path_seed)
 
-        # initialise the path at level l, the fine(r) path, this gets fed straight in
-        setup_tuple, (dZ1_fine, dZ2_3D_fine) = full_energy_model_setup(stepsize_level, rng)
+        #initialise the path at level l, the fine(r) path, this gets fed straight in
+        setup_tuple, (dZ1_fine, dZ2_spatial_dim_fine) = full_energy_model_setup(stepsize_level, rng)
 
         if sim_counter == 0:
-            s, X, Omega, E, Y, hf, coeff_prefactor, nf = setup_tuple
+            s, X, Omega, E, Y, hf, nf = setup_tuple
             hc = hf * base if level > 0 else 0.0
             nc = int(T // (-hc)) if level > 0 else 0
             if not (abs(stepsize_level - round(-log(-hf / T) / log(base))) < 1e-6):
@@ -61,29 +61,29 @@ def mlmc_coarse_fine_worker(level: int, path_seed_chunk_l, M_diag):
                     f"mlmc level {level}"
                 )
         else:
-            s, X, Omega, E, Y, h, coeff_prefactor, num_steps = setup_tuple
-            if h != hf:
+            s, X, Omega, E, Y, h, num_steps = setup_tuple
+            if h!=hf:
                 raise ValueError(
                     f"hf should not change during one mlmc level. initially sampled as {hf} "
                     f"at mlmc level {level}, now reads as {h}."
                 )
-            if num_steps != nf:
+            if num_steps!=nf:
                 raise ValueError(
                     f"nf should not change during one mlmc level. initially sampled as {nf} "
                     f"at mlmc level {level}, now reads as {num_steps}."
                 )
 
-        # convert to brownian from standard normal paths
+        #convert to brownian from standard normal paths
         sqrt_hf = np.sqrt(abs(hf))
         dB1_fine = sqrt_hf * dZ1_fine
-        dB2_3D_fine = sqrt_hf * dZ2_3D_fine
+        dB2_spatial_dim_fine = sqrt_hf * dZ2_spatial_dim_fine
 
         # Generate final dose payoff, fine path
         if dose_method == "SF":
-            load_f = energy_one_path_load_contribution(sde_model, (dB1_fine, dB2_3D_fine), setup_tuple)
+            load_f = energy_one_path_load_contribution(sde_model, (dB1_fine, dB2_spatial_dim_fine), setup_tuple)
             dose_f = load_f / M_diag
         elif dose_method == "SK":
-            dose_f = energy_one_path_dose_contribution(sde_model, (dB1_fine, dB2_3D_fine), setup_tuple)
+            dose_f = energy_one_path_dose_contribution(sde_model, (dB1_fine, dB2_spatial_dim_fine), setup_tuple)
         else:
             raise ValueError(f"invalid dose method: {dose_method}")
         if level == 0:  # mlmc level!
@@ -91,11 +91,11 @@ def mlmc_coarse_fine_worker(level: int, path_seed_chunk_l, M_diag):
             dose_c = 0.0
         elif level > 0:
             dB1_coarse = coarsen_step(dB1_fine)
-            dB2_3D_coarse = coarsen_step(dB2_3D_fine)
+            dB2_spatial_dim_coarse = coarsen_step(dB2_spatial_dim_fine)
 
-            # change the input stepsize -- inefficient, update this
-            # keep all the same other ics
-            setup_tuple = s, X, Omega, E, Y, hc, coeff_prefactor, nc
+            #change the input stepsize -- inefficient, update this
+            #keep all the same other ics
+            setup_tuple = s, X, Omega, E, Y, hc, nc
 
             if nc != len(dB1_coarse):
                 raise ValueError(
@@ -104,11 +104,11 @@ def mlmc_coarse_fine_worker(level: int, path_seed_chunk_l, M_diag):
                 )
 
             if dose_method == "SF":
-                load_c = energy_one_path_load_contribution(sde_model, (dB1_coarse, dB2_3D_coarse), setup_tuple)
+                load_c = energy_one_path_load_contribution(sde_model, (dB1_coarse, dB2_spatial_dim_coarse), setup_tuple)
                 dose_c = load_c / M_diag
                 payoff_diff = dose_f - dose_c
             elif dose_method == "SK":
-                dose_c = energy_one_path_dose_contribution(sde_model, (dB1_coarse, dB2_3D_coarse), setup_tuple)
+                dose_c = energy_one_path_dose_contribution(sde_model, (dB1_coarse, dB2_spatial_dim_coarse), setup_tuple)
                 payoff_diff = dose_f - dose_c
         else:
             raise ValueError(f"mlmc level should not be negative: {level}.")

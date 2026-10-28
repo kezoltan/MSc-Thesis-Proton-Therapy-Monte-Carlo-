@@ -436,11 +436,9 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
     node3 = beam_nodes_numbers[np.nanargmax(alpha[beamline_mask])]
     node4 = beam_nodes_numbers[np.nanargmax(beta[beamline_mask])]
 
-    same_node = False
-    if node4 == node3:  # likely this could happen
+    if node4 == node3:  # nodes are the same - likely this could happen
         nodes = [node1, node2, node3]
         names = [r"Max $P_L$", r"$\beta$, Beamline", r"Max $\alpha_i$, $\beta_i$"]  # r"Min $P_\ell$",
-        same_node = True
     else:
         nodes = [node1, node2, node3, node4]  # node2,
         names = [r"Max $P_L$", r"$\beta$, Beamline", r"Max $\alpha_i$", r"Max $\beta_i$"]  # r"Min $P_\ell$",
@@ -481,7 +479,7 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
     seen = set()
     unique_nodes = []
     unique_names = []
-    for node, name in zip(nodes, names):
+    for node, name in zip(nodes, names, strict=False):
         if node not in seen:
             seen.add(node)
             unique_nodes.append(node)
@@ -489,7 +487,7 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
     nodes = unique_nodes
     names = unique_names
 
-    named_nodes = [(node_number, name) for node_number, name in zip(nodes, names)]
+    named_nodes = [(node_number, name) for node_number, name in zip(nodes, names, strict=False)]
     plot_keyword = "beamline"
     plot_mlmc_test(
         named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path, y_coord

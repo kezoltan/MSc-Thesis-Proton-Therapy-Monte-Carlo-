@@ -253,15 +253,15 @@ def verify_params():
     if theta>1 or theta<0:
         raise ValueError("mlmc error weighting parameter theta must be in interval [0,1].")
     if EMIN > 1:
-        warnings.warn(f"EMIN of {EMIN} may be too large.", UserWarning)
+        warnings.warn(f"EMIN of {EMIN} may be too large.", UserWarning, stacklevel=2)
     if min(Eps) < 0.2 or L_conv_test + MLMC_LEVEL_OFFSET >= 16:
-        warnings.warn("mlmc likely to be slow under chosen parameterisation.", RuntimeWarning)
+        warnings.warn("mlmc likely to be slow under chosen parameterisation.", RuntimeWarning, stacklevel=2)
     if E0 <= 0:
         raise ValueError("initial energy E0 must be positive.")
     if not(50 <= E0 <= 250):
-        warnings.warn(f"E0 of {E0} is outside therapeutic energy range.", UserWarning)
+        warnings.warn(f"E0 of {E0} is outside therapeutic energy range.", UserWarning, stacklevel=2)
     if N0 < 20000:
-        warnings.warn(f"N0 of {N0} may be too small to achieve suitable variable estimates.")
+        warnings.warn(f"N0 of {N0} may be too small to achieve suitable variable estimates.", stacklevel=2)
 verify_params()
 
 #set up title labels

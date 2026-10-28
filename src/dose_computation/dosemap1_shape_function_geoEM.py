@@ -344,7 +344,7 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
         phi2 = Phi_vectorised(side_len, gamma_t2_point, nodes_touched)
         node_contributions = (energy_length / 2) * (phi1 + phi2) / RHO  # array
 
-        for node, contribution in zip(nodes_touched, node_contributions):
+        for node, contribution in zip(nodes_touched, node_contributions, strict=False):
             position = storage_position_convention(node)
             one_step[position] += contribution
 

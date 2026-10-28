@@ -2,6 +2,7 @@
 #July 2026
 #Supporting function to run the geometric EM scheme for the track length model
 
+from math import exp
 from doseparams import *
 from dosesetup import *
 

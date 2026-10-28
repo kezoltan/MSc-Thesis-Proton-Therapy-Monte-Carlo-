@@ -412,7 +412,7 @@ def dose_plot_3D(sde_model, dose_method, path_3D, n_points=num_points, av_width=
         #    for j in range(n_points):
         #        X_eval = np.array([Xg[i, j], Yg[i, j], Z_BEAM], dtype=float)
         #        val = 0.0
-        #        for c, node in zip(coeffs, node_coords):
+        #        for c, node in zip(coeffs, node_coords, strict=False):
         #            val += c * Phi(side_len, X_eval, node)
         #        U[i, j] = val
 
@@ -433,7 +433,7 @@ def dose_plot_3D(sde_model, dose_method, path_3D, n_points=num_points, av_width=
             for iy, y in enumerate(y_average_vals):
                 X_eval = np.array([x, y, Z_BEAM], dtype=float)
                 val = 0.0
-                for c, node in zip(coeffs, node_coords):
+                for c, node in zip(coeffs, node_coords, strict=False):
                     val += c * Phi(side_len, X_eval, node)
                 dose_across_y[iy] = val
             dose_curve_raw[ix] = np.mean(dose_across_y)

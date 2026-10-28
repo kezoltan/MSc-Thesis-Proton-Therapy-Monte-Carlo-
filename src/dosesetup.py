@@ -416,7 +416,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     for boundary_mask, equal_mask in product(ni_boundary_masks, nj_equal_masks):
         # Calculate the weight of the node nj (i.e. num voxels)
         # Count the number of times nj is on a boundary
-        nj_num_boundaries = sum(b == 1 and e == 1 for b, e in zip(boundary_mask, equal_mask))
+        nj_num_boundaries = sum(b == 1 and e == 1 for b, e in zip(boundary_mask, equal_mask, strict=False))
         nj_num_differences = spatial_dim - np.sum(equal_mask)
 
         # The weight between ni and nj halves once for each boundary nj is also on

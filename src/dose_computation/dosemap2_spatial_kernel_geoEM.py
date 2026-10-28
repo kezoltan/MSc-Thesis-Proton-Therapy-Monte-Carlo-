@@ -39,7 +39,7 @@ def spatial_kernel_vectorized(X_i, nodes_array, truncate=True, allowed_sd=4):
     #If we are near to a boundary, we need a different truncation
     #   If we exactly touch a boundary, we get no deposit due to rescaling. This is an issue at X0.
     #   Non-physical to just cut off energy dispersion at the wall
-    #   Instead I move the wall backwards for the dispersion only 
+    #   Instead I move the wall backwards for the dispersion only
     #   (the actual scheme is still absorbed if it goes backwards)
 
     if SPATIAL_DIM==2:

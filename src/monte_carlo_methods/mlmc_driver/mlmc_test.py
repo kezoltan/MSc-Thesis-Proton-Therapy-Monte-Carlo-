@@ -374,7 +374,7 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
 
         # Dynamic unpacking of arbitrary lengths via index filtering slices
         results = mlmcv(
-            mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0=beta_global, gamma0=1.0, alpha0=1.0, *args
+            mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0=beta_global, gamma0=1.0, alpha0=1.0, *args  # noqa: B026
         )  # alpha_max, beta_max,
 
         # All results

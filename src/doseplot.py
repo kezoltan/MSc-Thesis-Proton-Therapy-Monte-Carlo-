@@ -258,7 +258,7 @@ def dose_plot_2D(path_3D_list, hybrid=False):
         if sampling_type=='mlmc':
             if np.count_nonzero(negative_mask) >= 1:
                 print(f"Maximum magnitude of negative dose: {np.max(np.abs(fine_dose_field[negative_mask])):.3f}")
-            ax_top.scatter(plot_X[negative_mask], plot_Y[negative_mask], color="#4C78A8", s=5, zorder=10, label=f"Negative Dose")
+            ax_top.scatter(plot_X[negative_mask], plot_Y[negative_mask], color="#4C78A8", s=5, zorder=10, label="Negative Dose")
             ax_top.legend(fontsize=small_size-2, markerscale=2.5, framealpha=0.9, loc="upper left")
 
         sampling_name = "Monte Carlo" if sampling_type=="mc" else "MLMC and Hybrid MC-MLMC"

@@ -3,7 +3,7 @@
 #Finite Element Dose Method Code
 
 import numpy as np
-from math import ceil, prod, floor, exp, log
+from math import ceil, prod, floor, log
 from numba import njit
 from dosesetup import *
 from doseparams import *
@@ -260,7 +260,7 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
         elif sde_model=='track_length':
             E_n1, Omega_n1, s_n1, X_n1, Y_n1 = track_length_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y)
         if E_n1 < 0:
-            raise ValueError(f"E became negative.")
+            raise ValueError("E became negative.")
 
         start=X
         end=X_n1

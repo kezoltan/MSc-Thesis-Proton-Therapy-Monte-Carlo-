@@ -4,8 +4,6 @@
 
 import numpy as np
 from math import pi
-from concurrent.futures import ProcessPoolExecutor
-from itertools import repeat
 from doseparams import *
 from dosesetup import *
 from scipy.stats import chi2

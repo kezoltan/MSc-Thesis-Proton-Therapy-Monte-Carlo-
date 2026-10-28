@@ -248,7 +248,7 @@ def verify_params():
     if EMIN > 1:
         warnings.warn(f"EMIN of {EMIN} may be too large.", UserWarning)
     if min(Eps) < 0.2 or L_conv_test + MLMC_LEVEL_OFFSET >= 16:
-        warnings.warn(f"mlmc likely to be slow under chosen parameterisation.", RuntimeWarning)
+        warnings.warn("mlmc likely to be slow under chosen parameterisation.", RuntimeWarning)
     if E0 <= 0:
         raise ValueError("initial energy E0 must be positive.")
     if not(50 <= E0 <= 250):

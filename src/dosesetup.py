@@ -3,7 +3,7 @@
 #Dose basic functions
 
 import numpy as np
-from math import prod, comb, cos, sin, exp, log
+from math import prod, comb, cos, sin, log
 from itertools import product
 from .doseparams import *
 

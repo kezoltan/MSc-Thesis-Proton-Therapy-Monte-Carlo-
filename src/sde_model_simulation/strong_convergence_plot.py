@@ -5,7 +5,7 @@
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 import os
-from src.doseparams import Omega0, E0, p, base, master_seed_seq, file_path, SPATIAL_DIM, T, MLMC_LEVEL_OFFSET
+from src.doseparams import Omega0, E0, p, base, master_seed_seq, file_path, SPATIAL_DIM, T
 from src.doseparams import NUM_CPUS as num_CPUs
 from src.doseparams import X0_mean as X0
 from src.doseparams import ALPHA as alpha

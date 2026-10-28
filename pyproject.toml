@@ -29,8 +29,8 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B"]
-# Ignore F405: names that may be undefined because they come from star imports.
-ignore = ["F405"]
+# Ignore F403 (star imports) and F405 (names that may be undefined due to star imports).
+ignore = ["F403", "F405"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

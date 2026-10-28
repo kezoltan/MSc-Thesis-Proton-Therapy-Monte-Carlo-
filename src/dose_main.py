@@ -33,7 +33,10 @@ if __name__ == "__main__":
             plot = dose_plot_3D([path_3D])
 
     else:
-        print(f"Gaussian energy spread is {'active' if energy_spread else 'inactive'}: energy deviation is {energy_sdev}, E0 is {E0}.")
+        print(
+            f"Gaussian energy spread is {'active' if energy_spread else 'inactive'}: "
+            f"energy deviation is {energy_sdev}, E0 is {E0}."
+        )
         print(f"Gaussian initial position sampling is {'active' if width_spread else 'inactive'}.")
 
         #For Monte Carlo, we select (it is simply convenient to ensure the stepsize is compatible with mlmc)
@@ -44,7 +47,11 @@ if __name__ == "__main__":
                 h = round(abs(ds), 3)
             elif sde_model=='energy':
                 h = round(abs(dE), 3)
-            print(f"Simulation details: {sampling_type} dose method {dose_method}, model {sde_model}, {h} h, EO {E0}, side_len {side_len}, N {SIMS_PER_CPU*NUM_CPUS}, KAPPA {KAPPA}")
+            print(
+                f"Simulation details: {sampling_type} dose method {dose_method}, "
+                f"model {sde_model}, {h} h, EO {E0}, side_len {side_len}, "
+                f"N {SIMS_PER_CPU * NUM_CPUS}, KAPPA {KAPPA}"
+            )
 
             if dose_method=="SF":
                 M_diag = load_mass_matrix()
@@ -55,12 +62,35 @@ if __name__ == "__main__":
                 dose_expected = mc_parallel(sde_model, mc_level)
 
             sim_num=SIMS_PER_CPU*NUM_CPUS
-            save_folder = f"{sampling_type}_{dose_method}_{sde_model}_h_{h}_side_len_{side_len}_N_{sim_num}_{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_sigma_{SIGMA:.2f}_kappa_{KAPPA}_eps0_{EPS_0}_width_sdev_{width_sdev_factor:.2f}_EMIN_{EMIN}_energy_sdev_{energy_sdev}"
+            save_folder = (
+                f"{sampling_type}_{dose_method}_{sde_model}_h_{h}_side_len_{side_len}_N_{sim_num}_"
+                f"{SPATIAL_DIM}D_shape_{dose_shape}_E0_{E0}_sigma_{SIGMA:.2f}_kappa_{KAPPA}_eps0_{EPS_0}_"
+                f"width_sdev_{width_sdev_factor:.2f}_EMIN_{EMIN}_energy_sdev_{energy_sdev}"
+            )
             folder_path = os.path.join(file_path, save_folder)
             os.makedirs(folder_path, exist_ok=True)
 
             path_3D = os.path.join(folder_path, f"{sampling_type}_{dose_method}_{sde_model}.npz")
-            np.savez(path_3D, dose_expected=dose_expected, sim_num=sim_num, sde_model=sde_model, dose_method=dose_method, absolute_h=h, SPATIAL_DIM=SPATIAL_DIM, side_len=side_len, X_meshgrid = X_meshgrid, Y_meshgrid = Y_meshgrid, sigma=SIGMA, folder_path=folder_path, dose_shape=dose_shape, KAPPA=KAPPA, EPS_0=EPS_0, sampling_type=sampling_type, EMIN=EMIN, E0=E0)
+            np.savez(
+                path_3D,
+                dose_expected=dose_expected,
+                sim_num=sim_num,
+                sde_model=sde_model,
+                dose_method=dose_method,
+                absolute_h=h,
+                SPATIAL_DIM=SPATIAL_DIM,
+                side_len=side_len,
+                X_meshgrid=X_meshgrid,
+                Y_meshgrid=Y_meshgrid,
+                sigma=SIGMA,
+                folder_path=folder_path,
+                dose_shape=dose_shape,
+                KAPPA=KAPPA,
+                EPS_0=EPS_0,
+                sampling_type=sampling_type,
+                EMIN=EMIN,
+                E0=E0,
+            )
 
             print("Now plotting MC data...")
             if SPATIAL_DIM==2:
@@ -72,8 +102,15 @@ if __name__ == "__main__":
             if mc_level < MLMC_LEVEL_OFFSET:
                 print(f"CAUTION: mc_level {mc_level} strictly less than mlmc offset {MLMC_LEVEL_OFFSET}.")
 
-            print(f"Simulation details: {sampling_type} dose method {dose_method}, model {sde_model}, EO {E0}, side_len {side_len}, KAPPA {KAPPA}, eps_0 {EPS_0}\n" \
-                f"mlmc_test details: mlmc L_conv {L_conv_test} (finest step level {L_conv_test + MLMC_LEVEL_OFFSET}), mc sims per level {N_conv_test} \n mlmc details (main): mlmc Lmin {Lmin}, mlmc Lmax {Lmax}, N0 {N0}, base {base}")
+            print(
+                f"Simulation details: {sampling_type} dose method {dose_method}, model {sde_model}, "
+                f"EO {E0}, side_len {side_len}, KAPPA {KAPPA}, eps_0 {EPS_0}\n"
+                f"mlmc_test details: mlmc L_conv {L_conv_test} "
+                f"(finest step level {L_conv_test + MLMC_LEVEL_OFFSET}), "
+                f"mc sims per level {N_conv_test}\n"
+                f"mlmc details (main): mlmc Lmin {Lmin}, mlmc Lmax {Lmax}, "
+                f"N0 {N0}, base {base}"
+            )
 
             if SPATIAL_DIM not in [2, 3]:
                 raise ValueError("spatial dimension must be either 2 or 3.")
@@ -94,7 +131,9 @@ if __name__ == "__main__":
             partial_mlmc_parallel = partial(mlmc_parallel, M_diag=M_diag)
 
             print(f"Running full MLMC and MLMC test with Eps = {Eps}")
-            folder_path, title_seg, paths_file = mlmc_testv(partial_mlmc_parallel, N_conv_test, L_conv_test, N0, Eps, Lmin, Lmax)
+            folder_path, title_seg, paths_file = mlmc_testv(
+                partial_mlmc_parallel, N_conv_test, L_conv_test, N0, Eps, Lmin, Lmax
+            )
 
             print(f"Accessing mlmc data from within folder: {folder_path}")
 
@@ -166,7 +205,11 @@ if __name__ == "__main__":
                 axes[1].set_ylabel(r"$\epsilon^2$ Cost", fontsize=16)
                 axes[1].legend(fontsize=16)
 
-                out_mlmc_plot_path=os.path.join(folder_path, f"mlmc_plot_{dose_method}_{sde_model}_eps_{Eps[0]}_{Eps[-1]}_minstep_{step_levels[0]}_maxstep_{step_levels[-1]}.png")
+                out_mlmc_plot_path = os.path.join(
+                    folder_path,
+                    f"mlmc_plot_{dose_method}_{sde_model}_eps_{Eps[0]}_{Eps[-1]}_"
+                    f"minstep_{step_levels[0]}_maxstep_{step_levels[-1]}.png",
+                )
                 plt.tight_layout()
                 plt.savefig(out_mlmc_plot_path, dpi=300)
                 plt.show()

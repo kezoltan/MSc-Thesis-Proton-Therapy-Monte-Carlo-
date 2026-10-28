@@ -60,7 +60,7 @@ def stopping_power(E, a=ALPHA, p=p):
 RHO = 1 #water is 1gcm^{-3}
 side_len=0.05 #0.02 - this is what track_length uses for 200k sims
 len_reciprocal=1/side_len
-SIGMA = side_len*3/4 #tried making this side_len/4, definitely too small, images were very rough, i think side_len/2 is also a bit small, side_len looks quite bit to me
+SIGMA = side_len*3/4  # side_len/4 was too small and gave rough images; side_len/2 also seemed small.
 
 def choose_kappa():
     """
@@ -132,7 +132,8 @@ RO=calculate_R0()
 def nodes(side_len):
     """
     Defines the length dimensions of the cuboid D and gives the positions of all nodes in D
-    The origin is placed at the corner of the face of domain D where the beam originates, and is such that the coords within D are all positive
+    The origin is at the corner of domain D's face where the beam originates, so all coordinates
+    within D are positive.
     ALL nodes coordinates must be exactly divisible by the side length side_len
 
     Inputs:
@@ -236,11 +237,17 @@ def verify_params():
     if RHO <= 0:
         raise ValueError("medium density RHO must be positive.")
     if sde_model not in ['energy', 'track_length']:
-        raise ValueError("sde_model must be either energy or track_length, depending on the independent variable required.")
+        raise ValueError(
+            "sde_model must be either energy or track_length, depending on the independent variable required."
+            )
     if dose_method not in ['SF', 'SK']:
-        raise ValueError("dose_method must be either SF or SK, for dose computation methods shape function or spatial kernel, respectively.")
+        raise ValueError(
+            "dose_method must be either SF or SK, for computation methods shape function or spatial kernel."
+            )
     if sampling_type not in ['mc', 'mlmc']:
-        raise ValueError("sampling_type must be either mc or mlmc for Monte Carlo and Multilevel Monte Carlo sampling, respectively.")
+        raise ValueError(
+            "sampling_type must be either mc or mlmc for Monte Carlo and Multilevel Monte Carlo sampling."
+            )
     if SPATIAL_DIM not in [2, 3]:
         raise ValueError("spatial dimension must be either 2 or 3.")
     if theta>1 or theta<0:

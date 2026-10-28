@@ -39,13 +39,15 @@ def spatial_kernel_vectorized(X_i, nodes_array, truncate=True, allowed_sd=4):
     #If we are near to a boundary, we need a different truncation
     #   If we exactly touch a boundary, we get no deposit due to rescaling. This is an issue at X0.
     #   Non-physical to just cut off energy dispersion at the wall
-    #   Instead I move the wall backwards for he dispersion only (the actual scheme is still absorbed if it goes backwards)
+    #   Instead I move the wall backwards for the dispersion only 
+    #   (the actual scheme is still absorbed if it goes backwards)
 
     if SPATIAL_DIM==2:
         xi,yi = X_i[0], X_i[1]
         x_lo, y_lo = domain_lower_bounds
         x_hi, y_hi = domain_upper_bounds
-        x_lo -= allowed_sd*SIGMA #artificially move the line at zero by one sd, else we get no deposit here at all (due to rescaling)
+        # artificially move the line at zero by one sd, else we get no deposit here at all (due to rescaling)
+        x_lo -= allowed_sd*SIGMA
 
         #Shortest distances to boundaries:
         boundary_dist = np.array([abs(xi-x_lo), abs(xi-x_hi), abs(yi-y_lo), abs(yi-y_hi)])
@@ -82,7 +84,9 @@ def one_step_dose_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Om
         E_n1, Omega_n1, s_n1, X_n1 = energy_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X)
         return spatial_kernel_vectorized(X_n1, nodes_array), E_n1, Omega_n1, s_n1, X_n1
     elif sde_model=='track_length':
-        E_n1, Omega_n1, s_n1, X_n1, Y_n1 = track_length_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y)
+        E_n1, Omega_n1, s_n1, X_n1, Y_n1 = track_length_one_step_geoEM(
+            h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y
+            )
         constant = (-E_n1+E)/h
         return constant * spatial_kernel_vectorized(X_n1, nodes_array), E_n1, Omega_n1, s_n1, X_n1, Y_n1
 
@@ -120,7 +124,9 @@ def energy_one_path_dose_contribution(sde_model, brownian_paths, setup_tuple):
             dB1_onestep = dB1[k]
             dB2_3D_onestep = dB2_3D[k]
             X_start = X
-            one_step, E, Omega, s, X = one_step_dose_contribution(h, coeff_prefactor, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y) #Y will not be used or returned
+            one_step, E, Omega, s, X = one_step_dose_contribution(
+                h, coeff_prefactor, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y
+                ) #Y will not be used or returned
             if domain_exit_check(X): #If we left the domain
                 print(f"Track exited the domain between {X_start} and {X}.")
                 domain_check = False
@@ -169,7 +175,9 @@ def track_len_one_path_dose_contribution(sde_model, rng, level):
         else:
             dB1_onestep = sqrt * rng.standard_normal()
             dB2_3D_onestep = sqrt * rng.standard_normal(SPATIAL_DIM)
-            one_step, E, Omega, s, X, Y = one_step_dose_contribution(h, coeff, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y)
+            one_step, E, Omega, s, X, Y = one_step_dose_contribution(
+                h, coeff, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y
+                )
             E_end = E
             X_end = X
             dose_contribution += abs(h) * one_step

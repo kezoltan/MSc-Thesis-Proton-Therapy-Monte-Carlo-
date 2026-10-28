@@ -57,7 +57,8 @@ def traversal_alg(start, end, rounding_tol = 8, max_steps = max_steps, corner_to
 @njit
 def traversal_alg_numba(start, end, rounding_tol, max_steps, corner_tol):
     """
-    Fast voxel/cell traversal algorithm (based on Amanatides and Woo) for identifying where a straight line proton path (the ray) crosses boundaries on a Cartesian grid
+    Fast voxel/cell traversal algorithm (based on Amanatides and Woo) for identifying where a straight line proton path
+        (the ray) crosses boundaries on a Cartesian grid
     Requires that the proton belong to a uniform voxel grid of side length side_len
     To be executed once per linear segment of a single proton path
 
@@ -76,10 +77,13 @@ def traversal_alg_numba(start, end, rounding_tol, max_steps, corner_tol):
     tdeltas = np.empty((SPATIAL_DIM))
     ts = np.empty((max_steps)) #Arbitrarily long for Numba implementation
 
-    #1. [NOT NEEDED: StepX, ... : StepX is the length and direction of the step between two adjacent X boundaries, if dir is negative in X then StepX is negative]
+    #1. [NOT NEEDED: StepX, ... : StepX is the length and direction of the step between two adjacent X boundaries,
+    #                             if dir is negative in X then StepX is negative]
     #2. tMaxX, ... : from start where is the next boundary in X direction - relative to start NOT current position
-    #                is np.inf if there is no remaining uncrossed boundary in that direction bounded to along line segment
-    #3. tDeltaX,... : fixed parameters - once we are on an X boundary, how far in t along that coordinate do we go to get to the next X boundary (imagine this in 1D)
+    #                is np.inf if there is no remaining uncrossed boundary in that direction bounded to
+    #                along line segment
+    #3. tDeltaX,... : fixed parameters - once we are on an X boundary, how far in t along that coordinate do we go
+    #                 to get to the next X boundary (imagine this in 1D)
 
     for i in range(SPATIAL_DIM):
 
@@ -141,7 +145,8 @@ def traversal_alg_numba(start, end, rounding_tol, max_steps, corner_tol):
 
         #Corner check, we will get duplicates if we pass through a corner/face
         for i in range(SPATIAL_DIM):
-            if i!= idx and abs(tmaxs[i] - next_t) <= corner_tol: #If another coordinate is close enough to the same boundary, presume we crossed both
+            #If another coordinate is close enough to the same boundary, presume we crossed both
+            if i!= idx and abs(tmaxs[i] - next_t) <= corner_tol:
                 tmaxs[i] += tdeltas[i] #Update this one as well
                 if tmaxs[i] >= t_upper:
                     tmaxs[i] = np.inf #Inf will never be the min
@@ -163,7 +168,8 @@ def traversal_alg_numba(start, end, rounding_tol, max_steps, corner_tol):
 
     #Finally retrieve all the points:
 
-    points = start + ts[:, None] * direction #Right most term puts each elt of ts into its own row and then * direction for each row in ts, gives one big matrix
+    #  most term puts each elt of ts into its own row and then * direction for each row in ts, gives one big matrix
+    points = start + ts[:, None] * direction
 
     return points, ts
 
@@ -256,9 +262,13 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
         one_step = np.zeros(dose_shape)
     else:
         if sde_model=='energy':
-            E_n1, Omega_n1, s_n1, X_n1 = energy_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X)
+            E_n1, Omega_n1, s_n1, X_n1 = energy_one_step_geoEM(
+                h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X
+                )
         elif sde_model=='track_length':
-            E_n1, Omega_n1, s_n1, X_n1, Y_n1 = track_length_one_step_geoEM(h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y)
+            E_n1, Omega_n1, s_n1, X_n1, Y_n1 = track_length_one_step_geoEM(
+                h, dB1_onestep, dB2_3D_onestep, misc_coeff, E, Omega, s, X, Y
+                )
         if E_n1 < 0:
             raise ValueError("E became negative.")
 
@@ -317,8 +327,10 @@ def one_step_F_contribution(h, misc_coeff, dB1_onestep, dB2_3D_onestep, E, Omega
             #This is the value of E(t1) and E(t2), not X
             E_t1_point, E_t2_point = linear_path_parameterise(sub_E_start, sub_E_end).flatten()
             #Use a linear path approximation to get X(E1) and X(E2)
-            gamma_t1_point, gamma_t2_point = [sub_start + (sub_E_start - E)/(sub_E_start - sub_E_end) * (sub_end - sub_start) for E in [E_t1_point, E_t2_point]]
-
+            gamma_t1_point, gamma_t2_point = [
+                sub_start + (sub_E_start - E) / (sub_E_start - sub_E_end) * (sub_end - sub_start)
+                for E in [E_t1_point, E_t2_point]
+                ]
         nodes_touched = subsegment_voxel_vertices_numba(sub_start, sub_end)
 
         #Vectorisation - compute all Phi at once at all relevant nodes
@@ -374,7 +386,9 @@ def energy_one_path_load_contribution(sde_model, brownian_paths, setup_tuple):
     for k in range(num_steps):
         dB1_onestep = dB1[k]
         dB2_3D_onestep = dB2_3D[k]
-        one_step, E, Omega, s, X = one_step_F_contribution(h, coeff_prefactor, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y)
+        one_step, E, Omega, s, X = one_step_F_contribution(
+            h, coeff_prefactor, dB1_onestep, dB2_3D_onestep, E, Omega, s, X, Y
+            )
         one_path_load_contribution += one_step
         if domain_exit_check(X):
             break
@@ -433,7 +447,9 @@ def track_len_one_path_load_contribution(sde_model, rng, level):
             E_end = EMIN
 
             #Need to be tuples here for the function to work correctly
-            one_step = one_step_F_contribution(h, coeff, dB1_onestep, dB2_3D_onestep, (E_start, E_end), Omega, s, (X_start, X_end), Y)
+            one_step = one_step_F_contribution(
+                h, coeff, dB1_onestep, dB2_3D_onestep, (E_start, E_end), Omega, s, (X_start, X_end), Y
+                )
             one_path_load_contribution += one_step
             return one_path_load_contribution
 

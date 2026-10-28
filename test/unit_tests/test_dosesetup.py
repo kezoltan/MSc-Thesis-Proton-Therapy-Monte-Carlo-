@@ -3,8 +3,6 @@
 Implement these cases incrementally, starting with the pure helper functions.
 """
 import numpy as np
-from math import prod, comb, cos, sin, exp, log
-from itertools import product
 from src.doseparams import *
 import pytest
 from src.dosesetup import (

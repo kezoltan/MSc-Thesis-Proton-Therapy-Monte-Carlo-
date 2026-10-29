@@ -101,12 +101,17 @@ def energy_one_path_dose_contribution(sde_model, brownian_paths, setup_tuple):
     Estimates the dose due to one proton path using a Gaussian smoothing kernel, not truncated.
     Assumes a composite trapezium rule is used for path integral approximation.
 
-    Inputs:
-        sde_model = "energy" or "track_length" to denote which scheme we are using
-        brownian paths = dB1 and dB2 (2D/3D), MUST BE BROWNIAN not standard normal
+    Parameters
+    ----------
+    sde_model : str
+        "energy" or "track_length" to denote which scheme we are using.
+    brownian_paths : tuple
+        dB1 and dB2 (2D/3D), MUST BE BROWNIAN not standard normal.
 
-    Returns:
-        dose_contribution, np.ndarray, shape according to the number of nodes
+    Returns
+    -------
+    numpy.ndarray
+        dose_contribution, np.ndarray, shape according to the number of nodes.
     """
     dose_contribution = np.zeros(dose_shape)
     s, X, Omega, E, Y, h, num_steps = setup_tuple
@@ -152,11 +157,15 @@ def track_len_one_path_dose_contribution(sde_model, rng, level):
     Estimates the dose due to one proton path using a Gaussian smoothing kernel, not truncated.
     Assumes a composite trapezium rule is used for path integral approximation.
 
-    Inputs:
-        sde_model = "energy" or "track_length" to denote which scheme we are using
+    Parameters
+    ----------
+    sde_model : str
+        "energy" or "track_length" to denote which scheme we are using.
 
-    Returns:
-        dose_contribution, np.ndarray, shape according to the number of nodes
+    Returns
+    -------
+    numpy.ndarray
+        dose_contribution, np.ndarray, shape according to the number of nodes.
     """
     dose_contribution = np.zeros(dose_shape)
     s, X, Omega, E, Y = sample_gauss_beam(rng)

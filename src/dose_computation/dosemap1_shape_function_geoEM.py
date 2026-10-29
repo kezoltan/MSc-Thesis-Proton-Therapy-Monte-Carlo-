@@ -259,13 +259,19 @@ def one_step_F_contribution(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s
     Assumes 2 point quadrature is being used, everything must be np.ndarrays!
     Requires the lookup matrix and the phis matrix to be defined globally.
 
-    Inputs:
-        F_current, np.ndarray, 1D: the current load vector from the end of the previous segment
-        start, end: arrays for the start and end point of the full linear segment
-        dE, ds: floats for the energy lost + path length covered between start and end
+    Parameters
+    ----------
+    F_current : numpy.ndarray, 1D
+        The current load vector from the end of the previous segment.
+    start, end : arrays
+        Arrays for the start and end point of the full linear segment.
+    dE, ds : floats
+        Floats for the energy lost + path length covered between start and end.
 
-    Returns:
-        one_step, np.ndarray, 1D, same shape as F_current: one linear segment contribution to the dose
+    Returns
+    -------
+    one_step : numpy.ndarray, 1D
+        Same shape as F_current: one linear segment contribution to the dose.
     """
     # This takes care of the last step for the track_length model
     final_V_step = isinstance(E, tuple) and isinstance(X, tuple) and sde_model == "track_length"
@@ -380,12 +386,17 @@ def energy_one_path_load_contribution(sde_model, brownian_paths, setup_tuple):
     Does not store the path - at each step, run one_step_F_contribution. These are totalled up and returned.
     Does not reflect the Gaussian increment is ds becomes negative.
 
-    Inputs:
-        sde_model = "energy" or "track_length" to denote which scheme we are using
-        brownian_paths, tuple: precomputed dB1 and dB2 for this scheme
+    Parameters
+    ----------
+    sde_model : str
+        "energy" or "track_length" to denote which scheme we are using.
+    brownian_paths : tuple
+        Precomputed dB1 and dB2 for this scheme.
 
-    Returns:
-        total load vector contribution from this simulation, 1D np.ndarray
+    Returns
+    -------
+    numpy.ndarray
+        Total load vector contribution from this simulation, 1D np.ndarray.
     """
     if sde_model != "energy":  # Runs the scheme in independent energy
         raise ValueError("must run energy load contribution with sde_model energy.")
@@ -417,11 +428,15 @@ def track_len_one_path_load_contribution(sde_model, rng, level):
     Does not store the path - at each step, run one_step_F_contribution. These are totalled up and returned.
     Does not reflect the Gaussian increment is ds becomes negative.
 
-    Inputs:
-        sde_model = "energy" or "track_length" to denote which scheme we are using
+    Parameters
+    ----------
+    sde_model : str
+        "energy" or "track_length" to denote which scheme we are using.
 
-    Returns:
-        total load vector contribution from this simulation, 1D np.ndarray
+    Returns
+    -------
+    numpy.ndarray
+        Total load vector contribution from this simulation, 1D np.ndarray.
     """
     one_path_load_contribution = np.zeros(dose_shape)
     s, X, Omega, E, Y = sample_gauss_beam(rng)

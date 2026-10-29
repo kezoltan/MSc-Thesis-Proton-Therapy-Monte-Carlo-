@@ -21,13 +21,18 @@ def mlmc_coarse_fine_worker(level: int, path_seed_chunk_l, M_diag):
     Pl is fine, P_{l-1} is coarse, case of l=0 is distinct: only P0
     Parallelises, given sim num Ml at level l
 
-    Inputs:
-        l: level number >= 0 of the finer path
-        path_seed_chunk_l: path seeds for each path run at level l
+    Parameters
+    ----------
+    level : int
+        level number >= 0 of the finer path
+    path_seed_chunk_l : sequence
+        path seeds for each path run at level l
 
-    Returns:
+    Returns
+    -------
+    tuple
         statistics PER OUTPUT (i.e. per dose node), worker contribution, which are (in order):
-            raw diff, diff**2, diff**3, diff**4, fine payoff, fine payoff**2
+        raw diff, diff**2, diff**3, diff**4, fine payoff, fine payoff**2
     """
 
     if energy_spread:

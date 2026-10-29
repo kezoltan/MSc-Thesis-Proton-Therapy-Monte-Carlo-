@@ -94,7 +94,7 @@ The project is intended to be published on the Python Package Index (PyPI), allo
 
 ### Parameterisation
 
-All parameters can be set inside of src/doseparams.py. We provide default parameters for most variables for the purposes of testing, however we expect to provide alternative presets (e.g. for different materials) in future. Currently, the user should pay attention to:
+We provide default parameters for most variables for the purposes of testing, however we expect to provide alternative presets (e.g. for different materials) in future. Currently, the user should pay attention to:
 
 | Core Parameter Name | Function | Suggested Default* |
 |----------|----------|----------|
@@ -103,7 +103,8 @@ All parameters can be set inside of src/doseparams.py. We provide default parame
 | sampling_type |  Select which Monte Carlo method is used | 'mlmc' |
 | file_path | Select where data and pictures are saved | N/A |
 | SPATIAL_DIM | Select the number of spatial dimensions in which to estimate | 2 |
-| Eps | List of rmse values for use in MLMC | $\geq 0.2$ |
+| Eps | List of RMSE values, MLMC only | $\geq 0.2$ |
+| SIMS_PER_CPU | Number of simulations per CPU core, Monte Carlo only | _hardware dependent_ |
 
 *The suggested defaults above are based on the results of experiments but are not restrictive. The first three parameter settings produced the best overall computational complexity (when combined) and hence are recommended, but these results have yet to be reproduced. If reproducing the thesis results, other values of the first three settings will be required for comparison and no other parameters (excluding the file_path) should be modified.
 

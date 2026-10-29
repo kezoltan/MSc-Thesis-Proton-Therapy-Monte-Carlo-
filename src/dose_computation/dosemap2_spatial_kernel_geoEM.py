@@ -19,15 +19,20 @@ def spatial_kernel_vectorized(X_i, nodes_array, truncate=True, allowed_sd=4):
     Gaussian d-dimensional (d=2 or 3) spatial kernel, vectorised for efficiency to operate on all nodes simulataneously.
     Truncated by default to within min(allowed_sd, min_distance) standard deviations to ensure conservation
     the min_distance is the smallest distance to the furthest node over all directions
-        this is needed for the boundary cases
-        i.e. the gaussian truncates to ensure all deposit is within the boundary
+    this is needed for the boundary cases
+    i.e. the gaussian truncates to ensure all deposit is within the boundary
 
-    Inputs:
-        X_i: np.ndarray, the current position of the EM scheme (i.e. where the dose is "dropped")
-        nodes_array: array containing all node coords, in order aligned with meshgrid
+    Parameters
+    ----------
+    X_i : numpy.ndarray
+        The current position of the EM scheme (i.e. where the dose is "dropped").
+    nodes_array : numpy.ndarray
+        Array containing all node coords, in order aligned with meshgrid.
 
-    Returns:
-        values: Given X_i, contains the value of the dose deposit contribution at all nodes
+    Returns
+    -------
+    numpy.ndarray
+        Values, containing the value of the dose deposit contribution at all nodes.
     """
     diff = nodes_array - X_i #Find all diffs at once
     norm_sqrd = np.einsum('ij,ij->i', diff, diff) #Claude's suggestion, for speed via vectorisation

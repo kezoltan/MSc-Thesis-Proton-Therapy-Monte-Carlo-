@@ -4,17 +4,21 @@
 #Parameters + Methods are assigned in doseparams
 
 import numpy as np
-from doseparams import *
-from doseplot import dose_plot_2D, dose_plot_3D
-from dosesetup import choose_dE_ds, load_mass_matrix
+import matplotlib.pyplot as plt
+import os
+from functools import partial
+from src.parameterisation import *
+from src.doseplot import dose_plot_2D, dose_plot_3D
+from src.sde_model_simulation.energy_geometric_EM import choose_dE_ds
+from src.setup_functions.load_mass_matrix import load_mass_matrix
 from src.monte_carlo_methods.mc_parallel import mc_parallel
 from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel
 from src.monte_carlo_methods.mlmc_driver.mlmc_test import mlmc_testv
-from functools import partial
-import matplotlib.pyplot as plt
-import os
+from src.setup_functions.verify_params import verify_params
 
 if __name__ == "__main__":
+
+    verify_params()
 
     plot_only=False
 

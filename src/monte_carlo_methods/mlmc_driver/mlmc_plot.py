@@ -4,7 +4,7 @@
 import os
 import sys
 import numpy as np
-from src.doseparams import *
+from src.parameterisation import *
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator
 from math import ceil
@@ -479,7 +479,7 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
     seen = set()
     unique_nodes = []
     unique_names = []
-    for node, name in zip(nodes, names, strict=False):
+    for node, name in zip(nodes, names):
         if node not in seen:
             seen.add(node)
             unique_nodes.append(node)
@@ -487,7 +487,7 @@ def plot_beam_axis_nodes(L, alpha, beta, del1, del2, var1, var2, kur1, chk1, tru
     nodes = unique_nodes
     names = unique_names
 
-    named_nodes = [(node_number, name) for node_number, name in zip(nodes, names, strict=False)]
+    named_nodes = [(node_number, name) for node_number, name in zip(nodes, names)]
     plot_keyword = "beamline"
     plot_mlmc_test(
         named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path, y_coord
@@ -545,7 +545,7 @@ def plot_negative_estimator_nodes(
         nodes = np.concatenate((order[:n], order[-n:]))
 
     names = [f"Y={mlmc_estimator[node_idx]:.2f}" for node_idx in nodes]
-    named_nodes = [(node_number, name) for node_number, name in zip(nodes, names, strict=False)]
+    named_nodes = [(node_number, name) for node_number, name in zip(nodes, names)]
     plot_keyword = "negative estimator"
     plot_mlmc_test(
         named_nodes, plot_keyword, L, alpha, beta, del1, del2, var1, var2, kur1, chk1, trunc_tol, folder_path, None

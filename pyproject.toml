@@ -42,3 +42,6 @@ pythonpath = ["."]
 [tool.coverage.run]
 source = ["src"]
 omit = ["src/doseparams.py", "src/dose_main.py", "src/mlmc_driver", "src/doseplot.py", "src/dose_computation/__init__.py", "src/monte_carlo_methods/__init__.py", "src/sde_model_simulation/__init__.py", "src/__init__.py"]
+
+[tool.ruff]
+extend-exclude = ["*.md"]

@@ -75,7 +75,7 @@ def reference_cube_mapping(side_len, center, coordinate):
 
 
 def Phi(side_len, X, n_i):
-    """Evaluate the basis function ``Phi_i`` attached to the ``i``th node.
+    """Evaluate the basis function Phi_i attached to the ``i``-th node.
 
     The basis function is defined over the whole domain. ``X`` is the position
     at which ``Phi_i`` is evaluated, and ``n_i`` is the coordinate of the node
@@ -313,12 +313,16 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     cubic voxel mesh side length side_len.
     Exploits the symmetry and mapping onto the reference cube. Works in 2D or 3D.
 
-    Inputs:
-        meshgrid: tuple, X,Y,Z
-                         X,Y,Z = np.arrays from np.meshgrid indexed by i,j(,k)j
-        spatial_dim: int, number of spatial dimensions (2 or 3)
+    Parameters
+    ----------
+    X_meshgrid : tuple
+        Tuple of coordinate arrays, X,Y,Z = np.arrays from np.meshgrid indexed by i,j(,k)j
+    spatial_dim : int
+        Number of spatial dimensions (2 or 3).
 
-    Returns:
+    Returns
+    -------
+    numpy.ndarray
         M_diag, 1D np.array, shape = (number of nodes,) contains the diagonal elements of the diagonal matrix M
     """
     Xs = X_meshgrid  # This is the beam axis so is always there

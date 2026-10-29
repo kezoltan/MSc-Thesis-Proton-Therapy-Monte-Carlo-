@@ -16,14 +16,23 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     Dynamically vectorized to process and profile the Primal value along with
     an arbitrary number of sensitivities simultaneously.
 
-    Inputs:
-        mlmc_parallel_l: output of the user file (sums, cost)
-        N: sample number for convergence testing (complexity theorem)
-        L: max lvl in conv test
-        N0: level 0 starting sample count
-        Eps, array: error tolerances
-        Lmin/max: min max level numbers allowed
-        fp: output file (?)
+    Parameters
+    ----------
+    mlmc_parallel_l : callable
+        output of the user file (sums, cost)
+    N : int
+        sample number for convergence testing (complexity theorem)
+    L : int
+        max lvl in conv test
+    N0 : int
+        level 0 starting sample count
+    Eps : array
+        error tolerances
+    Lmin, Lmax : int
+        min max level numbers allowed
+    fp : file
+        output file (?)
+    args : tuple
         (*args means any other outputs e.g. params from user file)
     """
 

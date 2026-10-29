@@ -136,12 +136,18 @@ def nodes(side_len):
     within D are positive.
     ALL nodes coordinates must be exactly divisible by the side length side_len
 
-    Inputs:
-            range_allowance, float in (1, 2): R0*range_allowance \approx length of D along beam axis
-            y_scaling, float in (0, 1): length of D*y_scaling \approx the width and depth in the other two directions
+    Parameters
+    ----------
+    range_allowance : float
+        float in (1, 2): R0*range_allowance \approx length of D along beam axis
+    y_scaling : float
+        float in (0, 1): length of D*y_scaling \approx the width and depth in the other two directions
 
-    Returns: tuple X,Y,(Z): type(X) = np.array ; X.shape = (number of nodes along x axis, y sim, z sim)
-                                                                including the endpoints!
+    Returns
+    -------
+    tuple
+        tuple X,Y,(Z): type(X) = np.array ; X.shape = (number of nodes along x axis, y sim, z sim)
+        including the endpoints!
 
     Notes: X[i,j,k] will retrieve the x coordinate of the ith,jth,kth node
            i,j,k=0,0,0 -> (x,y,z)=(0,-1,-1)

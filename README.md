@@ -36,12 +36,12 @@ Smaller plots (e.g. large $\epsilon \sim \\mathcal{O}(1)$, Monte Carlo dose maps
 
 The following software is required:
 
-- Python [version requirements not yet determined]
+- Python [minimum: 3.11]
 - All standard scientific computing libraries, plus Numba [version requirements not yet determined]
 
 ### Installation from Source
 
-The project is intended to be distributed as an installable Python package, with its dependencies managed through [`pyproject.toml`](pyproject.toml). Currently, the project can be installed directly from the repository.
+The project is intended to be distributed as an installable Python package, with its dependencies managed through [`pyproject.toml`](pyproject.toml). Currently, the project can be installed directly from the repository. Below we give installation instructions for Mac users.
 
 Clone the repository:
 
@@ -53,7 +53,7 @@ cd MSc-Thesis-Proton-Therapy-Monte-Carlo-
 Create and activate a virtual environment:
 
 ```bash
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
@@ -69,19 +69,28 @@ For development, the package can be installed in editable mode:
 pip install -e .
 ```
 
+The user should review the ['parameterisation guide']('src/parameterisation/INFO.md) and related files to set basic parameters. Once this has been done, you can your choice of experiment from the terminal:
+
+```bash
+python3 -m src.dose_main
+```
+
+The file is running correctly if it begins printing the simulation details into the terminal, for example:
+
+```bash
+"Gaussian energy spread is inactive: energy deviation is 0, E0 is 62."
+"Gaussian initial position sampling is active."
+"Simulation details: mc dose method SF, model energy, 0.03 h, EO 62, side_len 0.05, N 2600, KAPPA 4e-05"
+"Mass matrix loaded successfully."
+```
+
+Be advised that running this project will generate new and permanent folders on your machine that will need to manually reviewed -- if running repeatedly, we suggested adding your own clean-up functions. 
+
 ### Future Package Distribution
 
 The project is intended to be published on the Python Package Index (PyPI), allowing users to install the package and its dependencies directly.
 
 *Note: PyPI installation is not yet available. We will update this section in due coarse.*
-
-## Usage
-
-After installation, the entire project can be executed using:
-
-```bash
-python src/dose_main.py
-```
 
 ### Parameterisation
 
@@ -94,8 +103,6 @@ All parameters can be set inside of src/doseparams.py. We provide default parame
 | sampling_type |  Select which Monte Carlo method is used | 'mlmc' |
 | file_path | Select where data and pictures are saved | N/A |
 | SPATIAL_DIM | Select the number of spatial dimensions in which to estimate | 2 |
-| side_len | Uniform distance between two adjacent nodes along the same coordinate direction | 0.02-0.1 (cm) |
-| E0 | Initial beam energy | 50-70 (MeV) |
 | Eps | List of rmse values for use in MLMC | $\geq 0.2$ |
 
 *The suggested defaults above are based on the results of experiments but are not restrictive. The first three parameter settings produced the best overall computational complexity (when combined) and hence are recommended, but these results have yet to be reproduced. If reproducing the thesis results, other values of the first three settings will be required for comparison and no other parameters (excluding the file_path) should be modified.

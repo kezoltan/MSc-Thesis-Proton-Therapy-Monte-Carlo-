@@ -4,8 +4,8 @@
 import numpy as np
 from math import ceil, prod, floor, log
 from numba import njit
-from dosesetup import *
-from doseparams import *
+from src.setup_functions import *
+from src.parameterisation import *
 from src.sde_model_simulation import *
 
 
@@ -279,7 +279,7 @@ def one_step_F_contribution(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s
         E_start = E
         E_end = E_n1
         one_step = np.zeros(dose_shape)
-        if domain_exit_check(X_n1) and not (final_V_step):  # If we left the domain during the simulation
+        if domain_exit_check(X_n1, domain_upper_bounds, domain_lower_bounds) and not (final_V_step):  # If we left the domain during the simulation
             print(f"Track exited the domain between {X} and {X_n1}.")
             if sde_model == "energy":
                 return one_step, E_n1, Omega_n1, s_n1, X_n1
@@ -342,7 +342,7 @@ def one_step_F_contribution(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s
         phi2 = Phi_vectorised(side_len, gamma_t2_point, nodes_touched)
         node_contributions = (energy_length / 2) * (phi1 + phi2) / RHO  # array
 
-        for node, contribution in zip(nodes_touched, node_contributions, strict=False):
+        for node, contribution in zip(nodes_touched, node_contributions):
             position = storage_position_convention(node)
             one_step[position] += contribution
 
@@ -395,7 +395,7 @@ def energy_one_path_load_contribution(sde_model, brownian_paths, setup_tuple):
           h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y
         )
         one_path_load_contribution += one_step
-        if domain_exit_check(X):
+        if domain_exit_check(X, domain_upper_bounds, domain_lower_bounds):
             break
     return one_path_load_contribution
 
@@ -462,7 +462,7 @@ def track_len_one_path_load_contribution(sde_model, rng, level):
 
         one_path_load_contribution += one_step
 
-        if domain_exit_check(X):
+        if domain_exit_check(X, domain_upper_bounds, domain_lower_bounds):
             return one_path_load_contribution
 
         # Update for next loop, given an accepted step

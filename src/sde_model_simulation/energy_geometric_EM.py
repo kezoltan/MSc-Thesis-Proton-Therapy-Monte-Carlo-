@@ -1,14 +1,12 @@
 # July 2026
 # Supporting function to run the geometric EM scheme for the track length model
 
-from doseparams import *
-from dosesetup import *
+from src.parameterisation import *
+from src.setup_functions import *
 from math import log
-
 
 def track_length_diff_coeff(E, a=ALPHA, p=p):
     return a * p * np.sqrt(KAPPA) * E ** (p - 0.5)
-
 
 # def n_KZ_angular_diffusion(E, Omega, EPS_0=EPS_0, a=ALPHA, p=p):
 #     return np.sqrt(2*EPS_0 * a*p)*E**(p/2 - 0.5) * (np.eye(SPATIAL_DIM) - np.outer(Omega, Omega))

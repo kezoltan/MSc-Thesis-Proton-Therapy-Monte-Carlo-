@@ -4,12 +4,12 @@
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 from numpy.random import default_rng
-from doseparams import *
-from dose_computation.dosemap1_shape_function_geoEM import (
+from src.parameterisation import *
+from src.dose_computation.dosemap1_shape_function_geoEM import (
     track_len_one_path_load_contribution,
     energy_one_path_load_contribution,
 )
-from dose_computation.dosemap2_spatial_kernel_geoEM import (
+from src.dose_computation.dosemap2_spatial_kernel_geoEM import (
     track_len_one_path_dose_contribution,
     energy_one_path_dose_contribution,
 )

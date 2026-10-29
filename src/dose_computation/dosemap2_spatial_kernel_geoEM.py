@@ -4,9 +4,9 @@
 
 import numpy as np
 from math import pi
-from doseparams import *
-from dosesetup import *
 from scipy.stats import chi2
+from src.parameterisation import *
+from src.setup_functions import *
 from src.sde_model_simulation import *
 
 #Precompute these

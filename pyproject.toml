@@ -22,6 +22,7 @@ dev = [
 ]
 docs = [
     "sphinx",
+    "shibuya",
 ]
 
 [tool.ruff]

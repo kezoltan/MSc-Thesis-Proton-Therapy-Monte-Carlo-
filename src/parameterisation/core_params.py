@@ -2,9 +2,7 @@
 import numpy as np
 
 # Choose parent folder to save all folders/files created during this program
-file_path = "/Users/katiez/Documents"
-
-# "/tmp/CHANGE_THIS" #### SET AS USER
+file_path = "/tmp/CHANGE_THIS" #### SET AS USER
 
 # Choose the number of spatial dimensions in which to compute
 SPATIAL_DIM = 2 # 2 or 3

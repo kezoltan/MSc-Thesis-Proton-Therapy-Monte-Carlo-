@@ -28,14 +28,18 @@ def linear_path_parameterise(start, end, points=quad_nodes):
     """
     Parameterises the line segment from start to end using s in [-1, 1].
 
-    Inputs:
-        start, np.array() with shape (number of dimensions,)
-        end, "" similar
-        points, np.array: contains all the points at which you want to know the value of the path
-                          defaults to the two point gauss quadrature nodes
+    Parameters
+    ----------
+    start, end : numpy.ndarray
+        np.array() with shape (number of dimensions,)
+    points : numpy.ndarray, optional
+        Contains all the points at which you want to know the value of the
+        path. Defaults to the two point gauss quadrature nodes.
 
-    Returns:
-        output points, array with rows containing coords of the line at points
+    Returns
+    -------
+    numpy.ndarray
+        Output points, array with rows containing coords of the line at points.
     """
     points = np.asarray(points)
     return start + 0.5 * (points[:, None] + 1) * (end - start)
@@ -63,16 +67,21 @@ def traversal_alg(start, end, rounding_tol=8, max_steps=max_steps, corner_tol=10
 def traversal_alg_numba(start, end, rounding_tol, max_steps, corner_tol):
     """
     Fast voxel/cell traversal algorithm (based on Amanatides and Woo) for identifying where a straight line proton path
-        (the ray) crosses boundaries on a Cartesian grid
+    (the ray) crosses boundaries on a Cartesian grid
     Requires that the proton belong to a uniform voxel grid of side length side_len
     To be executed once per linear segment of a single proton path
 
-    Inputs:
-        start/end: np.ndarrays, must be the same shape, start and end coordinates of a linear path segment
+    Parameters
+    ----------
+    start, end : numpy.ndarray
+        Must be the same shape; start and end coordinates of a linear path
+        segment.
 
-    Returns:
-        array of coordinates (np.ndarrays) in order they are crossed, including start and end
-            i.e. the straight line proton path between start and end split into subsegments
+    Returns
+    -------
+    tuple
+        Coordinates (np.ndarrays) in order they are crossed, including start and
+        end. i.e. the straight line proton path between start and end split into subsegments
     """
     direction = end - start
     t_upper = 1.0  # Bound on parameter t, by def t=1 if at end
@@ -182,11 +191,13 @@ def subsegment_voxel_vertices_numba(start, end, rounding_tol=8):
     """
     Given the start and end coordinates of a linear subsegment in ONE voxel/cell
     return the vertices of that voxel/cell that will receive a contribution from that proton path segment.
-        NOT the same as finding all voxel vertices:
-        e.g. if in 3D but segment remains on a plane then the function returns 4 coords, not 8
+    NOT the same as finding all voxel vertices:
+    e.g. if in 3D but segment remains on a plane then the function returns 4 coords, not 8
 
-    Returns:
-        vertices, np.ndarray: each row is one relevant vertex
+    Returns
+    -------
+    numpy.ndarray
+        Vertices, each row is one relevant vertex.
     """
     # We need the start and end in case one is on a boundary
 
@@ -248,13 +259,19 @@ def one_step_F_contribution(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s
     Assumes 2 point quadrature is being used, everything must be np.ndarrays!
     Requires the lookup matrix and the phis matrix to be defined globally.
 
-    Inputs:
-        F_current, np.ndarray, 1D: the current load vector from the end of the previous segment
-        start, end: arrays for the start and end point of the full linear segment
-        dE, ds: floats for the energy lost + path length covered between start and end
+    Parameters
+    ----------
+    F_current : numpy.ndarray, 1D
+        The current load vector from the end of the previous segment.
+    start, end : arrays
+        Arrays for the start and end point of the full linear segment.
+    dE, ds : floats
+        Floats for the energy lost + path length covered between start and end.
 
-    Returns:
-        one_step, np.ndarray, 1D, same shape as F_current: one linear segment contribution to the dose
+    Returns
+    -------
+    one_step : numpy.ndarray, 1D
+        Same shape as F_current: one linear segment contribution to the dose.
     """
     # This takes care of the last step for the track_length model
     final_V_step = isinstance(E, tuple) and isinstance(X, tuple) and sde_model == "track_length"
@@ -369,12 +386,17 @@ def energy_one_path_load_contribution(sde_model, brownian_paths, setup_tuple):
     Does not store the path - at each step, run one_step_F_contribution. These are totalled up and returned.
     Does not reflect the Gaussian increment is ds becomes negative.
 
-    Inputs:
-        sde_model = "energy" or "track_length" to denote which scheme we are using
-        brownian_paths, tuple: precomputed dB1 and dB2 for this scheme
+    Parameters
+    ----------
+    sde_model : str
+        "energy" or "track_length" to denote which scheme we are using.
+    brownian_paths : tuple
+        Precomputed dB1 and dB2 for this scheme.
 
-    Returns:
-        total load vector contribution from this simulation, 1D np.ndarray
+    Returns
+    -------
+    numpy.ndarray
+        Total load vector contribution from this simulation, 1D np.ndarray.
     """
     if sde_model != "energy":  # Runs the scheme in independent energy
         raise ValueError("must run energy load contribution with sde_model energy.")
@@ -406,11 +428,15 @@ def track_len_one_path_load_contribution(sde_model, rng, level):
     Does not store the path - at each step, run one_step_F_contribution. These are totalled up and returned.
     Does not reflect the Gaussian increment is ds becomes negative.
 
-    Inputs:
-        sde_model = "energy" or "track_length" to denote which scheme we are using
+    Parameters
+    ----------
+    sde_model : str
+        "energy" or "track_length" to denote which scheme we are using.
 
-    Returns:
-        total load vector contribution from this simulation, 1D np.ndarray
+    Returns
+    -------
+    numpy.ndarray
+        Total load vector contribution from this simulation, 1D np.ndarray.
     """
     one_path_load_contribution = np.zeros(dose_shape)
     s, X, Omega, E, Y = sample_gauss_beam(rng)

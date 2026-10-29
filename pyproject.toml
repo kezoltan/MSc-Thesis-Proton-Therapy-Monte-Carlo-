@@ -23,6 +23,7 @@ dev = [
 docs = [
     "sphinx",
     "shibuya",
+    "myst-parser"
 ]
 
 [tool.ruff]

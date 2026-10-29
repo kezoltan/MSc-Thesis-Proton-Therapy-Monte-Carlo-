@@ -6,12 +6,18 @@
 MLMC in Proton Beam Therapy documentation
 =========================================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+This documentation is generated from the project's Python docstrings. It covers
+the simulation, dose calculation, Monte Carlo, and plotting APIs.
 
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+   api/dose-setup
+   api/dose-parameters
+   api/dose-calculation
+   api/monte-carlo
+   api/sde-simulation
+   api/plotting
 

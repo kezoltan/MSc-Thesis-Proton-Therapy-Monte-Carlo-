@@ -9,7 +9,13 @@ MLMC in Proton Beam Therapy documentation
 This documentation is generated from the project's Python docstrings. It covers
 the simulation, dose calculation, Monte Carlo, and plotting APIs.
 
+Introduction
+------------
 
+.. include:: ../README.md
+   :parser: myst_parser.sphinx_
+
+   
 .. toctree::
    :maxdepth: 2
    :caption: Contents:

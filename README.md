@@ -41,7 +41,7 @@ The following software is required:
 
 ### Installation from Source
 
-The project is intended to be distributed as an installable Python package, with its dependencies managed through [`pyproject.toml`](pyproject.toml). Currently, the project can be installed directly from the repository.
+The project is intended to be distributed as an installable Python package, with its dependencies managed through [`pyproject.toml`](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/pyproject.toml). Currently, the project can be installed directly from the repository.
 
 Clone the repository:
 
@@ -125,11 +125,11 @@ DOI or journal publication does not yet exist.
 
 This project was developed by Katie Zoltan and Professor Mike Giles FRS. Our main contributors are Peiren Wang and Alice Watts.
 
-See ['CONTRIBUTING.md'](CONTRIBUTING.md) for further information.
+See ['CONTRIBUTING.md'](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/CONTRIBUTING.md) for further information.
 
 ## License
 
-This project is distributed under the MIT License. See ['LICENSE.md'](LICENSE.md) for details.
+This project is distributed under the MIT License. See ['LICENSE.md'](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/LICENSE.md) for details.
 
 ## Contact
 

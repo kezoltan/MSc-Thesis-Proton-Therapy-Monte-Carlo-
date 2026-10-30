@@ -7,10 +7,18 @@ from src.parameterisation import *
 
 def coarsen_step(brownian_incs):
     """
-    Take an input list/array of Brownian increments dB over some energy step, say h, can be any dimension of Brownians
-    Generate path one level more coarse than the input (each set of base fine steps -> sum -> one coarse step)
+    For geometric MLMC where step sizes are of the form h = T * base ** (-L), for integer L.
+    Geometric MLMC is the default type used in src/monte_carlo_methods/mlmc_driver.
+    Coarsen Brownian path by summing groups of ``base`` steps to construct coarse path from fine path.
 
-    Must be sqrt(h)*dZ = dB! Brownian increments
+    Parameters
+    ----------
+    brownian_incs : array_like
+
+    Returns
+    -------
+    numpy.ndarray
+        Coarse Brownian path, coupled to fine path for MLMC variance reduction.
     """
     brownian_incs = np.asarray(brownian_incs)
     b_shape = brownian_incs.shape

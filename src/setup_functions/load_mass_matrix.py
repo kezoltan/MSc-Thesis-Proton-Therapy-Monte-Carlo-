@@ -9,10 +9,22 @@ def load_mass_matrix(
     Y_meshgrid=Y_meshgrid,
     side_len=side_len,
 ):
-    """Load a cached lumped mass matrix or calculate and save it.
+    """Load a cached lumped mass matrix, or calculate and save it.
+       All parameters default to user settings given in src/parameterisation.
 
-    Optional arguments allow callers to provide a mesh and cache location.
-    When omitted, the corresponding values from ``doseparams`` are used.
+    Parameters
+    ----------
+    file_path : str, optional
+    spatial_dim : int, optional
+    dose_shape : int, optional
+    X_meshgrid : numpy.ndarray, optional
+    Y_meshgrid : numpy.ndarray, optional
+    side_len : float, optional
+
+    Returns
+    -------
+    M_diag : numpy.ndarray
+        Entries of the linear lumped mass matrix diagonal.
     """
     M_path = os.path.join(file_path, f"{spatial_dim}D_{dose_shape}_lumped_mass_matrix.npz")
     if os.path.exists(M_path):

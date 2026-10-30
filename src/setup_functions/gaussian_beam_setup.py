@@ -19,8 +19,27 @@ def initial_energy_spread():
 
 def sample_initial_position(meshgrid, rng, side_len):
     """
-    Gaussian sample the initial beam position given the X0 mean.
-    The spread (i.e. the standard dev) should be order side_len
+    Sample the initial beam position from a transverse Gaussian distribution.
+
+    The longitudinal coordinate is fixed at the position returned by
+    ``choose_X0``. Each transverse coordinate is sampled independently with
+    standard deviation ``width_sdev_factor * side_len``, set inside src/parameterisation.
+
+    Parameters
+    ----------
+    meshgrid : array_like
+        Must be in the form of the output of np.meshgrid, as determined by 
+        nodal_mesh_setup/nodes()
+    rng : numpy.random.Generator
+        Random number generator used to sample the transverse coordinates.
+    side_len : float
+        The distance between two adjacent nodes along the same fundamental direction.
+
+    Returns
+    -------
+    X0 : numpy.ndarray of shape (d,)
+        Sampled initial position for one proton, containing coordinates ``[x0, y]``
+        in 2D or ``[x0, y, z]`` in 3D.
     """
     X0_mean, _, _ = choose_X0(meshgrid)
 

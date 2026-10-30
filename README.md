@@ -118,7 +118,7 @@ Depending on the user's choice of Monte Carlo method, different figures will be 
 
 ## Testing and Validation
 
-Reproducible regimes for testing are currently being implemented [Issue #7](../../issues/7). As such, **we do not recommend installing this work for any reason other than reproducing results at this time.**
+Reproducible regimes for testing are currently being implemented [Issue #7](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/issues/7). As such, **we do not recommend installing this work for any reason other than reproducing results at this time.**
 
 ## Use of Generative AI
 

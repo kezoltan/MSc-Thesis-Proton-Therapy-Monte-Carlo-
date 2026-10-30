@@ -25,10 +25,10 @@ def main():
 
         print("Caution: plot will only compute correctly if all parameter values are unchanged in doseparams.py")
         path_3D = input("Please supply path to plot data: ")
-        sde_model = input("Please supply the matching scheme (energy/track_length) ")
-        dose_method = input("And the matching dose method (SF/SK): ")
+        selected_sde_model = input("Please supply the matching scheme (energy/track_length) ")
+        selected_dose_method = input("And the matching dose method (SF/SK): ")
 
-        if dose_method not in path_3D or sde_model not in path_3D:
+        if selected_dose_method not in path_3D or selected_sde_model not in path_3D:
             raise ValueError("Path details do not match sde_model and/or dose_method. Please check and try again.")
         if SPATIAL_DIM==2:
             plot = dose_plot_2D([path_3D])
@@ -158,8 +158,6 @@ def main():
                 std_mlmc_costs.append(mlmc_data['std_mlmc_cost'])
             std_MC_costs=np.asarray(std_MC_costs)
             std_mlmc_costs=np.asarray(std_mlmc_costs)
-            Eps=np.asarray(Eps)
-
             #To save as arrays, need to standardise the length:
             max_num_lvls = max(len(Nl) for Nl in all_Nls) #since Nl includes lvl 0
             step_levels = np.arange(MLMC_LEVEL_OFFSET, max_num_lvls + MLMC_LEVEL_OFFSET)
@@ -219,7 +217,6 @@ def main():
             plot_mlmc()
 
             #Find the highest accuracy result to plot
-            Eps=np.asarray(Eps)
             eps_idx=np.argmin(Eps)
             path_3D=results_paths[eps_idx]
 

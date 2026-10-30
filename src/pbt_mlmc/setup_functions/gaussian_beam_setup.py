@@ -2,7 +2,9 @@
 # Initialisation and parameterisation of Gaussian beam
 
 import numpy as np
-from pbt_mlmc.parameterisation import *
+from pbt_mlmc.parameterisation._fixed_params import E0, energy_sdev, width_sdev_factor
+from pbt_mlmc.parameterisation.core_params import SPATIAL_DIM
+from pbt_mlmc.setup_functions.nodal_mesh_setup import choose_X0
 
 def initial_energy_spread():
     """Draw a random initial proton energy from a Gaussian (normal) distribution.

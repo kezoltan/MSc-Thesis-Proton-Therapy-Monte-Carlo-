@@ -22,6 +22,10 @@ Firstly, we evaluate a pair of SDE proton transport models, the first of which o
 
 Overall, the main contribution of this work was that, using the new simulation and dose computation method we developed, the MLMC was successful at achieving significantly improved computational complexity over standard Monte Carlo, in the homogeneous medium tested. Future work would aim to extend this work to include other media, inhomogeneity, more complex geometric structures, and explore other variants of MLMC such as antithetic MLMC. Further details are given in the thesis.
 
+### Documentation
+
+The documentation for this code is still in progress following structural changes that are currently being implemented. The currently available documentation can be found [here](https://kezoltan.github.io/MSc-Thesis-Proton-Therapy-Monte-Carlo-/). 
+
 ## Installation
 
 ### HPC Hardware

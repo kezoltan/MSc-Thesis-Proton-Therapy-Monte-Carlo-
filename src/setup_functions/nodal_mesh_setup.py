@@ -17,6 +17,7 @@ def calculate_R0():
     -------
     float
         Value of the Bragg Kleeman proton range.
+    
     """
     return ALPHA*E0**p
 
@@ -34,6 +35,7 @@ def nodes(side_len):
     tuple of numpy.ndarray
         Coordinate grids ``(X, Y)`` in 2D or ``(X, Y, Z)`` in 3D.
         Meshgrid structure.
+    
     """
     R0=calculate_R0()
     range_upper = R0*range_allowance
@@ -124,24 +126,28 @@ def position_lookup_matrix(X_meshgrid):
     numpy.ndarray
         Integer array with the same shape as ``X_meshgrid``. Its values are
         consecutive positions in NumPy's default flattened order.
+    
     """
     grid_shape = X_meshgrid.shape
     return np.arange(0, prod(grid_shape)).reshape(grid_shape)
 
 def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     """
-    Calculates the diagonal of the lumped (row sum) mass matrix for (Q1) bi/trilinear basis functions over a regular
-    cubic voxel mesh side length side_len.
-    Exploits the symmetry and mapping onto the reference cube. Works in 2D or 3D.
-    Assumes that the mass matrix entries and nodes meshgrid ordering match
+    Calculate the lumped mass matrix diagonal for Q1 basis functions.
 
-    Inputs:
-        meshgrid: tuple, X,Y,Z
-                         X,Y,Z = np.arrays from np.meshgrid indexed by i,j(,k)
-        spatial_dim: int, number of spatial dimensions (2 or 3)
+    Uses a regular square or cubic mesh with element side length ``side_len``.
+    Assumes matching mass matrix and meshgrid node ordering.
 
-    Returns:
-        M_diag, 1D np.array, shape = (number of nodes,) contains the diagonal elements of the diagonal matrix M
+    Parameters
+    ----------
+    meshgrid : tuple of numpy.ndarray
+    side_len : float
+    spatial_dim : int
+
+    Returns
+    -------
+    M_diag : numpy.ndarray
+        One-dimensional array of diagonal entries, one per node.
     """
     Xs = X_meshgrid  # This is the beam axis so is always there
     nodes_shape = Xs.shape

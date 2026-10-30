@@ -27,7 +27,7 @@ def reference_cube_mapping(side_len, center, coordinate):
 
 
 def Phi(side_len, X, n_i):
-    """Evaluate the basis function ``Phi_i`` attached to the ``i``th node.
+    """Evaluate the basis function ``Phi_i`` attached to node ``i``.
 
     The basis function is defined over the whole domain. ``X`` is the position
     at which ``Phi_i`` is evaluated, and ``n_i`` is the coordinate of the node

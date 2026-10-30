@@ -18,9 +18,9 @@ The function of this code is to estimate the absorbed dose of a monoenergetic pr
 - (2) the dose computation technique used to convert a simulated energetic proton and its track into a dose map in 2D or 3D space
 - (3) the Monte Carlo method used estimate the overall dose map resulting from millions of proton simulations
 
-Firstly, we evaluate a pair of SDE proton transport models, the first of which originates from _Chronholm and Pryer, 2026_ (see _References_) simulated with the Euler-Maruyama discretisation (specifically, a geometry preserving scheme using the Riemannian exponential map on the sphere) where one is parameterised in energy and the other in track length. Secondly, the compare the existing dose computation method in _Chronholm and Pryer_ with a smoother alternative using finite element methods, which is developed in the adjoining thesis to this work. Thirdly, we compare the use of these methods with standard Monte Carlo against Multilevel Monte Carlo for this task, alongside suggesting techniques for ensuring dose positivity.
+Firstly, we evaluate a pair of SDE proton transport models, the first of which originates from _Chronholm and Pryer, 2026_ (see _References_) simulated with the Euler-Maruyama discretisation (specifically, a geometry preserving scheme using the Riemannian exponential map on the sphere) where one is parameterised in energy and the other in track length. Secondly, we compare the existing dose computation method in _Chronholm and Pryer_ with a smoother alternative using finite element methods, which was developed in the adjoining thesis to this work. Thirdly, we compare the use of these methods with standard Monte Carlo against Multilevel Monte Carlo for this task, alongside suggesting techniques for ensuring dose positivity.
 
-Overall, the main contribution of this work was that, using the new simulation and dose computation method that we developed, the MLMC was successful at achieving significantly improved computational complexity over standard Monte Carlo, in the homogeneous medium tested. Future work would aim to extend this work to include other media, inhomogeneity, more complex geometric structures, and explore other variants of MLMC such as antithetic MLMC. Further details are given in the written work, for which a URL will be provided in due course.
+Overall, the main contribution of this work was that, using the new simulation and dose computation method we developed, the MLMC was successful at achieving significantly improved computational complexity over standard Monte Carlo, in the homogeneous medium tested. Future work would aim to extend this work to include other media, inhomogeneity, more complex geometric structures, and explore other variants of MLMC such as antithetic MLMC. Further details are given in the thesis.
 
 ## Installation
 
@@ -28,7 +28,7 @@ Overall, the main contribution of this work was that, using the new simulation a
 
 Due to the high objective computational complexity of this task, access to a High-Performance Computing (HPC) cluster is recommended for running large-scale experiments. For example, running MLMC with root mean-square-error $\epsilon < 10^{-1}$ is likely to require at least $\mathcal{O}(10^{7})$ proton simulations in 2D, based on our use of this code. In 3D, we expect the complexity to worsen significantly for all methods with the current setup.
 
-The experiments presented in this thesis were performed using the an HPC cluster owned by the University of Oxford. 128 CPU cores were used over which proton simulations were run in parallel. No job scheduler was used, and Linux OS was used. One full dose map under the conditions described above in 2D was produced in the order of hours. Note that improving the error requirement can notably increase the runtime. Further information about the HPC cluster can be provided upon reasonable request.
+The experiments presented in this thesis were performed using the an HPC cluster owned by the University of Oxford. 128 CPU cores were used over which proton simulations were run in parallel. Linux OS and no job scheduler was used. One full dose map under the conditions described above in 2D was produced in the order of hours. Note that improving the error requirement can notably increase the runtime. Further information about the HPC cluster can be provided upon reasonable request.
 
 Smaller plots (e.g. large $\epsilon \sim \\mathcal{O}(1)$, Monte Carlo dose maps using $\mathcal{O}(10^{5})$ simulations) and unit tests may be executed locally.
 
@@ -69,7 +69,7 @@ For development, the package can be installed in editable mode:
 pip install -e .
 ```
 
-The user should review the ['parameterisation guide']('src/parameterisation/INFO.md) and related files to set basic parameters. Once this has been done, you can your choice of experiment from the terminal:
+The user should review the ['parameterisation guide']('https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/src/parameterisation/INFO.md) and related files to set basic parameters. Once this has been done, you can your choice of experiment from the terminal:
 
 ```bash
 python3 -m src.dose_main
@@ -90,7 +90,7 @@ Be advised that running this project will generate new and permanent folders on 
 
 The project is intended to be published on the Python Package Index (PyPI), allowing users to install the package and its dependencies directly.
 
-*Note: PyPI installation is not yet available. We will update this section in due coarse.*
+*Note: PyPI installation is not yet available - [Issue #13](../../issues/13). We will update this section in due coarse.*
 
 ### Parameterisation
 
@@ -110,7 +110,8 @@ We provide default parameters for most variables for the purposes of testing, ho
 
 ## Testing and Validation
 
-Reproducible regimes for testing are currently being implemented. As such, **we do not recommend installing this work for any reason other than reproducing results at this time.**
+Reproducible regimes for testing are currently being implemented [Issue #7](../../issues/7). As such, **we do not recommend installing this work for any reason other than reproducing results at this time.**
+
 
 ## References
 

@@ -70,13 +70,13 @@ SIGMA = side_len*3/4 # Need large enough for smooth results
 #======BEAM SAMPLING (NEEDS REWORK)======
 
 #how many times side_len should the width be, also depends on E0 ideally
-width_sdev_factor = CONFIG.get("width_sdev_factor", 3) 
+width_sdev_factor = CONFIG.get("width_sdev_factor", 3)
 width_spread = CONFIG.get("width_spread", True)
 if width_sdev_factor==0:
     width_spread=False
 
 #initial energy spread in % from Chronholm and Pryer 2026
-energy_spread_percent = CONFIG.get("energy_spread_percent", 1/100) 
+energy_spread_percent = CONFIG.get("energy_spread_percent", 1/100)
                                 #we will interpret this as the % of the mean = standard dev
 energy_spread = CONFIG.get("energy_spread", True)
 energy_sdev = CONFIG.get("energy_sdev", 0)#E0 * energy_spread_percent #convert to the standard dev

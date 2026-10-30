@@ -1,4 +1,4 @@
-"""Behavior-focused test names for ``src.dosesetup``.
+"""Behavior-focused test names for ``src.setup_functions``.
 
 Implement these cases incrementally, starting with the pure helper functions.
 """
@@ -85,7 +85,7 @@ def test_reciprocal_stopping_power_matches_drift_formula(energy, a, exponent):
 )
 def test_energy_straggling_term_matches_formula(energy, kappa):
     # stopping_power(E) = E**(1-p) / (ALPHA*p), so multiply by kappa*E.
-    # Use ALPHA and p from doseparams, matching the stopping_power  used by the function in doseparams.
+    # Use ALPHA and p from src/parameterisation, matching the stopping_power
     expected = kappa * energy ** (2 - p) / (ALPHA * p)
 
     # Pass kappa explicitly so the case does not depend on its default value.

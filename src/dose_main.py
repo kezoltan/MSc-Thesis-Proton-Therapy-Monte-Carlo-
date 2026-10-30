@@ -1,7 +1,6 @@
 
 #August 2026
 #Run this file for full simulations
-#Parameters + Methods are assigned in doseparams
 
 import numpy as np
 import matplotlib.pyplot as plt

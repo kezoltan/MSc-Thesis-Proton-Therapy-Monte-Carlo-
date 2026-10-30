@@ -5,7 +5,7 @@
 import numpy as np
 from math import pi
 from scipy.stats import chi2
-from pbt_mlmc.parameterisation import *
+from pbt_mlmc.simulation_config import *
 from pbt_mlmc.setup_functions import *
 from pbt_mlmc.sde_model_simulation import *
 

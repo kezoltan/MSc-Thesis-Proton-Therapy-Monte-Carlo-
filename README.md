@@ -69,7 +69,13 @@ For development, the package can be installed in editable mode:
 pip install -e .
 ```
 
-The user should review the ['parameterisation guide'](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/src/parameterisation/INFO.md) and related files to set basic parameters. Once this has been done, you can your choice of experiment from the terminal:
+Create a user-owned TOML config file from the packaged example:
+
+```bash
+pbt-mlmc --write-config dose-config.toml
+```
+
+Edit `dose-config.toml` to set the simulation method, dose parameters, beam and mesh properties, MLMC settings, and output directory. The generated example selects a small 2D standard Monte Carlo run (`NUM_CPUS = 1`, `SIMS_PER_CPU = 10`). Start it with:
 
 ```bash
 pbt-mlmc --config dose-config.toml
@@ -79,7 +85,7 @@ The config uses TOML sections: `[output]`, `[simulation]`, `[beam]`, `[mesh]`, a
 
 Paths in `file_path` are resolved from the current working directory. The selected output directory is created if needed. Results and the generated lumped mass-matrix cache are stored there. No external input data files are required.
 
-The Python parameter modules provide the package defaults; routine user changes should go in the external TOML file so they survive package upgrades. The package includes a parameterisation guide at `pbt_mlmc/parameterisation/INFO.md`.
+The package defaults are documented in `pbt_mlmc/simulation_config.py`; routine user changes should go in the external TOML file so they survive package upgrades. The primary user choices and defaults are `file_path` (`/tmp/CHANGE_THIS`), `SPATIAL_DIM` (`2`), `sde_model` (`energy`), `dose_method` (`SF`), `sampling_type` (`mc`), `SIMS_PER_CPU` (`200`), and `Eps` (`[0.2, 0.1]`). Valid model choices are `energy` or `track_length`; dose methods are `SF` or `SK`; sampling methods are `mc` or `mlmc`. `Eps` is used by MLMC and `SIMS_PER_CPU` is primarily used for standard Monte Carlo. The shipped TOML is a small example configuration and may intentionally use smaller run values than these defaults.
 
 The command should print simulation details before it starts, for example:
 

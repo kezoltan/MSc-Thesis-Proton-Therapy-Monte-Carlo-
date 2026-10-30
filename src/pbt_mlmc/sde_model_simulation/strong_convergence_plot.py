@@ -5,11 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from concurrent.futures import ProcessPoolExecutor
 import os
-from pbt_mlmc.parameterisation import Omega0, E0, p, base, master_seed_seq, file_path, SPATIAL_DIM, T
-from pbt_mlmc.parameterisation import NUM_CPUS as num_CPUs
-from pbt_mlmc.parameterisation import X0_mean as X0
-from pbt_mlmc.parameterisation import ALPHA as alpha
-from pbt_mlmc.parameterisation import EPS_0 as eps_0
+from pbt_mlmc.simulation_config import Omega0, E0, p, base, master_seed_seq, file_path, SPATIAL_DIM, T
+from pbt_mlmc.simulation_config import NUM_CPUS as num_CPUs
+from pbt_mlmc.simulation_config import X0_mean as X0
+from pbt_mlmc.simulation_config import ALPHA as alpha
+from pbt_mlmc.simulation_config import EPS_0 as eps_0
 from pbt_mlmc.setup_functions.mlmc_setup import coarsen_step
 from pbt_mlmc.sde_model_simulation import energy_one_step_geoEM
 

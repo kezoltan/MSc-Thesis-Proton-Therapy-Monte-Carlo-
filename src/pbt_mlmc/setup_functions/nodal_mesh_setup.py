@@ -4,8 +4,7 @@
 import numpy as np
 from math import prod, comb, ceil
 from itertools import product
-from pbt_mlmc.parameterisation._fixed_params import *
-from pbt_mlmc.parameterisation.core_params import *
+from pbt_mlmc.simulation_config import ALPHA, E0, p, range_allowance, y_scaling, SPATIAL_DIM
 import warnings
 
 def calculate_R0():

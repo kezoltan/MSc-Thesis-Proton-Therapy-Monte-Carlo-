@@ -1,13 +1,13 @@
 
 #August 2026
 #Run this file for full simulations
-#Parameters + Methods are assigned in doseparams
+# Parameters are loaded from TOML or package defaults in pbt_mlmc.simulation_config.
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 from functools import partial
-from pbt_mlmc.parameterisation import *
+from pbt_mlmc.simulation_config import *
 from pbt_mlmc.doseplot import dose_plot_2D, dose_plot_3D
 from pbt_mlmc.sde_model_simulation.energy_geometric_EM import choose_dE_ds
 from pbt_mlmc.setup_functions.load_mass_matrix import load_mass_matrix
@@ -23,7 +23,7 @@ def main():
 
     if plot_only:
 
-        print("Caution: plot will only compute correctly if all parameter values are unchanged in doseparams.py")
+        print("Caution: plot will only compute correctly if all parameter values match the saved simulation data.")
         path_3D = input("Please supply path to plot data: ")
         selected_sde_model = input("Please supply the matching scheme (energy/track_length) ")
         selected_dose_method = input("And the matching dose method (SF/SK): ")

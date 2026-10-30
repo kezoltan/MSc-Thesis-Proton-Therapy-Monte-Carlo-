@@ -4,7 +4,7 @@
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 from numpy.random import default_rng
-from pbt_mlmc.parameterisation import *
+from pbt_mlmc.simulation_config import *
 from pbt_mlmc.dose_computation.dosemap1_shape_function_geoEM import (
     track_len_one_path_load_contribution,
     energy_one_path_load_contribution,

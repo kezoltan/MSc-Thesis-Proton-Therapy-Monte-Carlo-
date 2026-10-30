@@ -21,7 +21,7 @@ pbt-mlmc = "pbt_mlmc.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-pbt_mlmc = ["parameterisation/INFO.md", "default_config.toml"]
+pbt_mlmc = ["example_config.toml"]
 
 [project.optional-dependencies]
 dev = [

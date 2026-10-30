@@ -1,5 +1,5 @@
 import numpy as np
-from pbt_mlmc.parameterisation import *
+from pbt_mlmc.simulation_config import *
 from pbt_mlmc.monte_carlo_methods.mlmc_parallel import mlmc_parallel as mlmc_parallel_l
 from pbt_mlmc.setup_functions.load_mass_matrix import load_mass_matrix
 import os

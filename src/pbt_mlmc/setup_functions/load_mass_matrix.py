@@ -1,4 +1,11 @@
-from pbt_mlmc.parameterisation import *
+import os
+
+import numpy as np
+
+from pbt_mlmc.simulation_config import (
+    file_path, SPATIAL_DIM, dose_shape, X_meshgrid, Y_meshgrid, side_len,
+)
+from pbt_mlmc.setup_functions.nodal_mesh_setup import linear_lumped_mass_matrix
 
 # added defaults so tests are easier to run
 def load_mass_matrix(
@@ -12,7 +19,7 @@ def load_mass_matrix(
     """Load a cached lumped mass matrix or calculate and save it.
 
     Optional arguments allow callers to provide a mesh and cache location.
-    When omitted, the corresponding values from ``doseparams`` are used.
+    When omitted, the corresponding values from ``pbt_mlmc.simulation_config`` are used.
     """
     M_path = os.path.join(file_path, f"{spatial_dim}D_{dose_shape}_lumped_mass_matrix.npz")
     if os.path.exists(M_path):

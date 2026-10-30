@@ -4,7 +4,7 @@
 import os
 import sys
 import numpy as np
-from pbt_mlmc.parameterisation import *
+from pbt_mlmc.simulation_config import *
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator
 from math import ceil

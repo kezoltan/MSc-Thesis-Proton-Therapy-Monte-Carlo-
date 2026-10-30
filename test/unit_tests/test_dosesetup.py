@@ -3,7 +3,10 @@
 Implement these cases incrementally, starting with the pure helper functions.
 """
 import numpy as np
-from pbt_mlmc.parameterisation import *
+from pbt_mlmc.simulation_config import (
+    ALPHA, SPATIAL_DIM, base, domain_lower_bounds,
+    domain_upper_bounds, p,
+)
 import pytest
 from pbt_mlmc.setup_functions import (
     exponential_map_sphere,

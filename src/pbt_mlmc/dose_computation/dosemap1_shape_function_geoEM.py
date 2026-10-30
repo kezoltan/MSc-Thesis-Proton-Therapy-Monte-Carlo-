@@ -5,7 +5,7 @@ import numpy as np
 from math import ceil, prod, floor, log
 from numba import njit
 from pbt_mlmc.setup_functions import *
-from pbt_mlmc.parameterisation import *
+from pbt_mlmc.simulation_config import *
 from pbt_mlmc.sde_model_simulation import *
 
 

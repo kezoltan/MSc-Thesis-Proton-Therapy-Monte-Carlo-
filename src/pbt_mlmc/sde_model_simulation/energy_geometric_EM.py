@@ -1,7 +1,7 @@
 # July 2026
 # Supporting function to run the geometric EM scheme for the track length model
 
-from pbt_mlmc.parameterisation import *
+from pbt_mlmc.simulation_config import *
 from pbt_mlmc.setup_functions import *
 from math import log
 

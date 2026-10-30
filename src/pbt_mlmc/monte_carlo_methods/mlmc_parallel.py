@@ -10,7 +10,7 @@ import numpy as np
 from pbt_mlmc.sde_model_simulation.energy_geometric_EM import full_energy_model_setup
 
 # Don't import dE and ds
-from pbt_mlmc.parameterisation import sde_model, dose_method, dose_shape, energy_sdev
+from pbt_mlmc.simulation_config import sde_model, dose_method, dose_shape, energy_sdev
 
 # ---------------------------------MLMC LEVEL WORKER FUNCTIONS-----------------------------------------
 

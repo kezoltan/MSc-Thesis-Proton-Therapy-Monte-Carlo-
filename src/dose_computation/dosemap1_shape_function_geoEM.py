@@ -296,7 +296,8 @@ def one_step_F_contribution(h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s
         E_start = E
         E_end = E_n1
         one_step = np.zeros(dose_shape)
-        if domain_exit_check(X_n1, domain_upper_bounds, domain_lower_bounds) and not (final_V_step):  # If we left the domain during the simulation
+        # If we left the domain during the simulation
+        if domain_exit_check(X_n1, domain_upper_bounds, domain_lower_bounds) and not (final_V_step):
             print(f"Track exited the domain between {X} and {X_n1}.")
             if sde_model == "energy":
                 return one_step, E_n1, Omega_n1, s_n1, X_n1

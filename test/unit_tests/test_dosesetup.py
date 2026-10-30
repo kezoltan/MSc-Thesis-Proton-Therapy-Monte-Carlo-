@@ -462,8 +462,8 @@ def test_load_mass_matrix_computes_and_saves_when_cache_is_missing(
 #     dimension, coords_XZ, coords_Y, side_len
 # ):
 
-#     # Create the meshgrid 
-    
+#     # Create the meshgrid
+
 #     dose_shape = int(np.prod(mesh_shape))
 #     expected = linear_lumped_mass_matrix(
 #         meshgrid[0], side_len, spatial_dim=dimension)

@@ -164,7 +164,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     #     adj_coord = tuple(adj_coord_list)
     #     regular_side_length = Xs[adj_coord] - Xs[first_coord]
     #     print(
-    #         f"Side length in fundamental direction {i} is reading as {regular_side_length:.8f}," 
+    #         f"Side length in fundamental direction {i} is reading as {regular_side_length:.8f},"
     #         f"should be {side_len}.")
     #     if not (np.isclose(regular_side_length, side_len)):  # Only tests if they are almost the same
     #         raise ValueError(f"Meshgrid sidelength must be uniformally equal to side_len: {side_len}.")

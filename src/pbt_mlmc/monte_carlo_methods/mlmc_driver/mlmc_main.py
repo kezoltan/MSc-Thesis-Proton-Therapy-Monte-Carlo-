@@ -1,9 +1,9 @@
 import numpy as np
-from src.parameterisation import *
-from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel as mlmc_parallel_l
-from src.setup_functions.load_mass_matrix import load_mass_matrix
+from pbt_mlmc.parameterisation import *
+from pbt_mlmc.monte_carlo_methods.mlmc_parallel import mlmc_parallel as mlmc_parallel_l
+from pbt_mlmc.setup_functions.load_mass_matrix import load_mass_matrix
 import os
-from src.doseplot import dose_plot_2D, dose_plot_3D
+from pbt_mlmc.doseplot import dose_plot_2D, dose_plot_3D
 from functools import partial
 
 

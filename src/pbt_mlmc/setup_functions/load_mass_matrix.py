@@ -1,4 +1,4 @@
-from src.parameterisation import *
+from pbt_mlmc.parameterisation import *
 
 # added defaults so tests are easier to run
 def load_mass_matrix(

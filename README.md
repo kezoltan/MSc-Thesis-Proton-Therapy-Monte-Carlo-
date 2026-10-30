@@ -72,7 +72,7 @@ pip install -e .
 The user should review the ['parameterisation guide'](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/src/parameterisation/INFO.md) and related files to set basic parameters. Once this has been done, you can your choice of experiment from the terminal:
 
 ```bash
-python3 -m src.dose_main
+pbt-mlmc
 ```
 
 The file is running correctly if it begins printing the simulation details into the terminal, for example:
@@ -84,14 +84,14 @@ The file is running correctly if it begins printing the simulation details into 
 "Mass matrix loaded successfully."
 ```
 
+Simulation outputs and the generated lumped mass-matrix cache are written under `file_path` from `core_params.py`. 
 Be advised that running this project will generate new and permanent folders on your machine that will need to manually reviewed -- if running repeatedly, we suggested adding your own clean-up functions. 
 
 ### Future Package Distribution
 
-The project is intended to be published on the Python Package Index (PyPI), allowing users to install the package and its dependencies directly.
+A console command, `pbt-mlmc`, is installed with the package. 
 
 *Note: PyPI installation is not yet available - [Issue #13](../../issues/13). We will update this section in due coarse.*
-
 ### Parameterisation
 
 We provide default parameters for most variables for the purposes of testing, however we expect to provide alternative presets (e.g. for different materials) in future. Currently, the user should pay attention to:

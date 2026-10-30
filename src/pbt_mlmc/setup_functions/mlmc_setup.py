@@ -3,7 +3,7 @@
 
 import numpy as np
 from math import log
-from src.parameterisation import *
+from pbt_mlmc.parameterisation import *
 
 def coarsen_step(brownian_incs):
     """

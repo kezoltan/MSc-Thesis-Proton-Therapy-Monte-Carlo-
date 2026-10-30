@@ -5,9 +5,9 @@
 import numpy as np
 from math import pi
 from scipy.stats import chi2
-from src.parameterisation import *
-from src.setup_functions import *
-from src.sde_model_simulation import *
+from pbt_mlmc.parameterisation import *
+from pbt_mlmc.setup_functions import *
+from pbt_mlmc.sde_model_simulation import *
 
 #Precompute these
 KERNEL_PREFACTOR = 1/RHO * 1/((2*pi)**(SPATIAL_DIM/2)*SIGMA**SPATIAL_DIM)

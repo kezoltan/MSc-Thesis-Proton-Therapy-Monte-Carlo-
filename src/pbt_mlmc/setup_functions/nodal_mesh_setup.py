@@ -4,8 +4,8 @@
 import numpy as np
 from math import prod, comb, ceil
 from itertools import product
-from src.parameterisation._fixed_params import *
-from src.parameterisation.core_params import *
+from pbt_mlmc.parameterisation._fixed_params import *
+from pbt_mlmc.parameterisation.core_params import *
 import warnings
 
 def calculate_R0():

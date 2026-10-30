@@ -4,9 +4,9 @@
 import numpy as np
 from math import ceil, prod, floor, log
 from numba import njit
-from src.setup_functions import *
-from src.parameterisation import *
-from src.sde_model_simulation import *
+from pbt_mlmc.setup_functions import *
+from pbt_mlmc.parameterisation import *
+from pbt_mlmc.sde_model_simulation import *
 
 
 def storage_position_convention(node_coordinate):

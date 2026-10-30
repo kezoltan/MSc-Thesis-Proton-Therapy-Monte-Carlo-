@@ -3,8 +3,8 @@
 
 from ._fixed_params import *
 from .core_params import *
-from src.setup_functions.proton_setup_Bragg_Kleeman import *
-from src.setup_functions.nodal_mesh_setup import *
+from pbt_mlmc.setup_functions.proton_setup_Bragg_Kleeman import *
+from pbt_mlmc.setup_functions.nodal_mesh_setup import *
 from math import prod
 
 # Straggling parameter

@@ -4,11 +4,11 @@
 import os
 import sys
 import numpy as np
-from src.parameterisation import *
+from pbt_mlmc.parameterisation import *
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator
 from math import ceil
-from src.dose_computation.dosemap1_shape_function_geoEM import storage_position_convention
+from pbt_mlmc.dose_computation.dosemap1_shape_function_geoEM import storage_position_convention
 
 
 def printf(file_ptr, fmt, *pargs, printout=True):

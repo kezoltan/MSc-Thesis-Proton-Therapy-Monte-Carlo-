@@ -6,12 +6,12 @@ Dose calculation
 Shape function method
 ---------------------
 
-.. automodule:: dose_computation.dosemap1_shape_function_geoEM
+.. automodule:: pbt_mlmc.dose_computation.dosemap1_shape_function_geoEM
    :members:
 
 Spatial kernel method
 ---------------------
 
-.. automodule:: dose_computation.dosemap2_spatial_kernel_geoEM
+.. automodule:: pbt_mlmc.dose_computation.dosemap2_spatial_kernel_geoEM
    :members:
 

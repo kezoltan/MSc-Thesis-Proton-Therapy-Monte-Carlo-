@@ -3,10 +3,10 @@ import time
 import os
 import numpy as np
 from datetime import datetime
-from src.monte_carlo_methods.mlmc_driver.mlmc_main import mlmcv  # Vectorized controller
+from pbt_mlmc.monte_carlo_methods.mlmc_driver.mlmc_main import mlmcv  # Vectorized controller
 import matplotlib.pyplot as plt
-from src.parameterisation import *
-from src.monte_carlo_methods.mlmc_driver.mlmc_plot import *
+from pbt_mlmc.parameterisation import *
+from pbt_mlmc.monte_carlo_methods.mlmc_driver.mlmc_plot import *
 
 def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     """

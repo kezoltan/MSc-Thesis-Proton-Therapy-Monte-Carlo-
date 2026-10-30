@@ -3,8 +3,8 @@
 #Supporting function to run the geometric EM scheme for the track length model
 
 from math import exp
-from src.parameterisation import *
-from src.setup_functions import *
+from pbt_mlmc.parameterisation import *
+from pbt_mlmc.setup_functions import *
 
 def V_energy_loss_var_pul(E, kappa = KAPPA):
     """Calculates the energy loss variance per unit track length (pul).

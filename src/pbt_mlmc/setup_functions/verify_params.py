@@ -1,7 +1,7 @@
 # October 2026
 # Run test to verify that params can be accepted
 
-from src.parameterisation import *
+from pbt_mlmc.parameterisation import *
 import warnings
 
 def verify_params():

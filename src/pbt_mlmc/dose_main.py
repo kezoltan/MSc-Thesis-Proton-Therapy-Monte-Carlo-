@@ -7,17 +7,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 from functools import partial
-from src.parameterisation import *
-from src.doseplot import dose_plot_2D, dose_plot_3D
-from src.sde_model_simulation.energy_geometric_EM import choose_dE_ds
-from src.setup_functions.load_mass_matrix import load_mass_matrix
-from src.monte_carlo_methods.mc_parallel import mc_parallel
-from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel
-from src.monte_carlo_methods.mlmc_driver.mlmc_test import mlmc_testv
-from src.setup_functions.verify_params import verify_params
+from pbt_mlmc.parameterisation import *
+from pbt_mlmc.doseplot import dose_plot_2D, dose_plot_3D
+from pbt_mlmc.sde_model_simulation.energy_geometric_EM import choose_dE_ds
+from pbt_mlmc.setup_functions.load_mass_matrix import load_mass_matrix
+from pbt_mlmc.monte_carlo_methods.mc_parallel import mc_parallel
+from pbt_mlmc.monte_carlo_methods.mlmc_parallel import mlmc_parallel
+from pbt_mlmc.monte_carlo_methods.mlmc_driver.mlmc_test import mlmc_testv
+from pbt_mlmc.setup_functions.verify_params import verify_params
 
-if __name__ == "__main__":
-
+def main():
     verify_params()
 
     plot_only=False
@@ -229,3 +228,7 @@ if __name__ == "__main__":
                 plot = dose_plot_2D([path_3D])
             if SPATIAL_DIM==3:
                 plot = dose_plot_3D([path_3D])
+
+
+if __name__ == "__main__":
+    main()

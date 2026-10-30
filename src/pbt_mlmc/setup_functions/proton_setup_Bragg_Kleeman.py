@@ -3,7 +3,7 @@
 
 import numpy as np
 from math import cos, sin
-from src.parameterisation._fixed_params import *
+from pbt_mlmc.parameterisation._fixed_params import *
 
 def choose_Omega_0():
     if SPATIAL_DIM == 3:

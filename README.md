@@ -41,7 +41,7 @@ The following software is required:
 
 ### Installation from Source
 
-The project is intended to be distributed as an installable Python package, with its dependencies managed through [`pyproject.toml`](pyproject.toml). Currently, the project can be installed directly from the repository. Below we give installation instructions for Mac users.
+The project is intended to be distributed as an installable Python package, with its dependencies managed through [`pyproject.toml`](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/pyproject.toml). Currently, the project can be installed directly from the repository. Below we give installation instructions for Mac users.
 
 Clone the repository:
 
@@ -90,7 +90,7 @@ Be advised that running this project will generate new and permanent folders on 
 
 The project is intended to be published on the Python Package Index (PyPI), allowing users to install the package and its dependencies directly.
 
-*Note: PyPI installation is not yet available - [Issue #13](../../issues/13). We will update this section in due coarse.*
+*Note: PyPI installation is not yet available - [Issue #13](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/issues/13). We will update this section in due coarse.*
 
 ### Parameterisation
 

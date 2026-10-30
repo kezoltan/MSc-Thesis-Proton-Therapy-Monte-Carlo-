@@ -112,6 +112,10 @@ We provide default parameters for most variables for the purposes of testing, ho
 
 Reproducible regimes for testing are currently being implemented [Issue #7](../../issues/7). As such, **we do not recommend installing this work for any reason other than reproducing results at this time.**
 
+## Use of Generative AI
+
+ChatGPT (OpenAI) was used to assist with selected code-writing, refactoring, and debugging tasks. The project authors are responsible for the final code, scientific content, and results.
+
 
 ## References
 

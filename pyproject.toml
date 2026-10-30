@@ -10,18 +10,18 @@ authors = [
     {name = "Katie Zoltan", email = "katherine.zoltan@bnc.ox.ac.uk"}
 ]
 readme = "README.md"
-license = {file = "LICENSE.md"}
+license = "MIT"
 license-files = ["LICENSE.md"]
 dependencies = ["numpy", "matplotlib", "scipy", "numba"]
 
 [project.scripts]
-pbt-mlmc = "pbt_mlmc.dose_main:main"
+pbt-mlmc = "pbt_mlmc.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-pbt_mlmc = ["parameterisation/INFO.md"]
+pbt_mlmc = ["parameterisation/INFO.md", "default_config.toml"]
 
 [project.optional-dependencies]
 dev = [

@@ -1,0 +1,39 @@
+# Example settings for a small 2D standard Monte Carlo run.
+# Paths are resolved relative to the directory where pbt-mlmc is launched.
+
+[output]
+file_path = "./pbt_mlmc_output"
+
+[simulation]
+SPATIAL_DIM = 2
+sde_model = "energy"
+dose_method = "SF"
+sampling_type = "mc"
+NUM_CPUS = 1
+SIMS_PER_CPU = 10
+Eps = [0.2]
+random_seed = 42
+
+[beam]
+E0 = 62
+EMIN = 0.1
+straggling_severity = "Moderate"
+width_sdev_factor = 3
+width_spread = true
+energy_spread_percent = 0.01
+energy_sdev = 0.0
+energy_spread = true
+
+[mesh]
+side_len = 0.05
+range_allowance = 1.6
+y_scaling = 1.0
+
+[mlmc]
+MLMC_LEVEL_OFFSET = 5
+L_conv_test = 8
+N_conv_test = 200000
+Lmax = 17
+N0 = 50000
+base = 2
+Lmin = 2

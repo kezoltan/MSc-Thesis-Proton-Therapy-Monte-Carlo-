@@ -16,8 +16,8 @@ Parameters must be assigned for each of the following purposes:
 - Set physical properties e.g. medium dependent parameters, beam settings
 - Based on the above, determine conditional parameters
 
-We refer all users to choose the parameters in [core_params.py]('core_params.py'), where the numerical experiment is defined. It is likely that modifications to [_fixed_params.py]('_fixed_params.py') will also be needed, but alter these parameters with slightly more caution - the main reason to touch these would be (1) to alter the simulation to align with your hardware capability and (2) to investigate different physical parameterisations. 
+For installed-package use, create a user-owned TOML file with `pbt-mlmc --write-config dose-config.toml` and edit the settings there. The config file is read before dependent mesh and beam values are calculated. For development, `core_params.py` and `_fixed_params.py` still provide the package defaults and can be changed in an editable checkout.
 
-We recommend not modifying parameters given in [_conditional_params.py]('_conditional_params.py') or any of their setup functions as these are assigned based on conventions. 
+Do not modify parameters given in `_conditional_params.py` or its setup functions; those values are derived from the user settings.
 
 Please read the comments in the former two files for any known parameter restrictions.

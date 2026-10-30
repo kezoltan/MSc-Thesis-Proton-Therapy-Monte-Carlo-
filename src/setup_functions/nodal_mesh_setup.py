@@ -10,27 +10,30 @@ import warnings
 
 def calculate_R0():
     """
-    Analytical approx for the max range of protons
+    Calculate the proton range using the Bragg Kleeman model.
+    Parameters are imported and set to defaults in src/parameterisation.
+
+    Returns
+    -------
+    float
+        Value of the Bragg Kleeman proton range.
     """
     return ALPHA*E0**p
 
 def nodes(side_len):
     """
-    Defines the length dimensions of the cuboid D and gives the positions of all nodes in D
-    The origin is at the corner of domain D's face where the beam originates, so all coordinates
-    within D are positive.
-    ALL nodes coordinates must be exactly divisible by the side length side_len
+    Generate node coordinate grids for closed cuboid domain D, assigned in src/parameterisation, including endpoints.
+    Node coordinates are integer multiples of ``side_len``.
 
-    Inputs:
-            range_allowance, float in (1, 2): R0*range_allowance \approx length of D along beam axis
-            y_scaling, float in (0, 1): length of D*y_scaling \approx the width and depth in the other two directions
+    Parameters
+    ----------
+    side_len : float
 
-    Returns: tuple X,Y,(Z): type(X) = np.array ; X.shape = (number of nodes along x axis, y sim, z sim)
-                                                                including the endpoints!
-
-    Notes: X[i,j,k] will retrieve the x coordinate of the ith,jth,kth node
-           i,j,k=0,0,0 -> (x,y,z)=(0,-1,-1)
-
+    Returns
+    -------
+    tuple of numpy.ndarray
+        Coordinate grids ``(X, Y)`` in 2D or ``(X, Y, Z)`` in 3D.
+        Meshgrid structure.
     """
     R0=calculate_R0()
     range_upper = R0*range_allowance

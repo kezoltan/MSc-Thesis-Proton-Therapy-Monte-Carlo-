@@ -14,7 +14,7 @@ def V_energy_loss_var_pul(E, kappa = KAPPA):
     E : float
         Energy, must be nonegative.
     kappa : float, optional
-        Energy straggling strength. Defaults to ``KAPPA`` from ``doseparams``.
+        Energy straggling strength. Defaults to ``KAPPA`` from src/parameterisation.
 
     Returns
     -------

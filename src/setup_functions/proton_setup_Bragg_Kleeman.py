@@ -61,7 +61,7 @@ def stopping_power(E, a=ALPHA, p=p):
         Default medium is water, default value is ``ALPHA`` from ``doseparams``.
     p : float, optional
         Medium dependent coefficient.
-        Default medium is water, default value is ``p`` from ``doseparams``.
+        Default medium is water, default value is ``p`` from src/parameterisation.
 
     Returns
     -------
@@ -83,7 +83,7 @@ def reciprocal_stopping_power(E, a=ALPHA, p=p):
         Default medium is water, default value is ``ALPHA`` from ``doseparams``.
     p : float, optional
         Medium dependent coefficient.
-        Default medium is water, default value is ``p`` from ``doseparams``.
+        Default medium is water, default value is ``p`` from src/paramterisation.
 
     Returns
     -------

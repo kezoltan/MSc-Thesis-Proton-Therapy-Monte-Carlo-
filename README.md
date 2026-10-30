@@ -114,7 +114,7 @@ Depending on the user's choice of Monte Carlo method, different figures will be 
 
 ![example monte carlo dose map](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/docs/figures/mc_SF_energy.png)
 
-*Example output of proton beam dose map generated using the standard Monte Carlo sampling method with the energy parameterised SDE model and the (so-called) 'shape function' dose estimation technique in 2D. The mean initial proton energy is 62 MeV and the straggling strength is 'Moderate' with $\kappa = 4e-05$.*
+*Example output of proton beam dose map generated using the standard Monte Carlo sampling method with the energy parameterised SDE model and the (so-called) 'shape function' dose estimation technique in 2D. The mean initial proton energy is 62 MeV and the straggling strength is 'Moderate' with $\kappa = 4 \times 10^{-5}$.*
 
 ## Testing and Validation
 

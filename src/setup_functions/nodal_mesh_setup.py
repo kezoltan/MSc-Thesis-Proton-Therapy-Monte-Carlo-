@@ -143,6 +143,10 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     Xs = X_meshgrid  # This is the beam axis so is always there
     nodes_shape = Xs.shape
 
+    print(Xs)
+    print(Xs.shape)
+    print(np.transpose(Xs)[0].shape)
+
     # Useful integral values (no prefactor)
     I1 = 4 / 3  # if different coordinates (1 and -1)
     I2 = 8 / 3  # if same coords (1 and 1, or -1 and -1)

@@ -154,8 +154,8 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     # Test the side length along X direction only
     if Xs.shape[0] == 1:
         warnings.warn("Only one X coordinate, side length not well defined.")
-    elif not np.allclose(np.diff(np.transpose(Xs)[0], axis=0), side_len):
-        raise ValueError("Non-uniform X spacing, other dimensions not tested.")
+    elif not np.allclose(np.diff(Xs, axis=0), side_len):
+        raise ValueError("Non-uniform X spacing and sidelength did not match, other dimensions not tested.")
 
     # first_coord = tuple([0] * spatial_dim)
     # for i in range(spatial_dim):

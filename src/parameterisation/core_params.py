@@ -10,7 +10,7 @@ SPATIAL_DIM = 2 # 2 or 3
 # Choose the independent variable for the proton transport SDE system
 sde_model = "energy" # "energy" or "track_length"
 
-# Choose the dose computation technique 
+# Choose the dose computation technique
 dose_method = "SF" # "SF" or "SK" for (shape function or spatial kernel)
 
 # Choose the Monte Carlo sampling method

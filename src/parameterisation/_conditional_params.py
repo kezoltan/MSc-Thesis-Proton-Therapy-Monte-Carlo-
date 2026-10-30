@@ -29,7 +29,7 @@ X0_mean, domain_lower_bounds, domain_upper_bounds = choose_X0(meshgrid)
 dose_shape = prod(X_meshgrid.shape) #More accurately this is a length but it works as a 1D shape
 max_steps = sum(X_meshgrid.shape) #All boundaries, just needs to be large enough but relatively small
 
-# Standardised title element for plots 
+# Standardised title element for plots
 if dose_method=='SF':
     title_seg = f"{'Bilinear' if SPATIAL_DIM==2 else 'Trilinear'} Basis Function"
 elif dose_method=='SK':
@@ -37,7 +37,7 @@ elif dose_method=='SK':
 
 # Theta (MLMC only): proportion of error allocated to discretisation (vs. sampling)
 if dose_method=='SF':
-    theta = 0.25 
+    theta = 0.25
 if dose_method=='SK':
     theta=0.5
 

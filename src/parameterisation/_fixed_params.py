@@ -1,13 +1,13 @@
 # July 2026 (updated October 2026)
-# Standard parameters for reproducing results 
+# Standard parameters for reproducing results
 
 import numpy as np
 from .core_params import *
 import os
 
 # Parameters organised by purpose
-# Medium is water phantom 
-# Be aware that many parameters can and should be modified, and have linked values 
+# Medium is water phantom
+# Be aware that many parameters can and should be modified, and have linked values
 #   e.g. higher energy -> longer range -> consider increasing side_len for runtime
 
 #======SIMULATION PARAMETERS======
@@ -23,15 +23,15 @@ sim_num = NUM_CPUS * SIMS_PER_CPU
 #======PHYSICAL PARAMETERS (BEAM AND MEDIUM DEPENDENT)======
 
 # Mean initial proton energy
-E0 = 62 
+E0 = 62
 
-# Medium dependent parameters 
+# Medium dependent parameters
 
 # for BK model
 ALPHA =  2.633e-3
 p = 1.735
 # Density of medium
-RHO = 1 
+RHO = 1
 
 #======SPATIAL AND MESH PARAMETERS======
 
@@ -51,7 +51,7 @@ len_reciprocal=1/side_len
 #======NUMERICAL PROTON TRANSPORT PARAMETERS======
 
 # Proton absorption energy
-EMIN = 0.1 
+EMIN = 0.1
 
 T=E0-EMIN
 
@@ -90,10 +90,10 @@ MLMC_LEVEL_OFFSET = 5 #5-9
 L_conv_test = 8
 
 # The number of proton simulations used in MLMC test
-N_conv_test = 200000 #minimum: 50k, ideal: >=100k 
+N_conv_test = 200000 #minimum: 50k, ideal: >=100k
 
 # Maximum MLMC level before MLMC driver is forced to terminate
-Lmax = 17 
+Lmax = 17
 
 # Initialising simulation number for MLMC driver
 N0 = 50000 #need large enough to get a good variance estimate
@@ -102,7 +102,7 @@ N0 = 50000 #need large enough to get a good variance estimate
 base = 2
 
 # Minimum MLMC level for MLMC driver
-Lmin = 2 
+Lmin = 2
 
 
 #ds = 0.005*2 #positive!

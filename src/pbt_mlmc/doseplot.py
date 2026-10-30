@@ -3,8 +3,8 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from src.setup_functions import *
-from src.parameterisation import NUM_CPUS, Y_meshgrid  # subject to change -- should save ymeshgrid
+from pbt_mlmc.setup_functions import *
+from pbt_mlmc.simulation_config import NUM_CPUS, Y_meshgrid  # subject to change -- should save ymeshgrid
 from math import ceil
 import os
 from matplotlib.ticker import FormatStrFormatter, MultipleLocator

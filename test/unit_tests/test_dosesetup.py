@@ -1,11 +1,14 @@
-"""Behavior-focused test names for ``src.dosesetup``.
+"""Behavior-focused test names for ``pbt_mlmc.setup_functions``.
 
 Implement these cases incrementally, starting with the pure helper functions.
 """
 import numpy as np
-from src.parameterisation import *
+from pbt_mlmc.simulation_config import (
+    ALPHA, SPATIAL_DIM, base, domain_lower_bounds,
+    domain_upper_bounds, p,
+)
 import pytest
-from src.setup_functions import (
+from pbt_mlmc.setup_functions import (
     exponential_map_sphere,
     reciprocal_stopping_power,
     reference_cube_mapping,
@@ -17,8 +20,8 @@ from src.setup_functions import (
     coarsen_step,
     linear_lumped_mass_matrix
 )
-from src.sde_model_simulation.track_length_geometric_EM import V_energy_loss_var_pul
-from src.setup_functions.load_mass_matrix import load_mass_matrix
+from pbt_mlmc.sde_model_simulation.track_length_geometric_EM import V_energy_loss_var_pul
+from pbt_mlmc.setup_functions.load_mass_matrix import load_mass_matrix
 
 @pytest.mark.parametrize(
     ("omega", "increment", "expected"), # omega = initial direction

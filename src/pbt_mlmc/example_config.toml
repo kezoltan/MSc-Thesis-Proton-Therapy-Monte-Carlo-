@@ -1,0 +1,13 @@
+# Example settings for a small 2D standard Monte Carlo run.
+# Paths are resolved relative to the directory where pbt-mlmc is launched.
+
+[output]
+file_path = "./pbt_mlmc_output"
+
+[simulation]
+SPATIAL_DIM = 2
+sde_model = "energy"
+dose_method = "SF"
+sampling_type = "mc"
+SIMS_PER_CPU = 10
+Eps = [0.2]

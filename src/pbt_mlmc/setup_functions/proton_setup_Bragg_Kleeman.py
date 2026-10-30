@@ -3,7 +3,9 @@
 
 import numpy as np
 from math import cos, sin
-from src.parameterisation._fixed_params import *
+from pbt_mlmc.simulation_config import (
+    SPATIAL_DIM, straggling_severity, ALPHA, p, EPS_0, sde_model,
+)
 
 def choose_Omega_0():
     if SPATIAL_DIM == 3:
@@ -58,10 +60,10 @@ def stopping_power(E, a=ALPHA, p=p):
         Energy, must be nonegative.
     a : float, optional
         Medium dependent coefficient.
-        Default medium is water, default value is ``ALPHA`` from ``doseparams``.
+        Default medium is water, default value is ``ALPHA`` from ``pbt_mlmc.simulation_config``.
     p : float, optional
         Medium dependent coefficient.
-        Default medium is water, default value is ``p`` from ``doseparams``.
+        Default medium is water, default value is ``p`` from ``pbt_mlmc.simulation_config``.
 
     Returns
     -------
@@ -80,10 +82,10 @@ def reciprocal_stopping_power(E, a=ALPHA, p=p):
         Energy, must be nonegative.
     a : float, optional
         Medium dependent coefficient.
-        Default medium is water, default value is ``ALPHA`` from ``doseparams``.
+        Default medium is water, default value is ``ALPHA`` from ``pbt_mlmc.simulation_config``.
     p : float, optional
         Medium dependent coefficient.
-        Default medium is water, default value is ``p`` from ``doseparams``.
+        Default medium is water, default value is ``p`` from ``pbt_mlmc.simulation_config``.
 
     Returns
     -------

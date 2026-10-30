@@ -1,8 +1,8 @@
 # July 2026
 # Supporting function to run the geometric EM scheme for the track length model
 
-from src.parameterisation import *
-from src.setup_functions import *
+from pbt_mlmc.simulation_config import *
+from pbt_mlmc.setup_functions import *
 from math import log
 
 def track_length_diff_coeff(E, a=ALPHA, p=p):

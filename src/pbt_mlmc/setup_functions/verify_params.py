@@ -1,7 +1,20 @@
 # October 2026
 # Run test to verify that params can be accepted
 
-from src.parameterisation import *
+from pbt_mlmc.simulation_config import (
+    E0,
+    EMIN,
+    Eps,
+    L_conv_test,
+    MLMC_LEVEL_OFFSET,
+    N0,
+    RHO,
+    SPATIAL_DIM,
+    dose_method,
+    sampling_type,
+    sde_model,
+    theta,
+)
 import warnings
 
 def verify_params():

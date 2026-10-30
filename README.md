@@ -69,39 +69,48 @@ For development, the package can be installed in editable mode:
 pip install -e .
 ```
 
-The user should review the ['parameterisation guide'](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/src/parameterisation/INFO.md) and related files to set basic parameters. Once this has been done, you can your choice of experiment from the terminal:
+Create a user-owned TOML config file from the packaged example:
 
 ```bash
-python3 -m src.dose_main
+pbt-mlmc --write-config dose-config.toml
 ```
 
-The file is running correctly if it begins printing the simulation details into the terminal, for example:
+The generated `dose-config.toml` is intentionally small and selects a 2D standard Monte Carlo run. Edit it as needed, then run:
+
+```bash
+pbt-mlmc --config dose-config.toml
+```
+
+Values omitted from a custom config use package defaults. For available options, valid values, and derived settings, see [the parameter reference](docs/api/dose-parameters.rst). Unknown names and invalid values are reported before the simulation starts.
+
+Paths in `file_path` are resolved from the current working directory. The selected output directory is created if needed. Results and the generated lumped mass-matrix cache are stored there. No external input data files are required.
+
+The command should print simulation details before it starts, for example:
 
 ```bash
 "Gaussian energy spread is inactive: energy deviation is 0, E0 is 62."
 "Gaussian initial position sampling is active."
-"Simulation details: mc dose method SF, model energy, 0.03 h, EO 62, side_len 0.05, N 2600, KAPPA 4e-05"
+"Simulation details: mc dose method SF, model energy, 0.03 h, EO 62, side_len 0.05, N 10, KAPPA 4e-05"
 "Mass matrix loaded successfully."
 ```
 
-Be advised that running this project will generate new and permanent folders on your machine that will need to manually reviewed -- if running repeatedly, we suggested adding your own clean-up functions. 
+Each run creates files in the configured output directory. Review or remove those results when they are no longer needed.
 
 ### Future Package Distribution
 
-The project is intended to be published on the Python Package Index (PyPI), allowing users to install the package and its dependencies directly.
+A console command, `pbt-mlmc`, is installed with the package. 
 
 *Note: PyPI installation is not yet available - [Issue #13](../../issues/13). We will update this section in due coarse.*
-
 ### Parameterisation
 
 We provide default parameters for most variables for the purposes of testing, however we expect to provide alternative presets (e.g. for different materials) in future. Currently, the user should pay attention to:
 
-| Core Parameter Name | Function | Suggested Default* |
+| Config setting | Function | Suggested Default* |
 |----------|----------|----------|
 | sde_model | Select which proton SDE is used | 'energy' |
 | dose_method | Select which dose computation technique is used | 'SF' |
-| sampling_type |  Select which Monte Carlo method is used | 'mlmc' |
-| file_path | Select where data and pictures are saved | N/A |
+| sampling_type | Select which Monte Carlo method is used | 'mc' |
+| file_path | Select where data and pictures are saved | `./pbt_mlmc_output` in the example config |
 | SPATIAL_DIM | Select the number of spatial dimensions in which to estimate | 2 |
 | Eps | List of RMSE values, MLMC only | $\geq 0.2$ |
 | SIMS_PER_CPU | Number of simulations per CPU core, Monte Carlo only | _hardware dependent_ |

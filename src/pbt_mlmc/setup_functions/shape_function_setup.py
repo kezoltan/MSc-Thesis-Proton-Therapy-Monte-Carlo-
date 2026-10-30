@@ -2,7 +2,6 @@
 # Define the shape functions
 
 import numpy as np
-from src.parameterisation import *
 
 def reference_cube_mapping(side_len, center, coordinate):
     """Map a global coordinate in a voxel to the reference cube ``[-1, 1]^d``.

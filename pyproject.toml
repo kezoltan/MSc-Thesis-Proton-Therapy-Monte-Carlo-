@@ -4,14 +4,24 @@ requires = ["setuptools", "wheel"] # setuptools and wheel are necessary for the 
 [project]
 name = "pbt-mlmc"
 version = "0.1"
-description = "A package to analyse timeseries"
+description = "Monte Carlo methods for proton beam therapy dose estimation"
+requires-python = ">=3.11"
 authors = [
     {name = "Katie Zoltan", email = "katherine.zoltan@bnc.ox.ac.uk"}
 ]
 readme = "README.md"
 license = "MIT"
-license-files = ["LICENSE"]
+license-files = ["LICENSE.md"]
 dependencies = ["numpy", "matplotlib", "scipy", "numba"]
+
+[project.scripts]
+pbt-mlmc = "pbt_mlmc.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pbt_mlmc = ["example_config.toml"]
 
 [project.optional-dependencies]
 dev = [
@@ -40,8 +50,6 @@ convention = "numpy"
 
 [tool.pytest.ini_options]
 testpaths = ["test/unit_tests"]
-pythonpath = ["."]
 
 [tool.coverage.run]
-source = ["src"]
-omit = ["src/doseparams.py", "src/dose_main.py", "src/mlmc_driver", "src/doseplot.py", "src/dose_computation/__init__.py", "src/monte_carlo_methods/__init__.py", "src/sde_model_simulation/__init__.py", "src/__init__.py"]
+source = ["pbt_mlmc"]

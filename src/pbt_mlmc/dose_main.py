@@ -1,35 +1,34 @@
 
 #August 2026
 #Run this file for full simulations
-#Parameters + Methods are assigned in doseparams
+# Parameters are loaded from TOML or package defaults in pbt_mlmc.simulation_config.
 
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 from functools import partial
-from src.parameterisation import *
-from src.doseplot import dose_plot_2D, dose_plot_3D
-from src.sde_model_simulation.energy_geometric_EM import choose_dE_ds
-from src.setup_functions.load_mass_matrix import load_mass_matrix
-from src.monte_carlo_methods.mc_parallel import mc_parallel
-from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel
-from src.monte_carlo_methods.mlmc_driver.mlmc_test import mlmc_testv
-from src.setup_functions.verify_params import verify_params
+from pbt_mlmc.simulation_config import *
+from pbt_mlmc.doseplot import dose_plot_2D, dose_plot_3D
+from pbt_mlmc.sde_model_simulation.energy_geometric_EM import choose_dE_ds
+from pbt_mlmc.setup_functions.load_mass_matrix import load_mass_matrix
+from pbt_mlmc.monte_carlo_methods.mc_parallel import mc_parallel
+from pbt_mlmc.monte_carlo_methods.mlmc_parallel import mlmc_parallel
+from pbt_mlmc.monte_carlo_methods.mlmc_driver.mlmc_test import mlmc_testv
+from pbt_mlmc.setup_functions.verify_params import verify_params
 
-if __name__ == "__main__":
-
+def main():
     verify_params()
 
     plot_only=False
 
     if plot_only:
 
-        print("Caution: plot will only compute correctly if all parameter values are unchanged in doseparams.py")
+        print("Caution: plot will only compute correctly if all parameter values match the saved simulation data.")
         path_3D = input("Please supply path to plot data: ")
-        sde_model = input("Please supply the matching scheme (energy/track_length) ")
-        dose_method = input("And the matching dose method (SF/SK): ")
+        selected_sde_model = input("Please supply the matching scheme (energy/track_length) ")
+        selected_dose_method = input("And the matching dose method (SF/SK): ")
 
-        if dose_method not in path_3D or sde_model not in path_3D:
+        if selected_dose_method not in path_3D or selected_sde_model not in path_3D:
             raise ValueError("Path details do not match sde_model and/or dose_method. Please check and try again.")
         if SPATIAL_DIM==2:
             plot = dose_plot_2D([path_3D])
@@ -159,8 +158,6 @@ if __name__ == "__main__":
                 std_mlmc_costs.append(mlmc_data['std_mlmc_cost'])
             std_MC_costs=np.asarray(std_MC_costs)
             std_mlmc_costs=np.asarray(std_mlmc_costs)
-            Eps=np.asarray(Eps)
-
             #To save as arrays, need to standardise the length:
             max_num_lvls = max(len(Nl) for Nl in all_Nls) #since Nl includes lvl 0
             step_levels = np.arange(MLMC_LEVEL_OFFSET, max_num_lvls + MLMC_LEVEL_OFFSET)
@@ -220,7 +217,6 @@ if __name__ == "__main__":
             plot_mlmc()
 
             #Find the highest accuracy result to plot
-            Eps=np.asarray(Eps)
             eps_idx=np.argmin(Eps)
             path_3D=results_paths[eps_idx]
 
@@ -229,3 +225,7 @@ if __name__ == "__main__":
                 plot = dose_plot_2D([path_3D])
             if SPATIAL_DIM==3:
                 plot = dose_plot_3D([path_3D])
+
+
+if __name__ == "__main__":
+    main()

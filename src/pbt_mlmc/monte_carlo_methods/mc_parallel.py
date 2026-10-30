@@ -4,16 +4,16 @@
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 from numpy.random import default_rng
-from src.parameterisation import *
-from src.dose_computation.dosemap1_shape_function_geoEM import (
+from pbt_mlmc.simulation_config import *
+from pbt_mlmc.dose_computation.dosemap1_shape_function_geoEM import (
     track_len_one_path_load_contribution,
     energy_one_path_load_contribution,
 )
-from src.dose_computation.dosemap2_spatial_kernel_geoEM import (
+from pbt_mlmc.dose_computation.dosemap2_spatial_kernel_geoEM import (
     track_len_one_path_dose_contribution,
     energy_one_path_dose_contribution,
 )
-from src.sde_model_simulation.energy_geometric_EM import full_energy_model_setup
+from pbt_mlmc.sde_model_simulation.energy_geometric_EM import full_energy_model_setup
 
 
 def mc_worker(sde_model, dose_method, path_seed_chunk, level):

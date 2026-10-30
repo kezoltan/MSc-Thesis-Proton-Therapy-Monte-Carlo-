@@ -143,6 +143,10 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     Xs = X_meshgrid  # This is the beam axis so is always there
     nodes_shape = Xs.shape
 
+    print(Xs)
+    print(Xs.shape)
+    print(np.transpose(Xs)[0].shape)
+
     # Useful integral values (no prefactor)
     I1 = 4 / 3  # if different coordinates (1 and -1)
     I2 = 8 / 3  # if same coords (1 and 1, or -1 and -1)
@@ -151,7 +155,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     if Xs.shape[0] == 1:
         warnings.warn("Only one X coordinate, side length not well defined.")
     elif not np.allclose(np.diff(Xs, axis=0), side_len):
-        raise ValueError("Non-uniform X spacing, other dimensions not tested.")
+        raise ValueError("Non-uniform X spacing and sidelength did not match, other dimensions not tested.")
 
     # first_coord = tuple([0] * spatial_dim)
     # for i in range(spatial_dim):
@@ -160,7 +164,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     #     adj_coord = tuple(adj_coord_list)
     #     regular_side_length = Xs[adj_coord] - Xs[first_coord]
     #     print(
-    #         f"Side length in fundamental direction {i} is reading as {regular_side_length:.8f}," 
+    #         f"Side length in fundamental direction {i} is reading as {regular_side_length:.8f},"
     #         f"should be {side_len}.")
     #     if not (np.isclose(regular_side_length, side_len)):  # Only tests if they are almost the same
     #         raise ValueError(f"Meshgrid sidelength must be uniformally equal to side_len: {side_len}.")

@@ -138,7 +138,7 @@ def energy_one_path_dose_contribution(sde_model, brownian_paths, setup_tuple):
             one_step, E, Omega, s, X = one_step_dose_contribution(
               h, dB1_onestep, dB2_spatial_dim_onestep, E, Omega, s, X, Y
             ) #Y will not be used or returned
-            if domain_exit_check(X): #If we left the domain
+            if domain_exit_check(X, domain_upper_bounds, domain_lower_bounds): #If we left the domain
                 print(f"Track exited the domain between {X_start} and {X}.")
                 domain_check = False
                 break
@@ -197,7 +197,7 @@ def track_len_one_path_dose_contribution(sde_model, rng, level):
             dose_contribution += abs(h) * one_step
         current_step+=1
 
-        if domain_exit_check(X): #If we left the domain
+        if domain_exit_check(X, domain_upper_bounds, domain_lower_bounds): #If we left the domain
             domain_check = False
             break
 

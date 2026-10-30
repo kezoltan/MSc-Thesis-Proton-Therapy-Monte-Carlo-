@@ -33,7 +33,7 @@ extend-exclude = ["*.md"]
 [tool.ruff.lint]
 select = ["E", "F", "W", "B"]
 # Ignore F403 (star imports) and F405 (names that may be undefined due to star imports).
-ignore = ["F403", "F405", "E741"]
+ignore = ["F403", "F405", "E741", "B905", "B028", "F841"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"

@@ -157,18 +157,6 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     elif not np.allclose(np.diff(Xs, axis=0), side_len):
         raise ValueError("Non-uniform X spacing and sidelength did not match, other dimensions not tested.")
 
-    # first_coord = tuple([0] * spatial_dim)
-    # for i in range(spatial_dim):
-    #     adj_coord_list = [0] * spatial_dim
-    #     adj_coord_list[i] = 1
-    #     adj_coord = tuple(adj_coord_list)
-    #     regular_side_length = Xs[adj_coord] - Xs[first_coord]
-    #     print(
-    #         f"Side length in fundamental direction {i} is reading as {regular_side_length:.8f},"
-    #         f"should be {side_len}.")
-    #     if not (np.isclose(regular_side_length, side_len)):  # Only tests if they are almost the same
-    #         raise ValueError(f"Meshgrid sidelength must be uniformally equal to side_len: {side_len}.")
-
     # Store the values of all possible volume integrals:
     # From the chain rule and normalisation of basis functions
     integral_prefactor = (1 / (2**spatial_dim)) ** 2 * (side_len / 2) ** (spatial_dim)

@@ -53,8 +53,8 @@ if __name__ == "__main__":
                 h = round(abs(dE), 3)
             print(
                 f"Simulation details: {sampling_type} dose method {dose_method}, "
-                f"model {sde_model}, {h} h, EO {E0}, side_len {side_len}, "
-                f"N {SIMS_PER_CPU * NUM_CPUS}, KAPPA {KAPPA}"
+                f"model {sde_model}, {h} h, E0 {E0}, side_len {side_len}, "
+                f"N {SIMS_PER_CPU * NUM_CPUS}, KAPPA {KAPPA}. See parameterisation for more details."
             )
 
             if dose_method=="SF":

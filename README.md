@@ -69,7 +69,7 @@ For development, the package can be installed in editable mode:
 pip install -e .
 ```
 
-The user should review the ['parameterisation guide']('https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/src/parameterisation/INFO.md) and related files to set basic parameters. Once this has been done, you can your choice of experiment from the terminal:
+The user should review the ['parameterisation guide'](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/src/parameterisation/INFO.md) and related files to set basic parameters. Once this has been done, you can your choice of experiment from the terminal:
 
 ```bash
 python3 -m src.dose_main
@@ -107,6 +107,12 @@ We provide default parameters for most variables for the purposes of testing, ho
 | SIMS_PER_CPU | Number of simulations per CPU core, Monte Carlo only | _hardware dependent_ |
 
 *The suggested defaults above are based on the results of experiments but are not restrictive. The first three parameter settings produced the best overall computational complexity (when combined) and hence are recommended, but these results have yet to be reproduced. If reproducing the thesis results, other values of the first three settings will be required for comparison and no other parameters (excluding the file_path) should be modified.
+
+### Example Output
+
+Depending on the user's choice of Monte Carlo method, different figures will be generated and saved to the user's machine in their elected folder. Additionally, different parameterisations will create spatial dose maps with different characteristics - for example, higher energy beams will have a higher range. Below we provide one example of a dose map created for a beam generated using all existing default parameter settings:
+
+![Example output of proton beam dose map generated using the standard Monte Carlo sampling method with the energy parameterised SDE model and the (so-called) 'shape function' dose estimation technique in 2D. The mean initial proton energy is 62 MeV and the straggling strength is 'Moderate' with $\kappa = 4e-05$.](https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/blob/main/src/figures/mc_SF_energy.png)
 
 ## Testing and Validation
 

@@ -17,7 +17,6 @@ def calculate_R0():
     -------
     float
         Value of the Bragg Kleeman proton range.
-    
     """
     return ALPHA*E0**p
 
@@ -35,7 +34,6 @@ def nodes(side_len):
     tuple of numpy.ndarray
         Coordinate grids ``(X, Y)`` in 2D or ``(X, Y, Z)`` in 3D.
         Meshgrid structure.
-    
     """
     R0=calculate_R0()
     range_upper = R0*range_allowance
@@ -126,7 +124,6 @@ def position_lookup_matrix(X_meshgrid):
     numpy.ndarray
         Integer array with the same shape as ``X_meshgrid``. Its values are
         consecutive positions in NumPy's default flattened order.
-    
     """
     grid_shape = X_meshgrid.shape
     return np.arange(0, prod(grid_shape)).reshape(grid_shape)

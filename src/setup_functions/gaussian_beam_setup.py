@@ -28,7 +28,7 @@ def sample_initial_position(meshgrid, rng, side_len):
     Parameters
     ----------
     meshgrid : array_like
-        Must be in the form of the output of np.meshgrid, as determined by 
+        Must be in the form of the output of np.meshgrid, as determined by
         nodal_mesh_setup/nodes()
     rng : numpy.random.Generator
         Random number generator used to sample the transverse coordinates.

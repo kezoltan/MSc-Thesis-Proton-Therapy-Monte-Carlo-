@@ -1,7 +1,6 @@
 # July 2026
 # Monte Carlo Dose Execution Files (parallelised)
 
-from matplotlib.pylab import ArrayLike
 import numpy as np
 from concurrent.futures import ProcessPoolExecutor
 from numpy.random import default_rng
@@ -25,14 +24,14 @@ def mc_worker(path_seed_chunk: list, level: int):
     ----------
     path_seed_chunk : list
     level : int
-        Positive integer MLMC level. 
+        Positive integer MLMC level.
 
     Returns
     -------
     np.ndarray, shape (dose_shape,)
         Summed total of all worker contributions across all nodes.
         Depending on the dose computation method used, the contribution may be the total
-        dose added to the nodes from those simulations, or the total load (prior to mass 
+        dose added to the nodes from those simulations, or the total load (prior to mass
         matrix rescaling).
     """
     wc = np.zeros(dose_shape)  # worker contribution
@@ -82,7 +81,7 @@ def mc_parallel(level: int):
     Returns
     -------
     np.ndarray, shape (dose_shape,)
-        Sample mean of all mc_worker outputs executed in parallel. 
+        Sample mean of all mc_worker outputs executed in parallel.
     """
     total_sims = SIMS_PER_CPU * NUM_CPUS
     total_out = None

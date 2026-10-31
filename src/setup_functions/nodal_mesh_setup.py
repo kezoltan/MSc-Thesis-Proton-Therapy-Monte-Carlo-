@@ -6,28 +6,13 @@ from math import prod, comb, ceil
 from itertools import product
 from src.parameterisation._fixed_params import *
 from src.parameterisation.core_params import *
+from proton_setup_Bragg_Kleeman import calculate_R0
 import warnings
 
-def calculate_R0():
-    """
-    Calculate the proton range using the Bragg Kleeman model.
-    Parameters are imported and set to defaults in src/parameterisation.
-
-    Returns
-    -------
-    float
-        Value of the Bragg Kleeman proton range.
-    """
-    return ALPHA*E0**p
-
-def nodes(side_len):
+def nodes():
     """
     Generate node coordinate grids for closed cuboid domain D, assigned in src/parameterisation, including endpoints.
     Node coordinates are integer multiples of ``side_len``.
-
-    Parameters
-    ----------
-    side_len : float
 
     Returns
     -------
@@ -128,7 +113,7 @@ def position_lookup_matrix(X_meshgrid):
     grid_shape = X_meshgrid.shape
     return np.arange(0, prod(grid_shape)).reshape(grid_shape)
 
-def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
+def linear_lumped_mass_matrix(X_meshgrid):
     """
     Calculate the lumped mass matrix diagonal for Q1 basis functions.
 
@@ -165,24 +150,24 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
 
     # Store the values of all possible volume integrals:
     # From the chain rule and normalisation of basis functions
-    integral_prefactor = (1 / (2**spatial_dim)) ** 2 * (side_len / 2) ** (spatial_dim)
-    integral_values = np.zeros(spatial_dim + 1)  # Index 0: 0 differences (i.e. same node), 1: 1 coord different, ...
-    for num_differences in range(spatial_dim + 1):
-        integral_values[num_differences] = I2 ** (spatial_dim - num_differences) * I1 ** (num_differences)
+    integral_prefactor = (1 / (2**SPATIAL_DIM)) ** 2 * (side_len / 2) ** (SPATIAL_DIM)
+    integral_values = np.zeros(SPATIAL_DIM + 1)  # Index 0: 0 differences (i.e. same node), 1: 1 coord different, ...
+    for num_differences in range(SPATIAL_DIM + 1):
+        integral_values[num_differences] = I2 ** (SPATIAL_DIM - num_differences) * I1 ** (num_differences)
     integral_values *= integral_prefactor
 
     # If an interior point, the number of nodes of each type surrounding them is:
-    interior_instance_num = [1] * (spatial_dim + 1)  # Start with ni=nj
-    for i in range(1, spatial_dim + 1):
+    interior_instance_num = [1] * (SPATIAL_DIM + 1)  # Start with ni=nj
+    for i in range(1, SPATIAL_DIM + 1):
         # in 3D this should be: [1, 6, 12, 8], in 2D this should be: [1, 4, 4]
-        interior_instance_num[i] = comb(spatial_dim, i) * 2**i
+        interior_instance_num[i] = comb(SPATIAL_DIM, i) * 2**i
     interior_instance_num = np.array(interior_instance_num)
 
     # For each type of node, the intersection of supports also changes - must add over all available voxels as well
     # The number of voxels in the intersection of supports is the weight
     # Exploit symmetry between ni and each node nj of the same type
 
-    interior_weights = [2**i for i in range(spatial_dim + 1)]
+    interior_weights = [2**i for i in range(SPATIAL_DIM + 1)]
     interior_weights = interior_weights[::-1]
 
     # Obtain the total number of integrals of each type over ONE reference cube
@@ -197,7 +182,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
 
     # For a node on a boundary, we need to replace the value of Mii from above
 
-    lower_boundary_index = np.zeros(spatial_dim)  # Index starts from 0 in all coords
+    lower_boundary_index = np.zeros(SPATIAL_DIM)  # Index starts from 0 in all coords
     # Should give the total number of nodes in each dim, minus 1 since we start indexing at 0
     upper_boundary_index = np.array(nodes_shape) - 1
 
@@ -207,9 +192,9 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
     # Make the weight dictionary dependent on how many boundaries ni/nj lie on
 
     boundary_weighted_integrals = {}
-    ni_boundary_masks = list(product([0, 1], repeat=spatial_dim))  # 1 if ni touches that boundary
+    ni_boundary_masks = list(product([0, 1], repeat=SPATIAL_DIM))  # 1 if ni touches that boundary
     # 1 if nj and ni match that coordinate (will be used to check if nj is also on a boundary)
-    nj_equal_masks = list(product([0, 1], repeat=spatial_dim))
+    nj_equal_masks = list(product([0, 1], repeat=SPATIAL_DIM))
 
     # For each combination we will calculate the weight:
     # Boundary mask is over ni, equal mask is over nj
@@ -217,7 +202,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
         # Calculate the weight of the node nj (i.e. num voxels)
         # Count the number of times nj is on a boundary
         nj_num_boundaries = sum(b == 1 and e == 1 for b, e in zip(boundary_mask, equal_mask))
-        nj_num_differences = spatial_dim - np.sum(equal_mask)
+        nj_num_differences = SPATIAL_DIM - np.sum(equal_mask)
 
         # The weight between ni and nj halves once for each boundary nj is also on
         weight = interior_weights[nj_num_differences] * (1 / 2) ** (nj_num_boundaries)
@@ -250,7 +235,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
                 difference_mask = 1 - equal_mask_arr  # Is 1 if nj is different from ni in this direction
 
                 number_of_nodes = 1
-                for coord in range(spatial_dim):
+                for coord in range(SPATIAL_DIM):
                     if difference_mask[coord] == 1 and boundary_mask[coord] == 0:
                         number_of_nodes *= 2
 
@@ -264,7 +249,7 @@ def linear_lumped_mass_matrix(X_meshgrid, side_len, spatial_dim=SPATIAL_DIM):
 
     # Final check using the known number of interior nodes:
     num_interior_nodes = np.array(Xs.shape) - 2 * np.ones(
-        spatial_dim, dtype=int
+        SPATIAL_DIM, dtype=int
     )  # Subtract the number of boundary nodes
     if np.any(num_interior_nodes <= 0):
         print("Note: there are no interior nodes.")

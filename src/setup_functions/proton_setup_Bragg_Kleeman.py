@@ -48,55 +48,68 @@ def exponential_map_sphere(Omega_n, strat_proj_brownian):
 
     return cos(norm) * Omega_n + sin(norm) * (strat_proj_brownian / norm)
 
-def stopping_power(E, a=ALPHA, p=p):
+def stopping_power(E):
     """Calculate the Bragg Kleeman stopping power.
-    Given by ``1/ap * E^(1-p)``.
+    Given by ``1/alpha*p * E^(1-p)``, where alpha, p are medium dependent parameters.
 
     Parameters
     ----------
     E : float
         Energy, must be nonegative.
-    a : float, optional
-        Medium dependent coefficient.
-        Default medium is water, default value is ``ALPHA`` from ``doseparams``.
-    p : float, optional
-        Medium dependent coefficient.
-        Default medium is water, default value is ``p`` from src/parameterisation.
 
     Returns
     -------
     float
         The value of the Bragg Kleeman stopping power.
     """
-    return 1/(a*p) * E**(1-p)
+    return 1/(ALPHA*p) * E**(1-p)
 
-def reciprocal_stopping_power(E, a=ALPHA, p=p):
+def reciprocal_stopping_power(E):
     """Calculate the reciprocal of the Bragg Kleeman stopping power.
-    Given by ``apE^(p-1)``.
+    Given by ``alpha*p*E^(p-1)``, where alpha, p are medium dependent parameters.
 
     Parameters
     ----------
     E : float
         Energy, must be nonegative.
-    a : float, optional
-        Medium dependent coefficient.
-        Default medium is water, default value is ``ALPHA`` from ``doseparams``.
-    p : float, optional
-        Medium dependent coefficient.
-        Default medium is water, default value is ``p`` from src/paramterisation.
 
     Returns
     -------
     float
         The reciprocal of the value of the Bragg Kleeman stopping power.
     """
-    return a * p * E ** (p - 1)
+    return ALPHA * p * E ** (p - 1)
 
-def calculate_coeff(E_n, EPS_0 = EPS_0, sde_model = sde_model, a=ALPHA, p=p):
+def calculate_R0():
+    """
+    Calculate the proton range using the Bragg Kleeman model.
+    Parameters are imported and set to defaults in src/parameterisation.
+
+    Returns
+    -------
+    float
+        Value of the Bragg Kleeman proton range.
+    """
+    return ALPHA*E0**p
+
+def calculate_coeff(E_n):
     if sde_model == 'track_length':
         coeff = np.sqrt(2*EPS_0)
     elif sde_model == 'energy':
-        coeff = np.sqrt(2*EPS_0 * a * p) * E_n**(p/2 - 0.5)
+        coeff = np.sqrt(2*EPS_0 * ALPHA * p) * E_n**(p/2 - 0.5)
     else:
         raise ValueError(f"sde_model {sde_model} does not exist - try energy or track_length.")
     return coeff
+
+def choose_geometric_dE_mu_ds(level: int, mu=1):
+    """
+    This is chosen such that dE aligns with a mlmc stepsize, purely for convenience.
+    And dE and ds align wrt the stopping power.
+    And so that the values align relatively closely to those used in Chronholm+Pryer 2026
+
+    mu is in [0,1], chosen freely.
+    level is the geometric stepsize level, 9 for MC standard (chosen in main text)
+    """
+    dE = -T * base ** (-level)
+    ds = -dE / (mu * stopping_power(E0))
+    return dE, ds

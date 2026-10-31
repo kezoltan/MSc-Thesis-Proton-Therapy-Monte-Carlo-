@@ -198,7 +198,7 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
 if __name__ == "__main__":
     # You can run only the mlmc directly here
 
-    M_diag = load_mass_matrix()
+    # M_diag = load_mass_matrix()
     partial_mlmc_parallel = partial(mlmc_parallel_l, M_diag=M_diag)
 
     eps = 5.0

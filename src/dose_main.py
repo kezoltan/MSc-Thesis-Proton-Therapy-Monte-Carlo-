@@ -8,7 +8,7 @@ import os
 from functools import partial
 from src.parameterisation import *
 from src.doseplot import dose_plot_2D, dose_plot_3D
-from src.sde_model_simulation.energy_geometric_EM import choose_dE_ds
+from src.sde_model_simulation.energy_geometric_EM import choose_geometric_dE_mu_ds
 from src.setup_functions.load_mass_matrix import load_mass_matrix
 from src.monte_carlo_methods.mc_parallel import mc_parallel
 from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         #For Monte Carlo, we select (it is simply convenient to ensure the stepsize is compatible with mlmc)
         mc_level= 11#9
         if sampling_type=="mc":
-            dE, ds = choose_dE_ds(mc_level)
+            dE, ds = choose_geometric_dE_mu_ds(mc_level)
             if sde_model=='track_length':
                 h = round(abs(ds), 3)
             elif sde_model=='energy':
@@ -57,7 +57,6 @@ if __name__ == "__main__":
             )
 
             if dose_method=="SF":
-                M_diag = load_mass_matrix()
                 mean_load_est = mc_parallel(sde_model, mc_level)
                 dose_expected = mean_load_est / M_diag
 
@@ -130,7 +129,7 @@ if __name__ == "__main__":
             #    "\n  Consistency: E[P_l - P_{l-1}] + E[P_{l-1}] ≈ E[P_l]")
 
             #we just load this every time -- please update
-            M_diag = load_mass_matrix()
+            # M_diag = load_mass_matrix()
             partial_mlmc_parallel = partial(mlmc_parallel, M_diag=M_diag)
 
             print(f"Running full MLMC and MLMC test with Eps = {Eps}")

@@ -3,7 +3,6 @@
 
 from src.parameterisation import *
 from src.setup_functions import *
-from math import log
 
 def track_length_diff_coeff(E, a=ALPHA, p=p):
     return a * p * np.sqrt(KAPPA) * E ** (p - 0.5)

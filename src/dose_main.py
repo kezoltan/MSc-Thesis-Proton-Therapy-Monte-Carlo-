@@ -9,7 +9,6 @@ from functools import partial
 from src.parameterisation import *
 from src.doseplot import dose_plot_2D, dose_plot_3D
 from src.sde_model_simulation.energy_geometric_EM import choose_geometric_dE_mu_ds
-from src.setup_functions.load_mass_matrix import load_mass_matrix
 from src.monte_carlo_methods.mc_parallel import mc_parallel
 from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel
 from src.monte_carlo_methods.mlmc_driver.mlmc_test import mlmc_testv

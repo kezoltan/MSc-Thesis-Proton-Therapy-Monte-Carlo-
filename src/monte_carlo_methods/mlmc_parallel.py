@@ -140,9 +140,9 @@ def mlmc_coarse_fine_worker(level: int, path_seed_chunk_l: list):
 
 def mlmc_parallel(level: int, Ml: int):
     """
-    Compute the sample mean of all nodal outputs from all CPUs. Nodal outputs are 
+    Compute the sample mean of all nodal outputs from all CPUs. Nodal outputs are
     computed by the mlmc_coarse_fine_worker function for all relevant statistical
-    quantities in addition to a cost. 
+    quantities in addition to a cost.
 
     Parameters
     ----------
@@ -155,7 +155,7 @@ def mlmc_parallel(level: int, Ml: int):
     -------
     tuple of np.ndarray
         Aggregated outputs of all mlmc_coarse_fine_workers over all simulations in
-        parallel, plus a positive integer cost estimate at level l. 
+        parallel, plus a positive integer cost estimate at level l.
     """
     total_sims = Ml
     if NUM_CPUS == 0:

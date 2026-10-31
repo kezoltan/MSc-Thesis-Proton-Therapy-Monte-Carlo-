@@ -14,7 +14,7 @@ KAPPA = choose_kappa()
 # Initial direction (must be on the unit sphere)
 Omega0 = choose_Omega_0()
 
-# The diagonal of the linear lumped mass matrix for the set of nodes 
+# The diagonal of the linear lumped mass matrix for the set of nodes
 M_diag = load_mass_matrix()
 
 if SPATIAL_DIM==3:

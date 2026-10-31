@@ -54,33 +54,6 @@ def energy_one_step_geoEM(h, dB1_onestep, dB2_spatial_dim_onestep, E_n, Omega_n,
     # The outputs are now at step n+1
     return E_n1, Omega_n1, s_n1, X_n1
 
-
-# -----------------GAUSSIAN BEAM SETUP-----------------
-
-
-def sample_gauss_beam(rng, s0=0):
-    s = float(s0)
-    X = sample_initial_position(meshgrid, rng, side_len)
-    Omega = Omega0
-    E = initial_energy_spread()
-    Y = log(E)
-    return s, X, Omega, E, Y
-
-
-def choose_dE_ds(level: int, T=E0 - EMIN, mu=1, base=base):
-    """
-    This is chosen such that dE aligns with a mlmc stepsize, purely for convenience.
-    And dE and ds align wrt the stopping power.
-    And so that the values align relatively closely to those used in Chronholm+Pryer 2026
-
-    mu is in [0,1], chosen freely.
-    level is the geometric stepsize level, 9 for MC standard (chosen in main text)
-    """
-    dE = -T * base ** (-level)
-    ds = -dE / (mu * stopping_power(E0))
-    return dE, ds
-
-
 def energy_model_initialise(dE, E_start, a=ALPHA, p=p):
     """
     l is the mlmc level with base=base
@@ -103,10 +76,9 @@ def energy_model_initialise(dE, E_start, a=ALPHA, p=p):
             )
     return h, num_steps
 
-
 def full_energy_model_setup(level, rng):
     s, X, Omega, E, Y = sample_gauss_beam(rng)
-    dE, _ = choose_dE_ds(level)
+    dE, _ = choose_geometric_dE_mu_ds(level)
     h, num_steps = energy_model_initialise(dE, E)
     setup_tuple = s, X, Omega, E, Y, h, num_steps
     dZ1 = rng.standard_normal(num_steps)

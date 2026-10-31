@@ -9,7 +9,7 @@ import sys
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'MLMC in Proton Beam Therapy'
+project = 'MLMC for Proton Beam Therapy Dose Estimation'
 copyright = '2026, Katie Zoltan'
 author = 'Katie Zoltan'
 release = '0.1'

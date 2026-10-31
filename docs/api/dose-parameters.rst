@@ -1,8 +1,11 @@
-Dose parameters
+Parameterisation
 ===============
 
-.. Constants and configuration values describing the simulated medium and proton
-.. beam.
+All parameters are set globally before any simulations occur, and they 
+should adhere to certain values and defaults. The full list of parameters 
+and their default values can be found in the `parameterisation folder`_.
+.. _parameterisation folder: https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/tree/main/src/parameterisation
+of the repository corresponding to this documentation.
 
 .. automodule:: parameterisation.core_params
    :members:

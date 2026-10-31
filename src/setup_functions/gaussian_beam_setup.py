@@ -3,6 +3,7 @@
 
 import numpy as np
 from src.parameterisation import *
+from math import log
 
 def initial_energy_spread():
     """Draw a random initial proton energy from a Gaussian (normal) distribution.
@@ -56,3 +57,11 @@ def sample_initial_position(meshgrid, rng, side_len):
         y = rng.normal(loc=y0, scale=width_sdev)
         z = rng.normal(loc=z0, scale=width_sdev)
         return np.array([x0, y, z], dtype=float)
+
+def sample_gauss_beam(rng, s0=0):
+    s = float(s0)
+    X = sample_initial_position(meshgrid, rng, side_len)
+    Omega = Omega0
+    E = initial_energy_spread()
+    Y = log(E)
+    return s, X, Omega, E, Y

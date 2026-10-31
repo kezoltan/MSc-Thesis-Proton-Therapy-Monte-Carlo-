@@ -15,26 +15,31 @@ from src.parameterisation import sde_model, dose_method, dose_shape, energy_sdev
 # ---------------------------------MLMC LEVEL WORKER FUNCTIONS-----------------------------------------
 
 
-def mlmc_coarse_fine_worker(level: int, path_seed_chunk_l, M_diag):
+def mlmc_coarse_fine_worker(level: int, path_seed_chunk_l: list):
     """
-    Runs the dose method on level l of MLMC + calculates coarse/fine diff, + other statistics for testing
-    Pl is fine, P_{l-1} is coarse, case of l=0 is distinct: only P0
-    Parallelises, given sim num Ml at level l
+    Worker function that runs independent MLMC simulations using each seed in
+    `path_seed_chunk` to determine the Brownian path underlying one proton at level l.
+    Calculate the coarse path from the fine path. Calculate the payoff difference and
+    other key statistics.
 
     Parameters
     ----------
     level : int
-        level number >= 0 of the finer path
-    path_seed_chunk_l : sequence
-        path seeds for each path run at level l
+        Positive integer MLMC level.
+    path_seed_chunk_l : list
 
     Returns
     -------
-    tuple
-        statistics PER OUTPUT (i.e. per dose node), worker contribution, which are (in order):
-        raw diff, diff**2, diff**3, diff**4, fine payoff, fine payoff**2
+    tuple of np.ndarray
+        Sum of the following quantities per node sampled over all worker simulations:
+            - (payoff) diff
+            - diff**2
+            - diff**3
+            - diff**4
+            - fine payoff
+            - fine payoff**2.
+        Hence tuple contains 6 arrays of shape (dose_shape,).
     """
-
     if energy_spread:
         raise ValueError(
             f"Gaussian beam energy sampling cannot be active for MLMC. Energy deviation is {energy_sdev}, E0 is {E0}."
@@ -133,14 +138,24 @@ def mlmc_coarse_fine_worker(level: int, path_seed_chunk_l, M_diag):
     return wc_stats, nf
 
 
-def mlmc_parallel(level, Ml: int, M_diag):
+def mlmc_parallel(level: int, Ml: int):
     """
-    Retrieves the load vector sums from all CPUs, adds them up, takes expectation.
-    Returns the coefficients c_i for the function approximation.
+    Compute the sample mean of all nodal outputs from all CPUs. Nodal outputs are
+    computed by the mlmc_coarse_fine_worker function for all relevant statistical
+    quantities in addition to a cost.
 
-    Ml, int: number of simulations performed at level l
+    Parameters
+    ----------
+    level : int
+        Positive integer MLMC level.
+    Ml : int
+        Total number of simulations performed at level l.
 
-    Returns sum of full stats from all workers
+    Returns
+    -------
+    tuple of np.ndarray
+        Aggregated outputs of all mlmc_coarse_fine_workers over all simulations in
+        parallel, plus a positive integer cost estimate at level l.
     """
     total_sims = Ml
     if NUM_CPUS == 0:
@@ -155,7 +170,7 @@ def mlmc_parallel(level, Ml: int, M_diag):
     path_seed_chunks = np.array_split(path_seeds, use_cpus)
 
     with ProcessPoolExecutor(max_workers=use_cpus) as ex:
-        for wc in ex.map(mlmc_coarse_fine_worker, [level] * use_cpus, path_seed_chunks, [M_diag] * use_cpus):
+        for wc in ex.map(mlmc_coarse_fine_worker, [level] * use_cpus, path_seed_chunks):
             if total_out is None:
                 total_out, nf = np.array(wc[0], copy=True), wc[1]
             else:

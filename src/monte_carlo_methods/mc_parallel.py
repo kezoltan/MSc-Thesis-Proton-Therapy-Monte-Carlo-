@@ -15,11 +15,24 @@ from src.dose_computation.dosemap2_spatial_kernel_geoEM import (
 )
 from src.sde_model_simulation.energy_geometric_EM import full_energy_model_setup
 
-
-def mc_worker(sde_model, dose_method, path_seed_chunk, level):
+def mc_worker(path_seed_chunk: list, level: int):
     """
-    This is the worker function telling each CPU what to do
-    Each CPU will run SIMS_PER_CPU independent simulations, and add up the load vectors.
+    Worker function that runs independent Monte Carlo simulations using each seed in
+    `path_seed_chunk` to simulate one proton. Then sums their outputs vectors.
+
+    Parameters
+    ----------
+    path_seed_chunk : list
+    level : int
+        Positive integer MLMC level.
+
+    Returns
+    -------
+    np.ndarray, shape (dose_shape,)
+        Summed total of all worker contributions across all nodes.
+        Depending on the dose computation method used, the contribution may be the total
+        dose added to the nodes from those simulations, or the total load (prior to mass
+        matrix rescaling).
     """
     wc = np.zeros(dose_shape)  # worker contribution
     if dose_method == "SF":
@@ -55,10 +68,20 @@ def mc_worker(sde_model, dose_method, path_seed_chunk, level):
     return wc
 
 
-def mc_parallel(sde_model, level, SIMS_PER_CPU=SIMS_PER_CPU, NUM_CPUS=NUM_CPUS):
+def mc_parallel(level: int):
     """
-    Retrieves the load vector sums from all CPUs, adds them up, takes expectation.
-    Returns the coefficients c_i for the function approximation.
+    Compute the sample mean of all nodal outputs from all CPUs. Nodal outputs are computed
+    by the mc_worker function.
+
+    Parameters
+    ----------
+    level : int
+        Positive integer MLMC level.
+
+    Returns
+    -------
+    np.ndarray, shape (dose_shape,)
+        Sample mean of all mc_worker outputs executed in parallel.
     """
     total_sims = SIMS_PER_CPU * NUM_CPUS
     total_out = None
@@ -69,7 +92,7 @@ def mc_parallel(sde_model, level, SIMS_PER_CPU=SIMS_PER_CPU, NUM_CPUS=NUM_CPUS):
 
     with ProcessPoolExecutor(max_workers=NUM_CPUS) as ex:
         for wc in ex.map(
-            mc_worker, [sde_model] * NUM_CPUS, [dose_method] * NUM_CPUS, path_seed_chunks, [level] * NUM_CPUS
+            mc_worker, path_seed_chunks, [level] * NUM_CPUS
         ):
             if total_out is None:
                 total_out = np.array(wc, copy=True)

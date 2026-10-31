@@ -1,7 +1,6 @@
 import numpy as np
 from src.parameterisation import *
 from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel as mlmc_parallel_l
-from src.setup_functions.load_mass_matrix import load_mass_matrix
 import os
 from src.doseplot import dose_plot_2D, dose_plot_3D
 from functools import partial
@@ -198,7 +197,7 @@ def mlmcv(mlmc_parallel_l, N0, eps, Lmin, Lmax, beta0, gamma0, alpha0, *args):
 if __name__ == "__main__":
     # You can run only the mlmc directly here
 
-    M_diag = load_mass_matrix()
+    # M_diag = load_mass_matrix()
     partial_mlmc_parallel = partial(mlmc_parallel_l, M_diag=M_diag)
 
     eps = 5.0

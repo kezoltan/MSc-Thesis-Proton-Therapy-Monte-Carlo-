@@ -169,7 +169,7 @@ def track_len_one_path_dose_contribution(sde_model, rng, level):
     """
     dose_contribution = np.zeros(dose_shape)
     s, X, Omega, E, Y = sample_gauss_beam(rng)
-    _, h = choose_dE_ds(level)
+    _, h = choose_geometric_dE_mu_ds(level)
     initial_constant = stopping_power(E) #For the comp trap
     sqrt = np.sqrt(abs(h))
     if sde_model != "track_length":

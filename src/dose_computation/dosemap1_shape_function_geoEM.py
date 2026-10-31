@@ -442,7 +442,7 @@ def track_len_one_path_load_contribution(sde_model, rng, level):
     one_path_load_contribution = np.zeros(dose_shape)
     s, X, Omega, E, Y = sample_gauss_beam(rng)
 
-    _, h = choose_dE_ds(level)
+    _, h = choose_geometric_dE_mu_ds(level)
     X_start = X #For the path segment calculation
     E_start = E
     Y_start = log(E_start)

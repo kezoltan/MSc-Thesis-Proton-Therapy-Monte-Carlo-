@@ -1,5 +1,5 @@
 Dose Computation in Space
-================
+=========================
 
 Given one proton path simulation, these functions use one of two 
 methods to compute the dose deposit of that proton onto the 

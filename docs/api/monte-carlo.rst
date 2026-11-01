@@ -1,5 +1,5 @@
 Monte Carlo Methods and Parallelisation
-===================
+=======================================
 
 These functions are required to execute standard Monte Carlo 
 and (geometric) MLMC in parallel. Furthermore, this section 
@@ -10,8 +10,7 @@ alongside modifications and additional data collection that
 were required for this project.
 
 MLMC Driver Code
-
----------------------
+----------------
 
 .. automodule:: monte_carlo_methods.mlmc_driver.mlmc_main
    :members:
@@ -23,8 +22,7 @@ MLMC Driver Code
    :members:
 
 Worker Functions and Parallelisation
-
----------------------
+------------------------------------
 
 .. automodule:: monte_carlo_methods.mc_parallel
    :members:

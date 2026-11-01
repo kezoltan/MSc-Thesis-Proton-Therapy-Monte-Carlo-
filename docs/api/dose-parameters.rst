@@ -1,5 +1,5 @@
 Parameterisation
-===============
+================
 
 All parameters are set globally before any simulations occur, and they 
 should adhere to certain values and defaults. The full list of parameters 

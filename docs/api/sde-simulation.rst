@@ -1,5 +1,5 @@
 Stochastic Proton Transport
-=====================
+===========================
 
 These functions run geometry-preserving Euler-Maruyama schemes 
 for each SDE model. The current SDE models are either parameterised 
@@ -13,7 +13,7 @@ Track Length Model
    :members:
 
 Energy Proton Model
-------------
+-------------------
 
 .. automodule:: sde_model_simulation.energy_geometric_EM
    :members:

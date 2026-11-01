@@ -33,12 +33,14 @@ def mlmc_coarse_fine_worker(level: int, path_seed_chunk_l: list):
     -------
     tuple of np.ndarray
         Sum of the following quantities per node sampled over all worker simulations:
-            - (payoff) diff
-            - diff**2
-            - diff**3
-            - diff**4
-            - fine payoff
-            - fine payoff**2.
+
+        - (payoff) diff
+        - diff**2
+        - diff**3
+        - diff**4
+        - fine payoff
+        - fine payoff**2.
+
         Hence tuple contains 6 arrays of shape (dose_shape,).
     """
     if energy_spread:

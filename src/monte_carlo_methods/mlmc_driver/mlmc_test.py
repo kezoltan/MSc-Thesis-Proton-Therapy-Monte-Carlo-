@@ -31,7 +31,12 @@ def mlmc_testv(mlmc_parallel_l, N, L, N0, Eps, Lmin, Lmax, *args):
     fp : file
         output file (?)
     args : tuple
-        (*args means any other outputs e.g. params from user file)
+        (args means any other outputs e.g. params from user file)
+
+    Returns
+    -------
+    tuple
+        Useful locations for plotting results access in dose_main.py
     """
 
     # Writes things to the text file as they print

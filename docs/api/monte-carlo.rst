@@ -4,10 +4,10 @@ Monte Carlo Methods and Parallelisation
 These functions are required to execute standard Monte Carlo 
 and (geometric) MLMC in parallel. Furthermore, this section 
 includes MLMC driver code written in Python in the usual style
-of Mike Giles, see `this link`_. 
-.. _this link: https://people.maths.ox.ac.uk/~gilesm/mlmc/ 
-alongside modifications and additional data collection that 
-were required for this project.
+of Mike Giles, see `this link`_ alongside modifications and 
+additional data collection that were required for this project.
+
+.. _this link: https://people.maths.ox.ac.uk/~gilesm/mlmc/
 
 MLMC Driver Code
 ----------------

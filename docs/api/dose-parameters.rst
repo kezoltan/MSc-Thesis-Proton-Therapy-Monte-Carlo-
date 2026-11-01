@@ -3,9 +3,10 @@ Parameterisation
 
 All parameters are set globally before any simulations occur, and they 
 should adhere to certain values and defaults. The full list of parameters 
-and their default values can be found in the `parameterisation folder`_.
-.. _parameterisation folder: https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/tree/main/src/parameterisation
+and their default values can be found in the `parameterisation folder`_ 
 of the repository corresponding to this documentation.
+
+.. _parameterisation folder: https://github.com/kezoltan/MSc-Thesis-Proton-Therapy-Monte-Carlo-/tree/main/src/parameterisation
 
 .. automodule:: parameterisation.core_params
    :members:

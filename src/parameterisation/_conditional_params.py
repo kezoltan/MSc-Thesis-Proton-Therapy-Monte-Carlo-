@@ -1,7 +1,6 @@
 # July 2026 (organised October 2026)
 # Parameter settings that explicitly depend on other functions
 
-from src.setup_functions.load_mass_matrix import load_mass_matrix
 from ._fixed_params import *
 from .core_params import *
 from src.setup_functions.proton_setup_Bragg_Kleeman import *
@@ -14,15 +13,12 @@ KAPPA = choose_kappa()
 # Initial direction (must be on the unit sphere)
 Omega0 = choose_Omega_0()
 
-# The diagonal of the linear lumped mass matrix for the set of nodes
-M_diag = load_mass_matrix()
-
 if SPATIAL_DIM==3:
-    X_meshgrid, Y_meshgrid, Z_meshgrid = nodes(side_len)
+    X_meshgrid, Y_meshgrid, Z_meshgrid = nodes()
     meshgrid = X_meshgrid, Y_meshgrid, Z_meshgrid
     nodes_array = np.stack([X_meshgrid.ravel(), Y_meshgrid.ravel(), Z_meshgrid.ravel()], axis=-1)
 if SPATIAL_DIM==2:
-    X_meshgrid, Y_meshgrid= nodes(side_len)
+    X_meshgrid, Y_meshgrid= nodes()
     meshgrid = X_meshgrid, Y_meshgrid
     nodes_array = np.stack([X_meshgrid.ravel(), Y_meshgrid.ravel()], axis=-1)
 

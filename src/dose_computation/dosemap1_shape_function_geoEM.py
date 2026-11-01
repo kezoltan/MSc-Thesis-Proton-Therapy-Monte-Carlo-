@@ -45,7 +45,7 @@ def linear_path_parameterise(start, end, points=quad_nodes):
     return start + 0.5 * (points[:, None] + 1) * (end - start)
 
 
-max_steps = sum(nodes(side_len)[0].shape)  # All boundaries, just needs to be large enough but relatively small
+max_steps = sum(nodes()[0].shape)  # All boundaries, just needs to be large enough but relatively small
 
 
 def traversal_alg(start, end, rounding_tol=8, max_steps=max_steps, corner_tol=10 ** (-4)):

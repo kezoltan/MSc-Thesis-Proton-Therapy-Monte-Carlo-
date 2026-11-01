@@ -48,7 +48,7 @@ def exponential_map_sphere(Omega_n, strat_proj_brownian):
 
     return cos(norm) * Omega_n + sin(norm) * (strat_proj_brownian / norm)
 
-def stopping_power(E):
+def stopping_power(E, ALPHA=ALPHA, p=p):
     """Calculate the Bragg Kleeman stopping power.
     Given by ``1/alpha*p * E^(1-p)``, where alpha, p are medium dependent parameters.
 
@@ -64,7 +64,7 @@ def stopping_power(E):
     """
     return 1/(ALPHA*p) * E**(1-p)
 
-def reciprocal_stopping_power(E):
+def reciprocal_stopping_power(E, ALPHA=ALPHA, p=p):
     """Calculate the reciprocal of the Bragg Kleeman stopping power.
     Given by ``alpha*p*E^(p-1)``, where alpha, p are medium dependent parameters.
 
@@ -92,7 +92,7 @@ def calculate_R0():
     """
     return ALPHA*E0**p
 
-def calculate_coeff(E_n):
+def calculate_coeff(E_n, sde_model=sde_model):
     if sde_model == 'track_length':
         coeff = np.sqrt(2*EPS_0)
     elif sde_model == 'energy':

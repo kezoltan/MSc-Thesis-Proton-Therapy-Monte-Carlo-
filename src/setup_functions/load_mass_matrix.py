@@ -1,10 +1,17 @@
+from curses.ascii import SP
+
 from src.parameterisation.core_params import *
 from src.parameterisation._fixed_params import *
 from src.parameterisation._conditional_params import dose_shape, X_meshgrid, Y_meshgrid
 from src.setup_functions.nodal_mesh_setup import linear_lumped_mass_matrix
 
 # added defaults so tests are easier to run
-def load_mass_matrix():
+def load_mass_matrix(file_path=file_path,  
+                     SPATIAL_DIM=SPATIAL_DIM, 
+                     dose_shape=dose_shape,
+                     X_meshgrid=X_meshgrid, 
+                     Y_meshgrid=Y_meshgrid,
+                     side_len=side_len):
     """Load a cached lumped mass matrix, or calculate and save it.
 
     Returns
@@ -21,6 +28,7 @@ def load_mass_matrix():
             raise ValueError(f"Lumped mass matrix shape must equal {dose_shape}, is {mass_shape}.")
         print("Mass matrix loaded successfully.")
     else:
-        M_diag = linear_lumped_mass_matrix(X_meshgrid)
+        print("Mass matrix not found, calculating.")
+        M_diag = linear_lumped_mass_matrix(X_meshgrid, side_len=side_len, SPATIAL_DIM=SPATIAL_DIM)
         np.savez(M_path, M_diag=M_diag, side_len=side_len, X=X_meshgrid, Y=Y_meshgrid)
     return M_diag

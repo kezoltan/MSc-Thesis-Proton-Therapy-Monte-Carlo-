@@ -69,7 +69,7 @@ def test_reciprocal_stopping_power_matches_drift_formula(energy, a, exponent):
     expected = a * exponent * energy ** (exponent - 1)
 
     # call the function being tested with explicit parameters, independent of module defaults.
-    result = reciprocal_stopping_power(energy, a=a, p=exponent)
+    result = reciprocal_stopping_power(energy, ALPHA=a, p=exponent)
 
     # check the floating-point values with a numerical tolerance.
     assert np.isclose(result, expected)
@@ -339,7 +339,7 @@ def test_linear_lumped_mass_matrix_has_expected_shape_and_positive_entries(
     shape = (3,) * dimension
     X_meshgrid = np.meshgrid(*[np.arange(3.0)] * dimension, indexing="ij")[0]
 
-    result = linear_lumped_mass_matrix(X_meshgrid, side_len=1.0, spatial_dim=dimension)
+    result = linear_lumped_mass_matrix(X_meshgrid, side_len=1.0, SPATIAL_DIM=dimension)
 
     assert result.shape == (int(np.prod(shape)),)
     assert np.all(result > 0.0)
@@ -352,7 +352,7 @@ def test_linear_lumped_mass_matrix_is_symmetric_across_regular_mesh(
     shape = (3,) * dimension
     X_meshgrid = np.meshgrid(*[np.arange(3.0)] * dimension, indexing="ij")[0]
     mass_diagonal = linear_lumped_mass_matrix(
-        X_meshgrid, side_len=1.0, spatial_dim=dimension
+        X_meshgrid, side_len=1.0, SPATIAL_DIM=dimension
     ).reshape(shape)
 
     for axis in range(dimension):
@@ -373,7 +373,7 @@ def test_linear_lumped_mass_matrix_rejects_nonuniform_or_wrong_spacing(
 
     with pytest.raises(ValueError, match="sidelength"):
         linear_lumped_mass_matrix(
-            X_meshgrid, side_len=side_len, spatial_dim=dimension
+            X_meshgrid, side_len=side_len, SPATIAL_DIM=dimension
         )
 
 
@@ -386,7 +386,7 @@ def test_linear_lumped_mass_matrix_handles_mesh_without_interior_extent(
     X_meshgrid = np.meshgrid(*coordinates, indexing="ij")[0]
 
     result = linear_lumped_mass_matrix(
-        X_meshgrid, side_len=1.0, spatial_dim=dimension
+        X_meshgrid, side_len=1.0, SPATIAL_DIM=dimension
     )
 
     assert result.shape == (2**dimension,)
@@ -407,7 +407,7 @@ def test_load_mass_matrix_loads_cached_matrix(tmp_path, dimension):
 
     result = load_mass_matrix(
         file_path=str(tmp_path),
-        spatial_dim=dimension,
+        SPATIAL_DIM=dimension,
         dose_shape=dose_shape,
         X_meshgrid=meshgrid[0],
         Y_meshgrid=meshgrid[1],
@@ -429,12 +429,12 @@ def test_load_mass_matrix_computes_and_saves_when_cache_is_missing(
     )
     dose_shape = int(np.prod(mesh_shape))
     expected = linear_lumped_mass_matrix(
-        meshgrid[0], side_len, spatial_dim=dimension
+        meshgrid[0], side_len, SPATIAL_DIM=dimension
     )
 
     result = load_mass_matrix(
         file_path=str(tmp_path),
-        spatial_dim=dimension,
+        SPATIAL_DIM=dimension,
         dose_shape=dose_shape,
         X_meshgrid=meshgrid[0],
         Y_meshgrid=meshgrid[1],
@@ -466,4 +466,4 @@ def test_load_mass_matrix_computes_and_saves_when_cache_is_missing(
 
 #     dose_shape = int(np.prod(mesh_shape))
 #     expected = linear_lumped_mass_matrix(
-#         meshgrid[0], side_len, spatial_dim=dimension)
+#         meshgrid[0], side_len, SPATIAL_DIM=dimension)

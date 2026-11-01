@@ -30,11 +30,11 @@ The documentation for this code is still in progress following structural change
 
 ### HPC Hardware
 
-Due to the high objective computational complexity of this task, access to a High-Performance Computing (HPC) cluster is recommended for running large-scale experiments. For example, running MLMC with root mean-square-error $\epsilon < 10^{-1}$ is likely to require at least $\mathcal{O}(10^{7})$ proton simulations in 2D, based on our use of this code. In 3D, we expect the complexity to worsen significantly for all methods with the current setup.
+Due to the high objective computational complexity of this task, access to a High-Performance Computing (HPC) cluster is recommended for running large-scale experiments. For example, running MLMC with root mean-square-error $\epsilon < 10^{-1}$ is likely to require at least $\mathcal{O}(10^{7})$ proton simulations in 2D, based on our use of this code. In 3D, we expect the complexity to increase significantly for all methods with the current setup.
 
-The experiments presented in this thesis were performed using the an HPC cluster owned by the University of Oxford. 128 CPU cores were used over which proton simulations were run in parallel. Linux OS and no job scheduler was used. One full dose map under the conditions described above in 2D was produced in the order of hours. Note that improving the error requirement can notably increase the runtime. Further information about the HPC cluster can be provided upon reasonable request.
+The experiments presented in this thesis were performed using an HPC cluster owned by the Mathematical Institute, University of Oxford. 128 CPU cores were used over which proton simulations were run in parallel. Linux OS and no job scheduler was used. Smaller plots (e.g. large $\epsilon \sim \mathcal{O}(1)$, Monte Carlo dose maps using $\mathcal{O}(10^{5})$ simulations) and unit tests may be executed locally, however higher accuracy results with large domains, large numbers of nodes, or three dimensions will require the HPC.
 
-Smaller plots (e.g. large $\epsilon \sim \\mathcal{O}(1)$, Monte Carlo dose maps using $\mathcal{O}(10^{5})$ simulations) and unit tests may be executed locally.
+With relatively small error $\epsilon$, a full dose map using the default parameters below was produced in the order of hours. The full set of thesis results - which requires several dose maps to be generated for comparison between all three layers of methods - executed on the HPC in a few days. The runtime of this program is heavily dependent on the parameterisation decisions made by the user, including important dependencies on the model, computation method and Monte Carlo method. Further information about the HPC cluster specifications can be provided upon reasonable request.
 
 ### Software Requirements
 

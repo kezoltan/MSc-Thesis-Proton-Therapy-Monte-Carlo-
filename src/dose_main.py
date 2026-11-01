@@ -13,6 +13,7 @@ from src.monte_carlo_methods.mc_parallel import mc_parallel
 from src.monte_carlo_methods.mlmc_parallel import mlmc_parallel
 from src.monte_carlo_methods.mlmc_driver.mlmc_test import mlmc_testv
 from src.setup_functions.verify_params import verify_params
+from src.setup_functions.load_mass_matrix import load_mass_matrix
 
 if __name__ == "__main__":
 
@@ -40,7 +41,6 @@ if __name__ == "__main__":
             f"energy deviation is {energy_sdev}, E0 is {E0}."
         )
         print(f"Gaussian initial position sampling is {'active' if width_spread else 'inactive'}.")
-
         #For Monte Carlo, we select (it is simply convenient to ensure the stepsize is compatible with mlmc)
         mc_level= 11#9
         if sampling_type=="mc":
@@ -52,15 +52,15 @@ if __name__ == "__main__":
             print(
                 f"Simulation details: {sampling_type} dose method {dose_method}, "
                 f"model {sde_model}, {h} h, E0 {E0}, side_len {side_len}, "
-                f"N {SIMS_PER_CPU * NUM_CPUS}, KAPPA {KAPPA}. See parameterisation for more details."
+                f"N {SIMS_PER_CPU * NUM_CPUS}, KAPPA {KAPPA}. See src/parameterisation for more details."
             )
-
+            M_diag = load_mass_matrix()
             if dose_method=="SF":
-                mean_load_est = mc_parallel(sde_model, mc_level)
+                mean_load_est = mc_parallel(mc_level)
                 dose_expected = mean_load_est / M_diag
 
             if dose_method=="SK":
-                dose_expected = mc_parallel(sde_model, mc_level)
+                dose_expected = mc_parallel(mc_level)
 
             sim_num=SIMS_PER_CPU*NUM_CPUS
             save_folder = (
@@ -127,8 +127,6 @@ if __name__ == "__main__":
             #    "\n  Kurtosis: E[(Y_l - E[Y_l])⁴] / Var(Y_l)²,  Y_l = P_l - P_{l-1}"
             #    "\n  Consistency: E[P_l - P_{l-1}] + E[P_{l-1}] ≈ E[P_l]")
 
-            #we just load this every time -- please update
-            # M_diag = load_mass_matrix()
             partial_mlmc_parallel = partial(mlmc_parallel, M_diag=M_diag)
 
             print(f"Running full MLMC and MLMC test with Eps = {Eps}")

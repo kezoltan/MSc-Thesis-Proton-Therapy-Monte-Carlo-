@@ -6,10 +6,10 @@ from math import prod, comb, ceil
 from itertools import product
 from src.parameterisation._fixed_params import *
 from src.parameterisation.core_params import *
-from proton_setup_Bragg_Kleeman import calculate_R0
+from src.setup_functions.proton_setup_Bragg_Kleeman import calculate_R0
 import warnings
 
-def nodes():
+def nodes(side_len=side_len, SPATIAL_DIM=SPATIAL_DIM):
     """
     Generate node coordinate grids for closed cuboid domain D, assigned in src/parameterisation, including endpoints.
     Node coordinates are integer multiples of ``side_len``.
@@ -113,7 +113,7 @@ def position_lookup_matrix(X_meshgrid):
     grid_shape = X_meshgrid.shape
     return np.arange(0, prod(grid_shape)).reshape(grid_shape)
 
-def linear_lumped_mass_matrix(X_meshgrid):
+def linear_lumped_mass_matrix(X_meshgrid, side_len=side_len, SPATIAL_DIM=SPATIAL_DIM):
     """
     Calculate the lumped mass matrix diagonal for Q1 basis functions.
 
@@ -122,9 +122,9 @@ def linear_lumped_mass_matrix(X_meshgrid):
 
     Parameters
     ----------
-    meshgrid : tuple of numpy.ndarray
+    X_meshgrid : tuple of numpy.ndarray
     side_len : float
-    spatial_dim : int
+    SPATIAL_DIM : int
 
     Returns
     -------
@@ -133,10 +133,6 @@ def linear_lumped_mass_matrix(X_meshgrid):
     """
     Xs = X_meshgrid  # This is the beam axis so is always there
     nodes_shape = Xs.shape
-
-    print(Xs)
-    print(Xs.shape)
-    print(np.transpose(Xs)[0].shape)
 
     # Useful integral values (no prefactor)
     I1 = 4 / 3  # if different coordinates (1 and -1)
